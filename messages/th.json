@@ -1,0 +1,55 @@
+{
+  "app": {
+    "title": "Review Income & Tax Tracker",
+    "description": "Review Income & Tax Tracker (Thailand-focused)"
+  },
+  "common": {
+    "add": "เพิ่ม",
+    "edit": "แก้ไข",
+    "delete": "ลบ",
+    "save": "บันทึก",
+    "cancel": "ยกเลิก",
+    "search": "ค้นหา",
+    "reset": "ล้างค่า",
+    "export": "ส่งออก",
+    "rows": "แถว",
+    "of": "จาก",
+    "confirmDelete": "คุณแน่ใจหรือไม่ว่าต้องการลบ?"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "placeholder": "Dashboard (placeholder)"
+  },
+  "jobs": {
+    "title": "Review Jobs",
+    "listPlaceholder": "Jobs list (placeholder)",
+    "detailPlaceholder": "Job (placeholder)",
+    "createJob": "เพิ่มงานรีวิว",
+    "editJob": "แก้ไขงานรีวิว",
+    "payer": "ผู้จ่าย",
+    "table": {
+      "platform": "Platform",
+      "contentType": "Content type",
+      "jobDate": "Job date"
+    }
+  },
+  "payers": {
+    "title": "Payers",
+    "listPlaceholder": "Payers list (placeholder)",
+    "createPayer": "เพิ่มผู้จ่าย",
+    "editPayer": "แก้ไขผู้จ่าย"
+  },
+  "income": {
+    "title": "Income",
+    "listPlaceholder": "Income list (placeholder)",
+    "createIncome": "เพิ่มรายได้",
+    "editIncome": "แก้ไขรายได้",
+    "job": "งานรีวิว"
+  },
+  "tax": {
+    "title": "Tax",
+    "summaryPlaceholder": "Tax summary (placeholder)",
+    "withholdingLabel": "หักภาษี ณ ที่จ่าย",
+    "withholdingTaxAtSource": "หักภาษี ณ ที่จ่าย"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "app": {
+    "title": "Review Income & Tax Tracker",
+    "description": "Review Income & Tax Tracker (Thailand-focused)"
+  },
+  "common": {
+    "add": "Add",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "search": "Search",
+    "reset": "Reset",
+    "export": "Export",
+    "rows": "Rows",
+    "of": "of",
+    "confirmDelete": "Are you sure you want to delete?"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "placeholder": "Dashboard (placeholder)"
+  },
+  "jobs": {
+    "title": "Review Jobs",
+    "listPlaceholder": "Jobs list (placeholder)",
+    "detailPlaceholder": "Job (placeholder)",
+    "createJob": "Add review job",
+    "editJob": "Edit review job",
+    "payer": "Payer",
+    "table": {
+      "platform": "Platform",
+      "contentType": "Content type",
+      "jobDate": "Job date"
+    }
+  },
+  "payers": {
+    "title": "Payers",
+    "listPlaceholder": "Payers list (placeholder)",
+    "createPayer": "Add payer",
+    "editPayer": "Edit payer"
+  },
+  "income": {
+    "title": "Income",
+    "listPlaceholder": "Income list (placeholder)",
+    "createIncome": "Add income",
+    "editIncome": "Edit income",
+    "job": "Review job"
+  },
+  "tax": {
+    "title": "Tax",
+    "summaryPlaceholder": "Tax summary (placeholder)",
+    "withholdingLabel": "Withholding tax",
+    "withholdingTaxAtSource": "Withholding tax at source"
+  }
+}
