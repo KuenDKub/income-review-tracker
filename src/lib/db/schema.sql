@@ -1,30 +1,28 @@
 -- Review Income & Tax Tracker — PostgreSQL schema
 -- Run with: psql $DATABASE_URL -f src/lib/db/schema.sql
 
--- Payers (brands / payers)
-CREATE TABLE IF NOT EXISTS payers (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
-  tax_id TEXT,
-  contact_email TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- Review jobs
+-- Review jobs (payer as text; status for workflow)
 CREATE TABLE IF NOT EXISTS review_jobs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  payer_id UUID NOT NULL REFERENCES payers(id) ON DELETE CASCADE,
+  payer_name TEXT,
+  status TEXT NOT NULL DEFAULT 'received',
   platforms TEXT[] NOT NULL DEFAULT '{}',
   content_type TEXT NOT NULL,
   title TEXT NOT NULL,
-  job_date DATE NOT NULL,
+  received_date DATE,
+  review_deadline DATE,
+  publish_date DATE,
+  payment_date DATE,
   tags TEXT[] DEFAULT '{}',
   notes TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_review_jobs_payer_id ON review_jobs(payer_id);
-CREATE INDEX IF NOT EXISTS idx_review_jobs_job_date ON review_jobs(job_date);
+CREATE INDEX IF NOT EXISTS idx_review_jobs_payer_name ON review_jobs(payer_name);
+CREATE INDEX IF NOT EXISTS idx_review_jobs_status ON review_jobs(status);
+CREATE INDEX IF NOT EXISTS idx_review_jobs_received_date ON review_jobs(received_date);
+CREATE INDEX IF NOT EXISTS idx_review_jobs_review_deadline ON review_jobs(review_deadline);
+CREATE INDEX IF NOT EXISTS idx_review_jobs_publish_date ON review_jobs(publish_date);
 
 -- Income (one per job or split by period)
 CREATE TABLE IF NOT EXISTS income (
@@ -41,20 +39,6 @@ CREATE TABLE IF NOT EXISTS income (
 
 CREATE INDEX IF NOT EXISTS idx_income_review_job_id ON income(review_job_id);
 CREATE INDEX IF NOT EXISTS idx_income_payment_date ON income(payment_date);
-
--- Withholding tax (optional separate table for per-payer/per-period tracking)
-CREATE TABLE IF NOT EXISTS withholding_tax (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  payer_id UUID NOT NULL REFERENCES payers(id) ON DELETE CASCADE,
-  income_id UUID REFERENCES income(id) ON DELETE SET NULL,
-  amount DECIMAL(15,2) NOT NULL,
-  rate DECIMAL(5,2) NOT NULL,
-  tax_period DATE NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX IF NOT EXISTS idx_withholding_tax_payer_id ON withholding_tax(payer_id);
-CREATE INDEX IF NOT EXISTS idx_withholding_tax_tax_period ON withholding_tax(tax_period);
 
 -- Documents / notes for Thai tax filing
 CREATE TABLE IF NOT EXISTS documents (

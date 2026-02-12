@@ -117,6 +117,7 @@ export function DataTablePagination({
               ) : (
                 <PaginationItem key={it}>
                   <PaginationLink
+                    size="icon"
                     isActive={it === safePage}
                     onClick={() => onPageChange(it)}
                   >

@@ -1,5 +1,9 @@
 import { NextIntlClientProvider } from "next-intl";
-import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
+import {
+  getMessages,
+  getTranslations,
+  setRequestLocale,
+} from "next-intl/server";
 import { hasLocale } from "next-intl";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
@@ -29,7 +33,6 @@ export default async function LocaleLayout({ children, params }: Props) {
   const navLabels = {
     dashboard: (await getTranslations("dashboard"))("title"),
     jobs: (await getTranslations("jobs"))("title"),
-    payers: (await getTranslations("payers"))("title"),
     income: (await getTranslations("income"))("title"),
     tax: (await getTranslations("tax"))("title"),
   };
@@ -37,7 +40,7 @@ export default async function LocaleLayout({ children, params }: Props) {
   return (
     <NextIntlClientProvider messages={messages}>
       <div className="flex min-h-screen flex-col">
-        <Header title={t("title")} />
+        <Header title={t("title")} navLabels={navLabels} />
         <div className="flex flex-1">
           <Sidebar labels={navLabels} />
           <main className="flex-1 p-6">

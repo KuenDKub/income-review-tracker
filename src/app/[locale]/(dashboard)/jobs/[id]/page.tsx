@@ -7,8 +7,10 @@ export default async function JobDetailPage({
 }) {
   const { id } = await params;
   return (
-    <main className="min-h-screen p-8">
-      <JobDetailClient id={id} />
+    <main className="min-h-screen p-6 sm:p-8">
+      <div className="mx-auto max-w-4xl space-y-8">
+        <JobDetailClient id={id} />
+      </div>
     </main>
   );
 }

@@ -72,14 +72,23 @@ export async function deleteDocument(id: string): Promise<boolean> {
     return (rowCount ?? 0) > 0;
   }
 
-  const { unlink } = await import("fs/promises");
-  const { join } = await import("path");
-
-  try {
-    const filePath = join(process.cwd(), "public", doc.filePath);
-    await unlink(filePath);
-  } catch (err) {
-    console.warn("Failed to delete file:", err);
+  const { getStorage } = await import("@/lib/storage");
+  const storage = getStorage();
+  if (storage && doc.filePath.startsWith("http")) {
+    try {
+      await storage.delete(doc.filePath);
+    } catch (err) {
+      console.warn("Failed to delete file from storage:", err);
+    }
+  } else {
+    const { unlink } = await import("fs/promises");
+    const { join } = await import("path");
+    try {
+      const filePath = join(process.cwd(), "public", doc.filePath);
+      await unlink(filePath);
+    } catch (err) {
+      console.warn("Failed to delete file:", err);
+    }
   }
 
   const { rowCount } = await query("DELETE FROM documents WHERE id = $1", [id]);

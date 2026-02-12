@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -14,17 +15,19 @@ export function JobFilters({
   onSearchChange,
   onReset,
 }: JobFiltersProps) {
+  const t = useTranslations("jobs");
+  const tCommon = useTranslations("common");
   return (
     <div className="flex flex-wrap items-center gap-4">
       <Input
-        placeholder="Search jobs..."
+        placeholder={t("searchPlaceholder")}
         value={search}
         onChange={(e) => onSearchChange?.(e.target.value)}
         className="max-w-xs"
       />
       {onReset && (
         <Button type="button" variant="outline" size="sm" onClick={onReset}>
-          Reset
+          {tCommon("reset")}
         </Button>
       )}
     </div>

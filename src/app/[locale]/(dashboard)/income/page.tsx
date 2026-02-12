@@ -1,9 +1,9 @@
-import { IncomePageClient } from "@/components/income/IncomePageClient";
+import { IncomeSummaryView } from "@/components/income/IncomeSummaryView";
 
 export default function IncomePage() {
   return (
     <main className="min-h-screen p-8">
-      <IncomePageClient />
+      <IncomeSummaryView />
     </main>
   );
 }

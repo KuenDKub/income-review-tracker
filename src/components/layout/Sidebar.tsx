@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/", labelKey: "dashboard" },
   { href: "/jobs", labelKey: "jobs" },
-  { href: "/payers", labelKey: "payers" },
   { href: "/income", labelKey: "income" },
   { href: "/tax", labelKey: "tax" },
 ] as const;
@@ -30,7 +29,7 @@ export function Sidebar({ labels }: SidebarProps) {
               "rounded-md px-3 py-2 text-sm font-medium transition-colors",
               pathname === href || (href !== "/" && pathname.startsWith(href))
                 ? "bg-primary text-primary-foreground"
-                : "hover:bg-muted"
+                : "hover:bg-muted",
             )}
           >
             {labels[labelKey] ?? labelKey}

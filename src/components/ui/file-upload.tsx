@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import { Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,7 @@ export function FileUpload({
   existingImages = [],
   onRemoveExisting,
 }: FileUploadProps) {
+  const t = useTranslations("ui");
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [previews, setPreviews] = React.useState<string[]>([]);
 
@@ -78,7 +80,7 @@ export function FileUpload({
           className="w-full"
         >
           <Upload className="mr-2 h-4 w-4" />
-          Upload {multiple ? "Images" : "Image"}
+          {multiple ? t("uploadImages") : t("uploadImage")}
         </Button>
       </div>
 
@@ -88,7 +90,7 @@ export function FileUpload({
             <div key={img.id} className="relative group">
               <img
                 src={img.url}
-                alt="Existing evidence"
+                alt={t("existingEvidence")}
                 className="w-full h-32 object-cover rounded-md border"
               />
               {onRemoveExisting && (
@@ -106,7 +108,7 @@ export function FileUpload({
             <div key={`new-${index}`} className="relative group">
               <img
                 src={preview}
-                alt={`Preview ${index + 1}`}
+                alt={t("preview", { n: index + 1 })}
                 className="w-full h-32 object-cover rounded-md border"
               />
               <button

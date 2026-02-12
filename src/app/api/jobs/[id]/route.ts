@@ -1,8 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getJobById, updateJob, deleteJob } from "@/controllers/jobsController";
+import { listIncome, createIncome, updateIncome } from "@/controllers/incomeController";
 import { reviewJobUpdateSchema } from "@/lib/schemas/reviewJob";
 
 type RouteParams = { params: Promise<{ id: string }> };
+
+function buildIncomeFromJobPayload(
+  reviewJobId: string,
+  payload: {
+    hasWithholdingTax?: boolean;
+    amount?: number;
+    netAmount?: number;
+    withholdingAmount?: number;
+    paymentDate?: string | null;
+  }
+): { grossAmount: number; withholdingAmount: number; netAmount: number; paymentDate: string } | null {
+  const paymentDate = payload.paymentDate?.trim() || null;
+  if (!paymentDate) return null;
+  if (payload.hasWithholdingTax) {
+    const net = Number(payload.netAmount ?? 0);
+    const withholding = Number(payload.withholdingAmount ?? 0);
+    if (net <= 0 && withholding <= 0) return null;
+    return {
+      grossAmount: net + withholding,
+      withholdingAmount: withholding,
+      netAmount: net,
+      paymentDate,
+    };
+  }
+  const amount = Number(payload.amount ?? 0);
+  if (amount <= 0) return null;
+  return {
+    grossAmount: amount,
+    withholdingAmount: 0,
+    netAmount: amount,
+    paymentDate,
+  };
+}
 
 export async function GET(_request: NextRequest, { params }: RouteParams) {
   const { id } = await params;
@@ -35,6 +69,26 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const data = await updateJob(id, parsed.data);
     if (!data) {
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
+    }
+    const incomePayload = buildIncomeFromJobPayload(id, parsed.data);
+    if (incomePayload) {
+      const { data: incomeList } = await listIncome({ reviewJobId: id, pageSize: 1 });
+      if (incomeList && incomeList.length > 0) {
+        await updateIncome(incomeList[0].id, {
+          grossAmount: incomePayload.grossAmount,
+          withholdingAmount: incomePayload.withholdingAmount,
+          netAmount: incomePayload.netAmount,
+          paymentDate: incomePayload.paymentDate,
+        });
+      } else {
+        await createIncome({
+          reviewJobId: id,
+          grossAmount: incomePayload.grossAmount,
+          withholdingAmount: incomePayload.withholdingAmount,
+          netAmount: incomePayload.netAmount,
+          paymentDate: incomePayload.paymentDate,
+        });
+      }
     }
     return NextResponse.json({ data });
   } catch (err) {

@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type WithholdingSummaryProps = {
@@ -13,21 +16,22 @@ export function WithholdingSummary({
   totalGross,
   totalNet,
 }: WithholdingSummaryProps) {
+  const t = useTranslations("tax");
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Withholding tax summary — {periodLabel}</CardTitle>
+        <CardTitle>{t("withholdingSummary", { period: periodLabel })}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2 text-sm">
         <p>
-          Total gross: <span className="font-medium">{totalGross.toLocaleString("th-TH")} THB</span>
+          {t("totalGross")}: <span className="font-medium">{totalGross.toLocaleString("th-TH")} THB</span>
         </p>
         <p>
-          Total withholding (หักภาษี ณ ที่จ่าย):{" "}
+          {t("totalWithholding")}:{" "}
           <span className="font-medium">{totalWithholding.toLocaleString("th-TH")} THB</span>
         </p>
         <p>
-          Total net: <span className="font-medium">{totalNet.toLocaleString("th-TH")} THB</span>
+          {t("totalNet")}: <span className="font-medium">{totalNet.toLocaleString("th-TH")} THB</span>
         </p>
       </CardContent>
     </Card>

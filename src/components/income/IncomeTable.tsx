@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import {
   Table,
   TableBody,
@@ -34,8 +37,11 @@ export function IncomeTable({
   onToggleSelected,
   onToggleAllSelected,
 }: IncomeTableProps) {
+  const t = useTranslations("income");
+  const tCommon = useTranslations("common");
+  const tDashboard = useTranslations("dashboard");
   if (items.length === 0) {
-    return <p className="text-sm text-muted-foreground">No income entries</p>;
+    return <p className="text-sm text-muted-foreground">{t("noIncomeEntries")}</p>;
   }
   const showActions = Boolean(onEdit || onDelete);
   const canSelect = Boolean(selectedIds && onToggleSelected && onToggleAllSelected);
@@ -49,15 +55,15 @@ export function IncomeTable({
               <Checkbox
                 checked={allSelected}
                 onCheckedChange={() => onToggleAllSelected?.()}
-                aria-label="Select all"
+                aria-label={tCommon("selectAll")}
               />
             </TableHead>
           )}
-          <TableHead>Payment date</TableHead>
-          <TableHead className="text-right">Gross</TableHead>
-          <TableHead className="text-right">Withholding</TableHead>
-          <TableHead className="text-right">Net</TableHead>
-          {showActions && <TableHead className="text-right w-[120px]">Action</TableHead>}
+          <TableHead>{t("paymentDate")}</TableHead>
+          <TableHead className="text-right">{tDashboard("gross")}</TableHead>
+          <TableHead className="text-right">{tDashboard("withholding")}</TableHead>
+          <TableHead className="text-right">{tDashboard("net")}</TableHead>
+          {showActions && <TableHead className="text-right w-[120px]">{tCommon("action")}</TableHead>}
         </TableRow>
       </TableHeader>
       <TableBody>

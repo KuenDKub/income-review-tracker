@@ -2,6 +2,7 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -37,9 +38,11 @@ export function IncomeForm({
   schema,
   defaultValues,
   onSubmit,
-  submitLabel = "Save",
+  submitLabel,
   jobs = [],
 }: IncomeFormProps) {
+  const t = useTranslations("income");
+  const tCommon = useTranslations("common");
   const form = useForm<IncomeFormValues>({
     resolver: zodResolver(schema) as never,
     defaultValues: defaultValues as IncomeFormValues,
@@ -53,11 +56,11 @@ export function IncomeForm({
           name="reviewJobId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Review job</FormLabel>
+              <FormLabel>{t("job")}</FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select job" />
+                    <SelectValue placeholder={t("selectJob")} />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -76,7 +79,7 @@ export function IncomeForm({
           name="grossAmount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Gross amount (THB)</FormLabel>
+              <FormLabel>{t("grossAmount")}</FormLabel>
               <FormControl>
                 <Input type="number" step="0.01" {...field} value={field.value ?? ""} />
               </FormControl>
@@ -88,7 +91,7 @@ export function IncomeForm({
           name="withholdingRate"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Withholding rate (%)</FormLabel>
+              <FormLabel>{t("withholdingRate")}</FormLabel>
               <FormControl>
                 <Input type="number" step="0.01" {...field} value={field.value ?? ""} />
               </FormControl>
@@ -100,14 +103,14 @@ export function IncomeForm({
           name="paymentDate"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Payment date</FormLabel>
+              <FormLabel>{t("paymentDate")}</FormLabel>
               <FormControl>
                 <Input type="date" {...field} value={field.value ?? ""} />
               </FormControl>
             </FormItem>
           )}
         />
-        <Button type="submit">{submitLabel}</Button>
+        <Button type="submit">{submitLabel ?? tCommon("save")}</Button>
       </form>
     </Form>
   );

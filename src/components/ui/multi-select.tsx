@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import { ChevronDown, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,10 +26,12 @@ export function MultiSelect({
   options,
   value,
   onChange,
-  placeholder = "Select...",
+  placeholder,
   className,
 }: MultiSelectProps) {
+  const t = useTranslations("common");
   const [open, setOpen] = React.useState(false);
+  const placeholderText = placeholder ?? t("selectPlaceholder");
 
   const handleToggle = (optionValue: string) => {
     if (value.includes(optionValue)) {
@@ -53,7 +56,7 @@ export function MultiSelect({
             role="combobox"
             className="w-full justify-between"
           >
-            {value.length > 0 ? `${value.length} selected` : placeholder}
+            {value.length > 0 ? t("selectedCount", { count: value.length }) : placeholderText}
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>

@@ -20,7 +20,8 @@ import {
 } from "@/components/ui/select";
 import { JobList, type JobItem } from "./JobList";
 import { JobForm } from "./JobForm";
-import { reviewJobCreateSchema } from "@/lib/schemas/reviewJob";
+import { reviewJobCreateSchema, REVIEW_JOB_STATUSES } from "@/lib/schemas/reviewJob";
+import type { ReviewJobStatus } from "@/lib/schemas/reviewJob";
 import { ConfirmDeleteDialog } from "@/components/ui/ConfirmDeleteDialog";
 import { toast } from "@/lib/toast";
 import { DataTablePagination } from "@/components/ui/DataTablePagination";
@@ -29,36 +30,36 @@ import { Download } from "lucide-react";
 
 type ReviewJobJson = {
   id: string;
-  payerId: string;
+  payerName: string | null;
+  status: string;
   platforms: string[];
   contentType: string;
   title: string;
-  jobDate: string;
+  receivedDate?: string | null;
+  reviewDeadline?: string | null;
+  publishDate?: string | null;
+  paymentDate?: string | null;
   tags: string[];
   notes: string | null;
+  grossAmount?: number | null;
 };
 
-type PayerJson = { id: string; name: string };
 type Paginated<T> = { data: T[]; total: number; page: number; pageSize: number };
 
 export function JobsPageClient() {
   const t = useTranslations("jobs");
   const tCommon = useTranslations("common");
   const [jobs, setJobs] = useState<JobItem[]>([]);
-  const [payers, setPayers] = useState<PayerJson[]>([]);
+  const [payerNames, setPayerNames] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
-  const [payerId, setPayerId] = useState<string>("all");
+  const [payerNameFilter, setPayerNameFilter] = useState("");
   const [platform, setPlatform] = useState("");
   const [contentType, setContentType] = useState("");
-  const [year, setYear] = useState<string>("all");
-  const [month, setMonth] = useState<string>("all");
-  const [jobDateFrom, setJobDateFrom] = useState("");
-  const [jobDateTo, setJobDateTo] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
@@ -72,57 +73,53 @@ export function JobsPageClient() {
       qs.set("page", String(page));
       qs.set("pageSize", String(pageSize));
       if (search.trim()) qs.set("search", search.trim());
-      if (payerId !== "all") qs.set("payerId", payerId);
+      if (payerNameFilter.trim()) qs.set("payerName", payerNameFilter.trim());
       if (platform.trim()) qs.set("platform", platform.trim());
       if (contentType.trim()) qs.set("contentType", contentType.trim());
-      if (year !== "all") qs.set("year", year);
-      if (month !== "all") qs.set("month", month);
-      if (jobDateFrom) qs.set("jobDateFrom", jobDateFrom);
-      if (jobDateTo) qs.set("jobDateTo", jobDateTo);
       const res = await fetch(`/api/jobs?${qs.toString()}`);
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Failed to fetch jobs");
+      if (!res.ok) throw new Error(json.error ?? t("loadingError"));
       return json as Paginated<ReviewJobJson>;
     } catch (e) {
-      toast.error("Failed to load jobs", String(e));
+      toast.error(t("loadingError"), String(e));
       return { data: [], total: 0, page, pageSize } as Paginated<ReviewJobJson>;
     }
-  }, [page, pageSize, search, payerId, platform, contentType, year, month, jobDateFrom, jobDateTo]);
+  }, [page, pageSize, search, payerNameFilter, platform, contentType, t]);
 
-  const fetchPayers = useCallback(async () => {
+  const fetchPayerNames = useCallback(async () => {
     try {
-      const qs = new URLSearchParams();
-      qs.set("page", "1");
-      qs.set("pageSize", "100");
-      const res = await fetch(`/api/payers?${qs.toString()}`);
+      const res = await fetch("/api/jobs/payer-names");
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Failed to fetch payers");
-      return (json.data ?? []) as PayerJson[];
+      if (!res.ok) throw new Error(json.error ?? "Failed to fetch payer names");
+      return (json.data ?? []) as string[];
     } catch (e) {
-      toast.error("Failed to load payers", String(e));
       return [];
     }
   }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [jobsData, payersData] = await Promise.all([fetchJobs(), fetchPayers()]);
-    const payerMap = new Map(payersData.map((p) => [p.id, p.name]));
+    const [jobsData, namesData] = await Promise.all([fetchJobs(), fetchPayerNames()]);
     setJobs(
       (jobsData.data ?? []).map((j) => ({
         id: j.id,
         title: j.title,
         platforms: j.platforms || [],
         contentType: j.contentType,
-        jobDate: j.jobDate,
-        payerName: payerMap.get(j.payerId),
+        payerName: j.payerName ?? undefined,
+        status: j.status,
+        receivedDate: j.receivedDate ?? undefined,
+        reviewDeadline: j.reviewDeadline ?? undefined,
+        publishDate: j.publishDate ?? undefined,
+        paymentDate: j.paymentDate ?? undefined,
+        grossAmount: j.grossAmount ?? undefined,
       }))
     );
     setTotal(jobsData.total ?? 0);
     setSelectedIds(new Set());
-    setPayers(payersData);
+    setPayerNames(namesData);
     setLoading(false);
-  }, [fetchJobs, fetchPayers]);
+  }, [fetchJobs, fetchPayerNames]);
 
   useEffect(() => {
     load();
@@ -154,9 +151,9 @@ export function JobsPageClient() {
           body: JSON.stringify(data),
         });
         const json = await res.json();
-        if (!res.ok) throw new Error(json.error ?? "Failed to update job");
+        if (!res.ok) throw new Error(json.error ?? t("updateError"));
         jobId = editingId;
-        toast.success("Job updated");
+        toast.success(t("updateSuccess"));
       } else {
         const res = await fetch("/api/jobs", {
           method: "POST",
@@ -164,12 +161,11 @@ export function JobsPageClient() {
           body: JSON.stringify(data),
         });
         const json = await res.json();
-        if (!res.ok) throw new Error(json.error ?? "Failed to create job");
+        if (!res.ok) throw new Error(json.error ?? t("createError"));
         jobId = json.data.id;
-        toast.success("Job created");
+        toast.success(t("createSuccess"));
       }
 
-      // Upload evidence files if any
       if (evidenceFiles.length > 0) {
         for (const file of evidenceFiles) {
           const formData = new FormData();
@@ -179,7 +175,7 @@ export function JobsPageClient() {
             body: formData,
           });
           if (!uploadRes.ok) {
-            throw new Error("Failed to upload file");
+            throw new Error(t("uploadError"));
           }
           const uploadJson = await uploadRes.json();
           await fetch("/api/documents", {
@@ -199,7 +195,7 @@ export function JobsPageClient() {
       setEditingId(null);
       await load();
     } catch (e) {
-      toast.error(editingId ? "Failed to update job" : "Failed to create job", String(e));
+      toast.error(editingId ? t("updateError") : t("createError"), String(e));
     }
   };
 
@@ -209,13 +205,13 @@ export function JobsPageClient() {
       const res = await fetch(`/api/jobs/${deleteId}`, { method: "DELETE" });
       if (!res.ok) {
         const json = await res.json();
-        throw new Error(json.error ?? "Failed to delete job");
+        throw new Error(json.error ?? t("deleteError"));
       }
-      toast.success("Job deleted");
+      toast.success(t("deleteSuccess"));
       setDeleteId(null);
       await load();
     } catch (e) {
-      toast.error("Failed to delete job", String(e));
+      toast.error(t("deleteError"), String(e));
     }
   };
 
@@ -232,18 +228,46 @@ export function JobsPageClient() {
     Promise.all([
       fetch(`/api/jobs/${editingId}`).then((r) => r.json()),
       fetch(`/api/documents?reviewJobId=${editingId}`).then((r) => r.json()),
+      fetch(`/api/income?reviewJobId=${editingId}&pageSize=1`).then((r) => r.json()),
     ])
-      .then(([jobJson, docsJson]) => {
+      .then(([jobJson, docsJson, incomeJson]) => {
         if (cancelled || !jobJson.data) return;
-        const d = jobJson.data;
+        const d = jobJson.data as ReviewJobJson;
+        const status: ReviewJobStatus = REVIEW_JOB_STATUSES.includes(d.status as ReviewJobStatus)
+          ? (d.status as ReviewJobStatus)
+          : "received";
+        const incomeList = (incomeJson?.data ?? []) as Array<{
+          grossAmount: number;
+          withholdingAmount: number;
+          netAmount: number;
+        }>;
+        const firstIncome = incomeList[0];
+        const incomeDefaults =
+          firstIncome && (firstIncome.grossAmount > 0 || firstIncome.netAmount > 0)
+            ? firstIncome.withholdingAmount > 0
+              ? {
+                  hasWithholdingTax: true as const,
+                  netAmount: firstIncome.netAmount,
+                  withholdingAmount: firstIncome.withholdingAmount,
+                }
+              : {
+                  hasWithholdingTax: false as const,
+                  amount: firstIncome.grossAmount,
+                }
+            : { hasWithholdingTax: false as const };
         setEditDefaultValues({
-          payerId: d.payerId,
+          payerName: d.payerName ?? "",
+          status,
           platforms: d.platforms || [],
           contentType: d.contentType,
           title: d.title,
-          jobDate: d.jobDate,
+          receivedDate: d.receivedDate ?? "",
+          reviewDeadline: d.reviewDeadline ?? "",
+          publishDate: d.publishDate ?? "",
+          paymentDate: d.paymentDate ?? "",
           tags: d.tags,
           notes: d.notes,
+          ...incomeDefaults,
         });
         const docs = (docsJson.data ?? []) as Array<{ id: string; filePath: string }>;
         setExistingEvidenceImages(
@@ -279,27 +303,16 @@ export function JobsPageClient() {
                   setPage(1);
                 }}
               />
-              <Select
-                value={payerId}
-                onValueChange={(v) => {
-                  setPayerId(v);
+              <Input
+                placeholder={t("payerName")}
+                value={payerNameFilter}
+                onChange={(e) => {
+                  setPayerNameFilter(e.target.value);
                   setPage(1);
                 }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Payer" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All payers</SelectItem>
-                  {payers.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
               <Input
-                placeholder="Platform"
+                placeholder={t("platform")}
                 value={platform}
                 onChange={(e) => {
                   setPlatform(e.target.value);
@@ -307,70 +320,13 @@ export function JobsPageClient() {
                 }}
               />
               <Input
-                placeholder="Content type"
+                placeholder={t("contentType")}
                 value={contentType}
                 onChange={(e) => {
                   setContentType(e.target.value);
                   setPage(1);
                 }}
               />
-              <Select
-                value={year}
-                onValueChange={(v) => {
-                  setYear(v);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Year" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All years</SelectItem>
-                  {Array.from({ length: 11 }, (_, i) => 2020 + i).map((y) => (
-                    <SelectItem key={y} value={String(y)}>
-                      {y}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={month}
-                onValueChange={(v) => {
-                  setMonth(v);
-                  setPage(1);
-                }}
-                disabled={year === "all"}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Month" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All months</SelectItem>
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                    <SelectItem key={m} value={String(m)}>
-                      {new Date(2000, m - 1).toLocaleString("en-US", { month: "long" })}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="grid grid-cols-2 gap-2">
-                <Input
-                  type="date"
-                  value={jobDateFrom}
-                  onChange={(e) => {
-                    setJobDateFrom(e.target.value);
-                    setPage(1);
-                  }}
-                />
-                <Input
-                  type="date"
-                  value={jobDateTo}
-                  onChange={(e) => {
-                    setJobDateTo(e.target.value);
-                    setPage(1);
-                  }}
-                />
-              </div>
             </div>
             <div className="flex items-center gap-2">
               <Button type="button" variant="outline" disabled>
@@ -382,13 +338,9 @@ export function JobsPageClient() {
                 variant="outline"
                 onClick={() => {
                   setSearch("");
-                  setPayerId("all");
+                  setPayerNameFilter("");
                   setPlatform("");
                   setContentType("");
-                  setYear("all");
-                  setMonth("all");
-                  setJobDateFrom("");
-                  setJobDateTo("");
                   setPage(1);
                 }}
               >
@@ -398,7 +350,7 @@ export function JobsPageClient() {
           </div>
 
           {loading ? (
-            <p className="text-sm text-muted-foreground">Loading...</p>
+            <p className="text-sm text-muted-foreground">{tCommon("loading")}</p>
           ) : (
             <JobList
               jobs={jobs}
@@ -449,18 +401,18 @@ export function JobsPageClient() {
               defaultValues={editingId ? editDefaultValues : undefined}
               onSubmit={handleDialogSubmit}
               submitLabel={tCommon("save")}
-              payers={payers}
+              payerNames={payerNames}
               evidenceFiles={evidenceFiles}
               onEvidenceFilesChange={setEvidenceFiles}
               existingEvidenceImages={existingEvidenceImages}
               onRemoveExistingEvidence={async (docId) => {
                 try {
                   const res = await fetch(`/api/documents/${docId}`, { method: "DELETE" });
-                  if (!res.ok) throw new Error("Failed to delete document");
+                  if (!res.ok) throw new Error(t("deleteDocError"));
                   setExistingEvidenceImages((prev) => prev.filter((img) => img.id !== docId));
-                  toast.success("Image removed");
+                  toast.success(t("removeImageSuccess"));
                 } catch (e) {
-                  toast.error("Failed to remove image", String(e));
+                  toast.error(t("removeImageError"), String(e));
                 }
               }}
             />

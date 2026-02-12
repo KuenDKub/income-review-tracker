@@ -9,9 +9,12 @@
     "lint": "eslint",
     "db:migrate": "node scripts/run-schema.js",
     "db:migrate-platforms": "node scripts/migrate-platform-to-platforms.js",
-    "script:daily-check": "node scripts/daily-check.js"
+    "db:migrate-payer-to-text": "node scripts/migrate-payer-to-text.js",
+    "db:migrate-add-job-dates": "node scripts/migrate-add-job-dates.js",
+    "db:migrate-drop-job-date": "node scripts/migrate-drop-job-date.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.988.0",
     "@hookform/resolvers": "^5.2.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -20,7 +23,6 @@
     "next": "16.1.6",
     "next-intl": "^4.8.2",
     "next-themes": "^0.4.6",
-    "nodemailer": "^7.0.13",
     "pg": "^8.18.0",
     "radix-ui": "^1.4.3",
     "react": "19.2.3",
@@ -33,7 +35,6 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
-    "@types/nodemailer": "^7.0.9",
     "@types/pg": "^8.16.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",

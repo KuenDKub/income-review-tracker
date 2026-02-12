@@ -208,3 +208,41 @@ export async function getYearlySummary(
     net: parseFloat(r.sum_net),
   };
 }
+
+export type MonthlyBreakdownItem = {
+  month: number;
+  year: number;
+  gross: number;
+  withholding: number;
+  net: number;
+};
+
+/** Monthly breakdown for a year: one row per month with sums. */
+export async function getMonthlyBreakdownByYear(
+  year: number
+): Promise<MonthlyBreakdownItem[]> {
+  const { rows } = await query<{
+    month: string;
+    sum_gross: string;
+    sum_withholding: string;
+    sum_net: string;
+  }>(
+    `SELECT
+       EXTRACT(MONTH FROM payment_date)::int AS month,
+       COALESCE(SUM(gross_amount), 0)::numeric AS sum_gross,
+       COALESCE(SUM(withholding_amount), 0)::numeric AS sum_withholding,
+       COALESCE(SUM(net_amount), 0)::numeric AS sum_net
+     FROM income
+     WHERE EXTRACT(YEAR FROM payment_date) = $1
+     GROUP BY EXTRACT(MONTH FROM payment_date)
+     ORDER BY month`,
+    [year]
+  );
+  return rows.map((r) => ({
+    month: parseInt(r.month, 10),
+    year,
+    gross: parseFloat(r.sum_gross),
+    withholding: parseFloat(r.sum_withholding),
+    net: parseFloat(r.sum_net),
+  }));
+}

@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -73,13 +73,13 @@ export function IncomePageClient() {
       if (paymentDateTo) qs.set("paymentDateTo", paymentDateTo);
       const res = await fetch(`/api/income?${qs.toString()}`);
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Failed to fetch income");
+      if (!res.ok) throw new Error(json.error ?? t("loadingError"));
       return json as Paginated<IncomeJson>;
     } catch (e) {
-      toast.error("Failed to load income", String(e));
+      toast.error(t("loadingError"), String(e));
       return { data: [], total: 0, page, pageSize } as Paginated<IncomeJson>;
     }
-  }, [page, pageSize, search, reviewJobId, currency, paymentDateFrom, paymentDateTo]);
+  }, [page, pageSize, search, reviewJobId, currency, paymentDateFrom, paymentDateTo, t]);
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -150,8 +150,8 @@ export function IncomePageClient() {
           body: JSON.stringify(payload),
         });
         const json = await res.json();
-        if (!res.ok) throw new Error(json.error ?? "Failed to update income");
-        toast.success("Income updated");
+        if (!res.ok) throw new Error(json.error ?? t("updateError"));
+        toast.success(t("updateSuccess"));
       } else {
         const res = await fetch("/api/income", {
           method: "POST",
@@ -159,14 +159,14 @@ export function IncomePageClient() {
           body: JSON.stringify(payload),
         });
         const json = await res.json();
-        if (!res.ok) throw new Error(json.error ?? "Failed to create income");
-        toast.success("Income created");
+        if (!res.ok) throw new Error(json.error ?? t("createError"));
+        toast.success(t("createSuccess"));
       }
       setDialogOpen(false);
       setEditingId(null);
       await load();
     } catch (e) {
-      toast.error(editingId ? "Failed to update income" : "Failed to create income", String(e));
+      toast.error(editingId ? t("updateError") : t("createError"), String(e));
     }
   };
 
@@ -176,13 +176,13 @@ export function IncomePageClient() {
       const res = await fetch(`/api/income/${deleteId}`, { method: "DELETE" });
       if (!res.ok) {
         const json = await res.json();
-        throw new Error(json.error ?? "Failed to delete income");
+        throw new Error(json.error ?? t("deleteError"));
       }
-      toast.success("Income deleted");
+      toast.success(t("deleteSuccess"));
       setDeleteId(null);
       await load();
     } catch (e) {
-      toast.error("Failed to delete income", String(e));
+      toast.error(t("deleteError"), String(e));
     }
   };
 
@@ -229,7 +229,7 @@ export function IncomePageClient() {
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <Input
-                placeholder={`${tCommon("search")} (job title)...`}
+                placeholder={t("searchPlaceholder")}
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
@@ -244,10 +244,10 @@ export function IncomePageClient() {
                 }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Job" />
+                  <SelectValue placeholder={t("job")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All jobs</SelectItem>
+                  <SelectItem value="all">{t("allJobs")}</SelectItem>
                   {jobs.map((j) => (
                     <SelectItem key={j.id} value={j.id}>
                       {j.title}
@@ -263,10 +263,10 @@ export function IncomePageClient() {
                 }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Currency" />
+                  <SelectValue placeholder={t("currency")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All currencies</SelectItem>
+                  <SelectItem value="all">{t("allCurrencies")}</SelectItem>
                   <SelectItem value="THB">THB</SelectItem>
                   <SelectItem value="USD">USD</SelectItem>
                 </SelectContent>
@@ -313,7 +313,7 @@ export function IncomePageClient() {
           </div>
 
           {loading ? (
-            <p className="text-sm text-muted-foreground">Loading...</p>
+            <p className="text-sm text-muted-foreground">{tCommon("loading")}</p>
           ) : (
             <IncomeTable
               items={items}

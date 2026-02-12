@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { randomUUID } from "crypto";
+import { getStorage } from "@/lib/storage";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,24 +15,34 @@ export async function POST(request: NextRequest) {
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-
     const ext = file.name.split(".").pop() || "";
-    const filename = `${randomUUID()}-${Date.now()}.${ext}`;
-    const uploadDir = join(process.cwd(), "public", "uploads");
+    const storageKey = `evidence/${randomUUID()}-${Date.now()}.${ext}`;
 
-    try {
-      await mkdir(uploadDir, { recursive: true });
-    } catch (err) {
-      // Directory might already exist
+    const storage = getStorage();
+    if (storage) {
+      const result = await storage.upload(
+        buffer,
+        storageKey,
+        file.type || "application/octet-stream",
+        file.name
+      );
+      return NextResponse.json({
+        filePath: result.filePath,
+        fileName: result.fileName,
+        fileSize: result.fileSize,
+        mimeType: result.mimeType,
+      });
     }
 
+    // Fallback: local filesystem (dev only)
+    const filename = storageKey.split("/").pop()!;
+    const uploadDir = join(process.cwd(), "public", "uploads");
+    await mkdir(uploadDir, { recursive: true });
     const filePath = join(uploadDir, filename);
     await writeFile(filePath, buffer);
 
-    const relativePath = `/uploads/${filename}`;
-
     return NextResponse.json({
-      filePath: relativePath,
+      filePath: `/uploads/${filename}`,
       fileName: file.name,
       fileSize: file.size,
       mimeType: file.type,

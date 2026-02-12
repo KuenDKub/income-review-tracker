@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import {
   Table,
   TableBody,
@@ -13,8 +16,13 @@ export type JobItem = {
   title: string;
   platforms: string[];
   contentType: string;
-  jobDate: string;
   payerName?: string;
+  status?: string;
+  receivedDate?: string | null;
+  reviewDeadline?: string | null;
+  publishDate?: string | null;
+  paymentDate?: string | null;
+  grossAmount?: number | null;
 };
 
 type JobListProps = {
@@ -34,8 +42,10 @@ export function JobList({
   onToggleSelected,
   onToggleAllSelected,
 }: JobListProps) {
+  const t = useTranslations("jobs");
+  const tCommon = useTranslations("common");
   if (jobs.length === 0) {
-    return <p className="text-sm text-muted-foreground">No jobs found</p>;
+    return <p className="text-sm text-muted-foreground">{t("noJobsFound")}</p>;
   }
   const showActions = Boolean(onEdit || onDelete);
   const canSelect = Boolean(selectedIds && onToggleSelected && onToggleAllSelected);
@@ -49,16 +59,21 @@ export function JobList({
               <Checkbox
                 checked={allSelected}
                 onCheckedChange={() => onToggleAllSelected?.()}
-                aria-label="Select all"
+                aria-label={tCommon("selectAll")}
               />
             </TableHead>
           )}
-          <TableHead>Title</TableHead>
-          <TableHead>Platform</TableHead>
-          <TableHead>Content type</TableHead>
-          <TableHead>Payer</TableHead>
-          <TableHead>Job date</TableHead>
-          {showActions && <TableHead className="text-right w-[140px]">Action</TableHead>}
+          <TableHead>{t("table.title")}</TableHead>
+          <TableHead>{t("table.platform")}</TableHead>
+          <TableHead>{t("table.contentType")}</TableHead>
+          <TableHead>{t("payer")}</TableHead>
+          <TableHead>{t("status")}</TableHead>
+          <TableHead>{t("receivedDate")}</TableHead>
+          <TableHead>{t("reviewDeadline")}</TableHead>
+          <TableHead>{t("publishDate")}</TableHead>
+          <TableHead>{t("paymentDate")}</TableHead>
+          <TableHead className="text-right">{t("income")}</TableHead>
+          {showActions && <TableHead className="text-right w-[140px]">{tCommon("action")}</TableHead>}
         </TableRow>
       </TableHeader>
       <TableBody>

@@ -1,21 +1,30 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import { AlertCircle } from "lucide-react";
 import { DashboardSummary } from "./DashboardSummary";
 
 type SummaryData = {
   monthly: { gross: number; withholding: number; net: number };
   yearly: { gross: number; withholding: number; net: number };
-  recentJobs: Array<{ id: string; title: string; jobDate: string }>;
+  recentJobs: Array<{ id: string; title: string; receivedDate: string | null }>;
+  topPlatform: { name: string; count: number } | null;
+  topPayer: { name: string; count: number } | null;
+  topMonth: { year: number; month: number; count: number } | null;
 };
 
 const emptyData: SummaryData = {
   monthly: { gross: 0, withholding: 0, net: 0 },
   yearly: { gross: 0, withholding: 0, net: 0 },
   recentJobs: [],
+  topPlatform: null,
+  topPayer: null,
+  topMonth: null,
 };
 
 export function DashboardSummaryWrapper() {
+  const t = useTranslations("dashboard");
   const [data, setData] = useState<SummaryData | null>(null);
   const [error, setError] = useState(false);
 
@@ -31,9 +40,13 @@ export function DashboardSummaryWrapper() {
   const summary = data ?? emptyData;
   if (error && !data) {
     return (
-      <p className="text-sm text-muted-foreground">
-        Could not load summary. Ensure the database is configured.
-      </p>
+      <div
+        role="alert"
+        className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-foreground"
+      >
+        <AlertCircle className="h-5 w-5 shrink-0 text-destructive" />
+        <p className="text-muted-foreground">{t("loadError")}</p>
+      </div>
     );
   }
 
@@ -46,6 +59,9 @@ export function DashboardSummaryWrapper() {
       yearlyWithholding={summary.yearly.withholding}
       yearlyNet={summary.yearly.net}
       recentJobs={summary.recentJobs}
+      topPlatform={summary.topPlatform ?? null}
+      topPayer={summary.topPayer ?? null}
+      topMonth={summary.topMonth ?? null}
     />
   );
 }
