@@ -405,7 +405,7 @@ export function JobFormFields({
                     type="date"
                     {...field}
                     value={field.value ?? ""}
-                    min={minPaymentDate}
+                    min={minPublishDate}
                   />
                 </FormControl>
               </FormItem>
