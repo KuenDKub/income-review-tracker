@@ -75,6 +75,7 @@ export function deserializeReviewJobBody(body: {
   paymentDate?: string | null;
   tags?: string[];
   notes?: string | null;
+  isBrotherJob?: boolean;
 }): {
   payer_name: string | null;
   status: string;
@@ -102,7 +103,7 @@ export function deserializeReviewJobBody(body: {
     tags: Array.isArray(body.tags) ? body.tags : [],
     notes: body.notes ?? null,
     is_brother_job: Object.prototype.hasOwnProperty.call(body, "isBrotherJob")
-      ? Boolean((body as { isBrotherJob?: boolean }).isBrotherJob)
+      ? Boolean(body.isBrotherJob)
       : false,
   };
 }
