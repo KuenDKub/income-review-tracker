@@ -52,7 +52,9 @@ export function JobForm({
           onRemoveExistingEvidence={onRemoveExistingEvidence}
           showEvidence={showEvidence}
         />
-        <Button type="submit">{submitLabel}</Button>
+        <Button type="submit" className="w-full sm:w-auto">
+          {submitLabel}
+        </Button>
       </form>
     </Form>
   );

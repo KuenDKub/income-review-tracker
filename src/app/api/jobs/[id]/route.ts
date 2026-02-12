@@ -1,22 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getJobById, updateJob, deleteJob } from "@/controllers/jobsController";
-import { listIncome, createIncome, updateIncome } from "@/controllers/incomeController";
+import {
+  listIncome,
+  createIncome,
+  updateIncome,
+} from "@/controllers/incomeController";
 import { reviewJobUpdateSchema } from "@/lib/schemas/reviewJob";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
 function buildIncomeFromJobPayload(
-  reviewJobId: string,
+  _reviewJobId: string,
   payload: {
     hasWithholdingTax?: boolean;
     amount?: number;
     netAmount?: number;
     withholdingAmount?: number;
     paymentDate?: string | null;
-  }
-): { grossAmount: number; withholdingAmount: number; netAmount: number; paymentDate: string } | null {
-  const paymentDate = payload.paymentDate?.trim() || null;
-  if (!paymentDate) return null;
+    receivedDate?: string | null;
+    publishDate?: string | null;
+    reviewDeadline?: string | null;
+  },
+): {
+  grossAmount: number;
+  withholdingAmount: number;
+  netAmount: number;
+  paymentDate: string;
+} | null {
+  const paymentDate =
+    payload.paymentDate?.trim() ||
+    payload.receivedDate?.trim() ||
+    payload.publishDate?.trim() ||
+    payload.reviewDeadline?.trim() ||
+    new Date().toISOString().slice(0, 10);
   if (payload.hasWithholdingTax) {
     const net = Number(payload.netAmount ?? 0);
     const withholding = Number(payload.withholdingAmount ?? 0);
@@ -48,10 +64,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ data });
   } catch (err) {
     console.error("GET /api/jobs/[id]:", err);
-    return NextResponse.json(
-      { error: "Failed to get job" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to get job" }, { status: 500 });
   }
 }
 
@@ -63,7 +76,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: "Validation failed", issues: parsed.error.flatten() },
-        { status: 400 }
+        { status: 400 },
       );
     }
     const data = await updateJob(id, parsed.data);
@@ -72,7 +85,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
     const incomePayload = buildIncomeFromJobPayload(id, parsed.data);
     if (incomePayload) {
-      const { data: incomeList } = await listIncome({ reviewJobId: id, pageSize: 1 });
+      const { data: incomeList } = await listIncome({
+        reviewJobId: id,
+        pageSize: 1,
+      });
       if (incomeList && incomeList.length > 0) {
         await updateIncome(incomeList[0].id, {
           grossAmount: incomePayload.grossAmount,
@@ -95,7 +111,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     console.error("PATCH /api/jobs/[id]:", err);
     return NextResponse.json(
       { error: "Failed to update job" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -112,7 +128,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     console.error("DELETE /api/jobs/[id]:", err);
     return NextResponse.json(
       { error: "Failed to delete job" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

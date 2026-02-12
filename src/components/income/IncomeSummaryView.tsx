@@ -39,11 +39,21 @@ export function IncomeSummaryView() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    setError(false);
+    let cancelled = false;
     fetch(`/api/income/summary?year=${year}&month=${month}`)
       .then((res) => (res.ok ? res.json() : Promise.reject(res)))
-      .then((json: { data: SummaryData }) => setData(json.data))
-      .catch(() => setError(true));
+      .then((json: { data: SummaryData }) => {
+        if (cancelled) return;
+        setData(json.data);
+        setError(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [year, month]);
 
   if (error && !data) {

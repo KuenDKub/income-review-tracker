@@ -43,7 +43,7 @@ export default async function LocaleLayout({ children, params }: Props) {
         <Header title={t("title")} navLabels={navLabels} />
         <div className="flex flex-1">
           <Sidebar labels={navLabels} />
-          <main className="flex-1 p-6">
+          <main className="flex-1 p-4 sm:p-6">
             <div className="mb-4 flex justify-end">
               <LocaleSwitcher />
             </div>

@@ -5,6 +5,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { formatDateThai } from "@/lib/formatDate";
 import type { IncomeItem } from "./IncomeTable";
 
 type IncomeRowProps = {
@@ -36,7 +37,7 @@ export function IncomeRow({
           />
         </TableCell>
       )}
-      <TableCell>{item.paymentDate}</TableCell>
+      <TableCell>{formatDateThai(item.paymentDate)}</TableCell>
       <TableCell className="text-right">
         {item.grossAmount.toLocaleString("th-TH")} {currency}
       </TableCell>
@@ -50,12 +51,24 @@ export function IncomeRow({
         <TableCell className="text-right">
           <div className="flex justify-end gap-1">
             {onEdit && (
-              <Button type="button" variant="ghost" size="icon" onClick={() => onEdit(item.id)} aria-label={tCommon("edit")}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => onEdit(item.id)}
+                aria-label={tCommon("edit")}
+              >
                 <Pencil className="h-4 w-4" />
               </Button>
             )}
             {onDelete && (
-              <Button type="button" variant="ghost" size="icon" onClick={() => onDelete(item.id)} aria-label={tCommon("delete")}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => onDelete(item.id)}
+                aria-label={tCommon("delete")}
+              >
                 <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
             )}

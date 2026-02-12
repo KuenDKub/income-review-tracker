@@ -53,7 +53,7 @@ const PLATFORM_OPTIONS = [
   { value: "Lemon8", label: "Lemon8" },
   { value: "Facebook", label: "Facebook" },
   { value: "Twitter", label: "Twitter/X" },
-  { value: "Other", label: "Other" },
+  { value: "Skinsista", label: "Skinsista" },
 ];
 
 export function JobFormFields({

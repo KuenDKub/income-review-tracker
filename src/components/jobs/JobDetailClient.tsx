@@ -15,11 +15,15 @@ import {
 } from "@/components/ui/dialog";
 import { JobForm } from "./JobForm";
 import { AddToCalendarButton } from "./AddToCalendarButton";
-import { reviewJobCreateSchema, REVIEW_JOB_STATUSES } from "@/lib/schemas/reviewJob";
+import {
+  reviewJobCreateSchema,
+  REVIEW_JOB_STATUSES,
+} from "@/lib/schemas/reviewJob";
 import { ConfirmDeleteDialog } from "@/components/ui/ConfirmDeleteDialog";
 import { toast } from "@/lib/toast";
 import { ArrowLeft, Calendar, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatDateThai } from "@/lib/formatDate";
 import type { z } from "zod";
 import type { ReviewJobStatus } from "@/lib/schemas/reviewJob";
 
@@ -34,15 +38,22 @@ const STATUS_KEYS: Record<string, string> = {
 };
 
 const STATUS_BADGE_CLASS: Record<string, string> = {
-  received: "bg-slate-100 text-slate-800 dark:bg-slate-800/50 dark:text-slate-300 border-slate-200 dark:border-slate-700",
-  script_sent: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-800",
-  in_progress: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800",
-  waiting_edit: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 border-orange-200 dark:border-orange-800",
-  waiting_review: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800",
-  approved_pending: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
+  received:
+    "bg-slate-100 text-slate-800 dark:bg-slate-800/50 dark:text-slate-300 border-slate-200 dark:border-slate-700",
+  script_sent:
+    "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-800",
+  in_progress:
+    "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800",
+  waiting_edit:
+    "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 border-orange-200 dark:border-orange-800",
+  waiting_review:
+    "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800",
+  approved_pending:
+    "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
   paid: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border-green-200 dark:border-green-800",
 };
-const DEFAULT_STATUS_BADGE_CLASS = "bg-muted text-muted-foreground border-border";
+const DEFAULT_STATUS_BADGE_CLASS =
+  "bg-muted text-muted-foreground border-border";
 
 type ReviewJobJson = {
   id: string;
@@ -77,7 +88,9 @@ export function JobDetailClient({ id }: { id: string }) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
-  const [existingEvidenceImages, setExistingEvidenceImages] = useState<Array<{ id: string; url: string }>>([]);
+  const [existingEvidenceImages, setExistingEvidenceImages] = useState<
+    Array<{ id: string; url: string }>
+  >([]);
   const [jobIncome, setJobIncome] = useState<{
     grossAmount: number;
     withholdingAmount: number;
@@ -105,12 +118,15 @@ export function JobDetailClient({ id }: { id: string }) {
         netAmount: number;
       }>;
       setJobIncome(
-        incomeList[0] && (incomeList[0].grossAmount > 0 || incomeList[0].netAmount > 0) ? incomeList[0] : null
+        incomeList[0] &&
+          (incomeList[0].grossAmount > 0 || incomeList[0].netAmount > 0)
+          ? incomeList[0]
+          : null,
       );
       setExistingEvidenceImages(
         docs
           .filter((doc) => doc.filePath)
-          .map((doc) => ({ id: doc.id, url: doc.filePath! }))
+          .map((doc) => ({ id: doc.id, url: doc.filePath! })),
       );
     } catch (e) {
       toast.error(t("loadingError"), String(e));
@@ -133,7 +149,9 @@ export function JobDetailClient({ id }: { id: string }) {
     }
   }, [editOpen]);
 
-  const handleEditSubmit = async (data: z.infer<typeof reviewJobCreateSchema>) => {
+  const handleEditSubmit = async (
+    data: z.infer<typeof reviewJobCreateSchema>,
+  ) => {
     try {
       const res = await fetch(`/api/jobs/${id}`, {
         method: "PATCH",
@@ -190,8 +208,12 @@ export function JobDetailClient({ id }: { id: string }) {
     }
   };
 
-  if (loading) return <p className="text-sm text-muted-foreground">{tCommon("loading")}</p>;
-  if (!job) return <p className="text-sm text-muted-foreground">{t("jobNotFound")}</p>;
+  if (loading)
+    return (
+      <p className="text-sm text-muted-foreground">{tCommon("loading")}</p>
+    );
+  if (!job)
+    return <p className="text-sm text-muted-foreground">{t("jobNotFound")}</p>;
 
   const handleDeleteDocument = async (docId: string) => {
     try {
@@ -204,7 +226,9 @@ export function JobDetailClient({ id }: { id: string }) {
     }
   };
 
-  const status: ReviewJobStatus = REVIEW_JOB_STATUSES.includes(job.status as ReviewJobStatus)
+  const status: ReviewJobStatus = REVIEW_JOB_STATUSES.includes(
+    job.status as ReviewJobStatus,
+  )
     ? (job.status as ReviewJobStatus)
     : "received";
 
@@ -245,7 +269,12 @@ export function JobDetailClient({ id }: { id: string }) {
 
   return (
     <div className="space-y-8">
-      <Button variant="ghost" size="sm" className="-ml-2 text-muted-foreground hover:text-foreground" asChild>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="-ml-2 text-muted-foreground hover:text-foreground"
+        asChild
+      >
         <Link href="/jobs">
           <ArrowLeft className="h-4 w-4" />
           {t("backToJobs")}
@@ -283,32 +312,45 @@ export function JobDetailClient({ id }: { id: string }) {
           <dl className="grid gap-4 text-sm sm:grid-cols-2">
             {job.payerName && (
               <div>
-                <dt className="font-medium text-muted-foreground">{t("payer")}</dt>
+                <dt className="font-medium text-muted-foreground">
+                  {t("payer")}
+                </dt>
                 <dd className="mt-1">{job.payerName}</dd>
               </div>
             )}
             <div>
-              <dt className="font-medium text-muted-foreground">{t("status")}</dt>
+              <dt className="font-medium text-muted-foreground">
+                {t("status")}
+              </dt>
               <dd className="mt-1">
                 <Badge
                   variant="outline"
                   className={cn(
                     "text-xs border",
-                    job.status ? (STATUS_BADGE_CLASS[job.status] ?? DEFAULT_STATUS_BADGE_CLASS) : DEFAULT_STATUS_BADGE_CLASS
+                    job.status
+                      ? (STATUS_BADGE_CLASS[job.status] ??
+                          DEFAULT_STATUS_BADGE_CLASS)
+                      : DEFAULT_STATUS_BADGE_CLASS,
                   )}
                 >
-                  {job.status ? t(STATUS_KEYS[job.status] ?? "statusReceived") : "—"}
+                  {job.status
+                    ? t(STATUS_KEYS[job.status] ?? "statusReceived")
+                    : "—"}
                 </Badge>
               </dd>
             </div>
             <div>
-              <dt className="font-medium text-muted-foreground">{t("table.platform")}</dt>
+              <dt className="font-medium text-muted-foreground">
+                {t("table.platform")}
+              </dt>
               <dd className="mt-1">
                 <PlatformBadges platforms={job.platforms ?? []} />
               </dd>
             </div>
             <div>
-              <dt className="font-medium text-muted-foreground">{t("table.contentType")}</dt>
+              <dt className="font-medium text-muted-foreground">
+                {t("table.contentType")}
+              </dt>
               <dd className="mt-1">{job.contentType || "—"}</dd>
             </div>
           </dl>
@@ -322,40 +364,40 @@ export function JobDetailClient({ id }: { id: string }) {
           </CardHeader>
           <CardContent>
             <dl className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
-              {(job.receivedDate != null && job.receivedDate !== "") && (
+              {job.receivedDate != null && job.receivedDate !== "" && (
                 <div>
                   <dt className="flex items-center gap-1.5 font-medium text-muted-foreground">
                     <Calendar className="h-3.5 w-3.5" />
                     {t("receivedDate")}
                   </dt>
-                  <dd className="mt-1">{job.receivedDate}</dd>
+                  <dd className="mt-1">{formatDateThai(job.receivedDate)}</dd>
                 </div>
               )}
-              {(job.reviewDeadline != null && job.reviewDeadline !== "") && (
+              {job.reviewDeadline != null && job.reviewDeadline !== "" && (
                 <div>
                   <dt className="flex items-center gap-1.5 font-medium text-muted-foreground">
                     <Calendar className="h-3.5 w-3.5" />
                     {t("reviewDeadline")}
                   </dt>
-                  <dd className="mt-1">{job.reviewDeadline}</dd>
+                  <dd className="mt-1">{formatDateThai(job.reviewDeadline)}</dd>
                 </div>
               )}
-              {(job.publishDate != null && job.publishDate !== "") && (
+              {job.publishDate != null && job.publishDate !== "" && (
                 <div>
                   <dt className="flex items-center gap-1.5 font-medium text-muted-foreground">
                     <Calendar className="h-3.5 w-3.5" />
                     {t("publishDate")}
                   </dt>
-                  <dd className="mt-1">{job.publishDate}</dd>
+                  <dd className="mt-1">{formatDateThai(job.publishDate)}</dd>
                 </div>
               )}
-              {(job.paymentDate != null && job.paymentDate !== "") && (
+              {job.paymentDate != null && job.paymentDate !== "" && (
                 <div>
                   <dt className="flex items-center gap-1.5 font-medium text-muted-foreground">
                     <Calendar className="h-3.5 w-3.5" />
                     {t("paymentDate")}
                   </dt>
-                  <dd className="mt-1">{job.paymentDate}</dd>
+                  <dd className="mt-1">{formatDateThai(job.paymentDate)}</dd>
                 </div>
               )}
             </dl>
@@ -382,7 +424,10 @@ export function JobDetailClient({ id }: { id: string }) {
           <CardContent>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
               {documents.map((doc) => (
-                <div key={doc.id} className="relative group rounded-lg border bg-muted/30 overflow-hidden">
+                <div
+                  key={doc.id}
+                  className="relative group rounded-lg border bg-muted/30 overflow-hidden"
+                >
                   <img
                     src={doc.filePath}
                     alt="Evidence"
@@ -420,9 +465,13 @@ export function JobDetailClient({ id }: { id: string }) {
             existingEvidenceImages={existingEvidenceImages}
             onRemoveExistingEvidence={async (docId) => {
               try {
-                const res = await fetch(`/api/documents/${docId}`, { method: "DELETE" });
+                const res = await fetch(`/api/documents/${docId}`, {
+                  method: "DELETE",
+                });
                 if (!res.ok) throw new Error(t("deleteDocError"));
-                setExistingEvidenceImages((prev) => prev.filter((img) => img.id !== docId));
+                setExistingEvidenceImages((prev) =>
+                  prev.filter((img) => img.id !== docId),
+                );
                 await load();
                 toast.success(t("removeImageSuccess"));
               } catch (e) {

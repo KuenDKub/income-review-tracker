@@ -33,11 +33,21 @@ export function TaxSummaryView() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    setError(false);
+    let cancelled = false;
     fetch(`/api/tax/summary?year=${year}`)
       .then((res) => (res.ok ? res.json() : Promise.reject(res)))
-      .then((json: { data: TaxSummaryData }) => setData(json.data))
-      .catch(() => setError(true));
+      .then((json: { data: TaxSummaryData }) => {
+        if (cancelled) return;
+        setData(json.data);
+        setError(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [year]);
 
   if (error && !data) {

@@ -5,17 +5,29 @@ import { reviewJobCreateSchema } from "@/lib/schemas/reviewJob";
 import { parsePagination } from "@/lib/pagination";
 
 function buildIncomeFromJobPayload(
-  reviewJobId: string,
+  _reviewJobId: string,
   payload: {
     hasWithholdingTax?: boolean;
     amount?: number;
     netAmount?: number;
     withholdingAmount?: number;
     paymentDate?: string | null;
-  }
-): { grossAmount: number; withholdingAmount: number; netAmount: number; paymentDate: string } | null {
-  const paymentDate = payload.paymentDate?.trim() || null;
-  if (!paymentDate) return null;
+    receivedDate?: string | null;
+    publishDate?: string | null;
+    reviewDeadline?: string | null;
+  },
+): {
+  grossAmount: number;
+  withholdingAmount: number;
+  netAmount: number;
+  paymentDate: string;
+} | null {
+  const paymentDate =
+    payload.paymentDate?.trim() ||
+    payload.receivedDate?.trim() ||
+    payload.publishDate?.trim() ||
+    payload.reviewDeadline?.trim() ||
+    new Date().toISOString().slice(0, 10);
   if (payload.hasWithholdingTax) {
     const net = Number(payload.netAmount ?? 0);
     const withholding = Number(payload.withholdingAmount ?? 0);
@@ -55,10 +67,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(result);
   } catch (err) {
     console.error("GET /api/jobs:", err);
-    return NextResponse.json(
-      { error: "Failed to list jobs" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to list jobs" }, { status: 500 });
   }
 }
 
@@ -69,7 +78,7 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json(
         { error: "Validation failed", issues: parsed.error.flatten() },
-        { status: 400 }
+        { status: 400 },
       );
     }
     const payload = parsed.data;
@@ -101,7 +110,7 @@ export async function POST(request: NextRequest) {
     console.error("POST /api/jobs:", err);
     return NextResponse.json(
       { error: "Failed to create job" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { formatDateThai } from "@/lib/formatDate";
 import {
   Card,
   CardAction,
@@ -42,14 +43,15 @@ export function RecentJobsList({ jobs }: RecentJobsListProps) {
         {jobs.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
             <Inbox className="h-10 w-10 text-muted-foreground/50" />
-            <p className="text-sm text-muted-foreground">
-              {t("noRecentJobs")}
-            </p>
+            <p className="text-sm text-muted-foreground">{t("noRecentJobs")}</p>
           </div>
         ) : (
           <ul className="space-y-3 divide-y divide-border">
             {jobs.map((job) => (
-              <li key={job.id} className="flex items-center justify-between gap-2 py-2 first:pt-0 last:pb-0">
+              <li
+                key={job.id}
+                className="flex items-center justify-between gap-2 py-2 first:pt-0 last:pb-0"
+              >
                 <Link
                   href={`/jobs/${job.id}`}
                   className="flex-1 text-sm font-medium text-primary hover:underline"
@@ -58,7 +60,7 @@ export function RecentJobsList({ jobs }: RecentJobsListProps) {
                 </Link>
                 {job.receivedDate && (
                   <span className="shrink-0 text-xs text-muted-foreground">
-                    {job.receivedDate}
+                    {formatDateThai(job.receivedDate)}
                   </span>
                 )}
               </li>

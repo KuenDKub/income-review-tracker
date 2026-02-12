@@ -11,13 +11,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { JobList, type JobItem } from "./JobList";
 import { JobForm } from "./JobForm";
 import { reviewJobCreateSchema, REVIEW_JOB_STATUSES } from "@/lib/schemas/reviewJob";
@@ -92,7 +85,7 @@ export function JobsPageClient() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Failed to fetch payer names");
       return (json.data ?? []) as string[];
-    } catch (e) {
+    } catch {
       return [];
     }
   }, []);
@@ -287,14 +280,16 @@ export function JobsPageClient() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        <Button onClick={handleOpenCreate}>{t("createJob")}</Button>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl font-semibold sm:text-2xl">{t("title")}</h1>
+        <Button onClick={handleOpenCreate} className="w-full sm:w-auto">
+          {t("createJob")}
+        </Button>
       </div>
       <Card>
-        <CardContent className="space-y-4 pt-6">
+        <CardContent className="space-y-4 px-4 pt-4 sm:px-6 sm:pt-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-            <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-7">
+            <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <Input
                 placeholder={`${tCommon("search")}...`}
                 value={search}
@@ -328,14 +323,15 @@ export function JobsPageClient() {
                 }}
               />
             </div>
-            <div className="flex items-center gap-2">
-              <Button type="button" variant="outline" disabled>
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:justify-end">
+              <Button type="button" variant="outline" disabled className="w-full sm:w-auto">
                 <Download className="mr-2 h-4 w-4" />
                 {tCommon("export")}
               </Button>
               <Button
                 type="button"
                 variant="outline"
+                className="w-full sm:w-auto"
                 onClick={() => {
                   setSearch("");
                   setPayerNameFilter("");

@@ -9,6 +9,7 @@ import type { JobItem } from "./JobList";
 import { PlatformBadges } from "./PlatformBadges";
 import { AddToCalendarButton } from "./AddToCalendarButton";
 import { formatTHB } from "@/lib/currency";
+import { formatDateThai } from "@/lib/formatDate";
 import { Eye, Pencil, Trash2 } from "lucide-react";
 
 const STATUS_KEYS: Record<string, string> = {
@@ -66,10 +67,10 @@ export function JobTableRow({
       <TableCell>
         {job.status ? t(STATUS_KEYS[job.status] ?? "statusReceived") : "—"}
       </TableCell>
-      <TableCell>{job.receivedDate ?? "—"}</TableCell>
-      <TableCell>{job.reviewDeadline ?? "—"}</TableCell>
-      <TableCell>{job.publishDate ?? "—"}</TableCell>
-      <TableCell>{job.paymentDate ?? "—"}</TableCell>
+      <TableCell>{formatDateThai(job.receivedDate)}</TableCell>
+      <TableCell>{formatDateThai(job.reviewDeadline)}</TableCell>
+      <TableCell>{formatDateThai(job.publishDate)}</TableCell>
+      <TableCell>{formatDateThai(job.paymentDate)}</TableCell>
       <TableCell className="text-right">
         {job.grossAmount != null ? `${formatTHB(job.grossAmount)} THB` : "—"}
       </TableCell>
@@ -89,7 +90,13 @@ export function JobTableRow({
               size="icon"
               iconOnly
             />
-            <Button type="button" variant="ghost" size="icon" asChild aria-label={tCommon("view")}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              asChild
+              aria-label={tCommon("view")}
+            >
               <Link href={`/jobs/${job.id}`}>
                 <Eye className="h-4 w-4" />
               </Link>
