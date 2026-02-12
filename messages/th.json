@@ -107,8 +107,8 @@
     "amount": "รายได้ (บาท)",
     "netAmount": "รายได้ที่หักภาษีแล้ว (บาท)",
     "withholdingAmount": "ภาษี (บาท)",
-    "isBrotherJob": "งาน brother (รับแต่ของรีวิว ไม่มีรายได้)",
-    "brotherBadge": "งาน Brother",
+    "isBrotherJob": "งาน Barter (รับแต่ของรีวิว ไม่มีรายได้)",
+    "brotherBadge": "งาน Barter",
     "searchPlaceholder": "ค้นหางาน..."
   },
   "payers": {
