@@ -68,6 +68,7 @@ type ReviewJobJson = {
   paymentDate?: string | null;
   tags: string[];
   notes: string | null;
+  isBrotherJob?: boolean;
 };
 
 type DocumentJson = {
@@ -232,18 +233,21 @@ export function JobDetailClient({ id }: { id: string }) {
     ? (job.status as ReviewJobStatus)
     : "received";
 
-  const incomeDefaults = jobIncome
-    ? jobIncome.withholdingAmount > 0
-      ? {
-          hasWithholdingTax: true as const,
-          netAmount: jobIncome.netAmount,
-          withholdingAmount: jobIncome.withholdingAmount,
-        }
-      : {
-          hasWithholdingTax: false as const,
-          amount: jobIncome.grossAmount,
-        }
-    : { hasWithholdingTax: false as const };
+  const incomeDefaults =
+    job.isBrotherJob
+      ? { isBrotherJob: true as const }
+      : jobIncome
+        ? jobIncome.withholdingAmount > 0
+          ? {
+              hasWithholdingTax: true as const,
+              netAmount: jobIncome.netAmount,
+              withholdingAmount: jobIncome.withholdingAmount,
+            }
+          : {
+              hasWithholdingTax: false as const,
+              amount: jobIncome.grossAmount,
+            }
+        : { hasWithholdingTax: false as const };
 
   const defaultValues = {
     payerName: job.payerName ?? "",

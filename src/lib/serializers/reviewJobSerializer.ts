@@ -22,6 +22,7 @@ export type ReviewJobRow = {
   payment_date?: Date | null;
   tags: string[];
   notes: string | null;
+  is_brother_job: boolean;
   created_at: Date;
 };
 
@@ -39,6 +40,7 @@ export type ReviewJobJson = {
   tags: string[];
   notes: string | null;
   createdAt: string;
+  isBrotherJob: boolean;
   grossAmount?: number | null;
 };
 
@@ -57,6 +59,7 @@ export function serializeReviewJob(row: ReviewJobRow): ReviewJobJson {
     tags: Array.isArray(row.tags) ? row.tags : [],
     notes: row.notes ?? null,
     createdAt: row.created_at.toISOString(),
+    isBrotherJob: Boolean(row.is_brother_job),
   };
 }
 
@@ -84,6 +87,7 @@ export function deserializeReviewJobBody(body: {
   payment_date: string | null;
   tags: string[];
   notes: string | null;
+  is_brother_job: boolean;
 } {
   return {
     payer_name: body.payerName?.trim() || null,
@@ -97,5 +101,8 @@ export function deserializeReviewJobBody(body: {
     payment_date: body.paymentDate?.trim() || null,
     tags: Array.isArray(body.tags) ? body.tags : [],
     notes: body.notes ?? null,
+    is_brother_job: Object.prototype.hasOwnProperty.call(body, "isBrotherJob")
+      ? Boolean((body as { isBrotherJob?: boolean }).isBrotherJob)
+      : false,
   };
 }

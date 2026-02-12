@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS review_jobs (
   payment_date DATE,
   tags TEXT[] DEFAULT '{}',
   notes TEXT,
+  is_brother_job BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

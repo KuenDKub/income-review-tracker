@@ -24,12 +24,18 @@ const reviewJobBaseSchema = z.object({
   tags: z.array(z.string()).optional().default([]),
   notes: z.string().optional().nullable(),
   hasWithholdingTax: z.boolean().default(false),
+  isBrotherJob: z.boolean().default(false),
   amount: z.coerce.number().min(0).optional(),
   netAmount: z.coerce.number().min(0).optional(),
   withholdingAmount: z.coerce.number().min(0).optional(),
 });
 
 export const reviewJobSchema = reviewJobBaseSchema.superRefine((data, ctx) => {
+  if (data.isBrotherJob) {
+    // Brother job: review-only, no income required; skip income validation.
+    return;
+  }
+
   if (data.hasWithholdingTax) {
     if (data.netAmount == null || data.netAmount === undefined || data.netAmount < 0) {
       ctx.addIssue({

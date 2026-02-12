@@ -35,6 +35,7 @@ type ReviewJobJson = {
   tags: string[];
   notes: string | null;
   grossAmount?: number | null;
+  isBrotherJob?: boolean;
 };
 
 type Paginated<T> = { data: T[]; total: number; page: number; pageSize: number };
@@ -106,6 +107,7 @@ export function JobsPageClient() {
         publishDate: j.publishDate ?? undefined,
         paymentDate: j.paymentDate ?? undefined,
         grossAmount: j.grossAmount ?? undefined,
+        isBrotherJob: j.isBrotherJob ?? false,
       }))
     );
     setTotal(jobsData.total ?? 0);
@@ -235,19 +237,23 @@ export function JobsPageClient() {
           netAmount: number;
         }>;
         const firstIncome = incomeList[0];
+        const isBrotherJob = d.isBrotherJob === true;
         const incomeDefaults =
-          firstIncome && (firstIncome.grossAmount > 0 || firstIncome.netAmount > 0)
-            ? firstIncome.withholdingAmount > 0
-              ? {
-                  hasWithholdingTax: true as const,
-                  netAmount: firstIncome.netAmount,
-                  withholdingAmount: firstIncome.withholdingAmount,
-                }
-              : {
-                  hasWithholdingTax: false as const,
-                  amount: firstIncome.grossAmount,
-                }
-            : { hasWithholdingTax: false as const };
+          isBrotherJob
+            ? { isBrotherJob: true as const }
+            : firstIncome &&
+              (firstIncome.grossAmount > 0 || firstIncome.netAmount > 0)
+              ? firstIncome.withholdingAmount > 0
+                ? {
+                    hasWithholdingTax: true as const,
+                    netAmount: firstIncome.netAmount,
+                    withholdingAmount: firstIncome.withholdingAmount,
+                  }
+                : {
+                    hasWithholdingTax: false as const,
+                    amount: firstIncome.grossAmount,
+                  }
+              : { hasWithholdingTax: false as const };
         setEditDefaultValues({
           payerName: d.payerName ?? "",
           status,

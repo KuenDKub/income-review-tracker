@@ -8,6 +8,7 @@ function buildIncomeFromJobPayload(
   _reviewJobId: string,
   payload: {
     hasWithholdingTax?: boolean;
+    isBrotherJob?: boolean;
     amount?: number;
     netAmount?: number;
     withholdingAmount?: number;
@@ -28,6 +29,9 @@ function buildIncomeFromJobPayload(
     payload.publishDate?.trim() ||
     payload.reviewDeadline?.trim() ||
     new Date().toISOString().slice(0, 10);
+  if (payload.isBrotherJob) {
+    return null;
+  }
   if (payload.hasWithholdingTax) {
     const net = Number(payload.netAmount ?? 0);
     const withholding = Number(payload.withholdingAmount ?? 0);
@@ -94,6 +98,7 @@ export async function POST(request: NextRequest) {
       paymentDate: payload.paymentDate ?? null,
       tags: payload.tags,
       notes: payload.notes,
+      isBrotherJob: payload.isBrotherJob ?? false,
     });
     const incomePayload = buildIncomeFromJobPayload(data.id, payload);
     if (incomePayload) {

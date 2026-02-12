@@ -73,19 +73,14 @@ export function JobFormFields({
   const payerValue = form.watch("payerName") ?? "";
   const statusValue = form.watch("status");
   const hasWithholdingTax = form.watch("hasWithholdingTax") ?? false;
+  const isBrotherJob = form.watch("isBrotherJob") ?? false;
   const receivedDate = form.watch("receivedDate");
   const reviewDeadline = form.watch("reviewDeadline");
-  const publishDate = form.watch("publishDate");
   const minReviewDeadline =
     receivedDate && String(receivedDate).trim()
       ? String(receivedDate).trim()
       : undefined;
   const minPublishDate =
-    (reviewDeadline && String(reviewDeadline).trim()) ||
-    (receivedDate && String(receivedDate).trim()) ||
-    undefined;
-  const minPaymentDate =
-    (publishDate && String(publishDate).trim()) ||
     (reviewDeadline && String(reviewDeadline).trim()) ||
     (receivedDate && String(receivedDate).trim()) ||
     undefined;
@@ -137,6 +132,7 @@ export function JobFormFields({
                       <li
                         key={name}
                         role="option"
+                        aria-selected={false}
                         className="cursor-pointer px-3 py-2 text-sm hover:bg-accent"
                         onMouseDown={(e) => {
                           e.preventDefault();
@@ -276,7 +272,7 @@ export function JobFormFields({
       <div className="space-y-4">
         <FormField
           control={form.control}
-          name="hasWithholdingTax"
+          name="isBrotherJob"
           render={({ field }) => (
             <FormItem className="flex flex-row items-start space-x-3 space-y-0">
               <FormControl>
@@ -289,106 +285,131 @@ export function JobFormFields({
               </FormControl>
               <div className="space-y-1 leading-none">
                 <FormLabel className="font-normal cursor-pointer">
-                  {t("hasWithholdingTax")}
+                  {t("isBrotherJob")}
                 </FormLabel>
               </div>
             </FormItem>
           )}
         />
-        {!hasWithholdingTax ? (
-          <FormField
-            control={form.control}
-            name="amount"
-            render={({ field }) => (
-              <FormItem className="max-w-xs">
-                <FormLabel>{t("amount")}</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min={0}
-                    placeholder="0"
-                    {...field}
-                    value={
-                      field.value === undefined || field.value === null
-                        ? ""
-                        : field.value
-                    }
-                    onChange={(e) => {
-                      const v =
-                        e.target.value === ""
-                          ? undefined
-                          : Number(e.target.value);
-                      field.onChange(v);
-                    }}
-                  />
-                </FormControl>
-              </FormItem>
+        {!isBrotherJob && (
+          <>
+            <FormField
+              control={form.control}
+              name="hasWithholdingTax"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value ?? false}
+                      onCheckedChange={(checked) =>
+                        field.onChange(checked === true)
+                      }
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel className="font-normal cursor-pointer">
+                      {t("hasWithholdingTax")}
+                    </FormLabel>
+                  </div>
+                </FormItem>
+              )}
+            />
+            {!hasWithholdingTax ? (
+              <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem className="max-w-xs">
+                    <FormLabel>{t("amount")}</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min={0}
+                        placeholder="0"
+                        {...field}
+                        value={
+                          field.value === undefined || field.value === null
+                            ? ""
+                            : field.value
+                        }
+                        onChange={(e) => {
+                          const v =
+                            e.target.value === ""
+                              ? undefined
+                              : Number(e.target.value);
+                          field.onChange(v);
+                        }}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 max-w-md">
+                <FormField
+                  control={form.control}
+                  name="netAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("netAmount")}</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min={0}
+                          placeholder="0"
+                          {...field}
+                          value={
+                            field.value === undefined || field.value === null
+                              ? ""
+                              : field.value
+                          }
+                          onChange={(e) => {
+                            const v =
+                              e.target.value === ""
+                                ? undefined
+                                : Number(e.target.value);
+                            field.onChange(v);
+                          }}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="withholdingAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("withholdingAmount")}</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min={0}
+                          placeholder="0"
+                          {...field}
+                          value={
+                            field.value === undefined || field.value === null
+                              ? ""
+                              : field.value
+                          }
+                          onChange={(e) => {
+                            const v =
+                              e.target.value === ""
+                                ? undefined
+                                : Number(e.target.value);
+                            field.onChange(v);
+                          }}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
             )}
-          />
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 max-w-md">
-            <FormField
-              control={form.control}
-              name="netAmount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("netAmount")}</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min={0}
-                      placeholder="0"
-                      {...field}
-                      value={
-                        field.value === undefined || field.value === null
-                          ? ""
-                          : field.value
-                      }
-                      onChange={(e) => {
-                        const v =
-                          e.target.value === ""
-                            ? undefined
-                            : Number(e.target.value);
-                        field.onChange(v);
-                      }}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="withholdingAmount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("withholdingAmount")}</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min={0}
-                      placeholder="0"
-                      {...field}
-                      value={
-                        field.value === undefined || field.value === null
-                          ? ""
-                          : field.value
-                      }
-                      onChange={(e) => {
-                        const v =
-                          e.target.value === ""
-                            ? undefined
-                            : Number(e.target.value);
-                        field.onChange(v);
-                      }}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </div>
+          </>
         )}
       </div>
 

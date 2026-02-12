@@ -107,6 +107,8 @@
     "amount": "Amount (THB)",
     "netAmount": "Net amount after withholding (THB)",
     "withholdingAmount": "Tax (THB)",
+    "isBrotherJob": "Brother job (review items only, no income)",
+    "brotherBadge": "Brother job",
     "searchPlaceholder": "Search jobs..."
   },
   "payers": {

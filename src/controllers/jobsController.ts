@@ -120,11 +120,12 @@ export async function createJob(body: {
   paymentDate?: string | null;
   tags?: string[];
   notes?: string | null;
+  isBrotherJob?: boolean;
 }): Promise<ReviewJobJson> {
   const data = deserializeReviewJobBody(body);
   const { rows } = await query<ReviewJobRow>(
-    `INSERT INTO review_jobs (payer_name, status, platforms, content_type, title, received_date, review_deadline, publish_date, payment_date, tags, notes)
-     VALUES ($1, $2, $3::text[], $4, $5, $6::date, $7::date, $8::date, $9::date, $10::text[], $11) RETURNING *`,
+    `INSERT INTO review_jobs (payer_name, status, platforms, content_type, title, received_date, review_deadline, publish_date, payment_date, tags, notes, is_brother_job)
+     VALUES ($1, $2, $3::text[], $4, $5, $6::date, $7::date, $8::date, $9::date, $10::text[], $11, $12) RETURNING *`,
     [
       data.payer_name,
       data.status,
@@ -137,6 +138,7 @@ export async function createJob(body: {
       data.payment_date || null,
       data.tags,
       data.notes,
+      data.is_brother_job,
     ]
   );
   return serializeReviewJob(rows[0]);
@@ -156,6 +158,7 @@ export async function updateJob(
     paymentDate: string | null;
     tags: string[];
     notes: string | null;
+    isBrotherJob: boolean;
   }>
 ): Promise<ReviewJobJson | null> {
   const existing = await getJobById(id);
@@ -172,10 +175,11 @@ export async function updateJob(
     paymentDate: body.paymentDate ?? existing.paymentDate ?? null,
     tags: body.tags ?? existing.tags,
     notes: body.notes ?? existing.notes,
+    isBrotherJob: body.isBrotherJob ?? existing.isBrotherJob ?? false,
   });
   const { rows } = await query<ReviewJobRow>(
-    `UPDATE review_jobs SET payer_name = $1, status = $2, platforms = $3::text[], content_type = $4, title = $5, received_date = $6::date, review_deadline = $7::date, publish_date = $8::date, payment_date = $9::date, tags = $10::text[], notes = $11
-     WHERE id = $12 RETURNING *`,
+    `UPDATE review_jobs SET payer_name = $1, status = $2, platforms = $3::text[], content_type = $4, title = $5, received_date = $6::date, review_deadline = $7::date, publish_date = $8::date, payment_date = $9::date, tags = $10::text[], notes = $11, is_brother_job = $12
+     WHERE id = $13 RETURNING *`,
     [
       data.payer_name,
       data.status,
@@ -188,6 +192,7 @@ export async function updateJob(
       data.payment_date || null,
       data.tags,
       data.notes,
+      data.is_brother_job,
       id,
     ]
   );

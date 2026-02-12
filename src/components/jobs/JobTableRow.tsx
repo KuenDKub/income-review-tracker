@@ -11,6 +11,7 @@ import { AddToCalendarButton } from "./AddToCalendarButton";
 import { formatTHB } from "@/lib/currency";
 import { formatDateThai } from "@/lib/formatDate";
 import { Eye, Pencil, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 const STATUS_KEYS: Record<string, string> = {
   received: "statusReceived",
@@ -72,7 +73,18 @@ export function JobTableRow({
       <TableCell>{formatDateThai(job.publishDate)}</TableCell>
       <TableCell>{formatDateThai(job.paymentDate)}</TableCell>
       <TableCell className="text-right">
-        {job.grossAmount != null ? `${formatTHB(job.grossAmount)} THB` : "—"}
+        {job.isBrotherJob ? (
+          <Badge
+            variant="outline"
+            className="text-xs bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-200 dark:border-purple-800"
+          >
+            {t("brotherBadge")}
+          </Badge>
+        ) : job.grossAmount != null ? (
+          `${formatTHB(job.grossAmount)} THB`
+        ) : (
+          "—"
+        )}
       </TableCell>
       {(onEdit || onDelete) && (
         <TableCell className="text-right">
