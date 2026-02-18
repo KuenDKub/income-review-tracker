@@ -24,8 +24,46 @@ import { incomeCreateSchema } from "@/lib/schemas/income";
 import { ConfirmDeleteDialog } from "@/components/ui/ConfirmDeleteDialog";
 import { toast } from "@/lib/toast";
 import { DataTablePagination } from "@/components/ui/DataTablePagination";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import type { z } from "zod";
 import { Download } from "lucide-react";
+
+function IncomeTableSkeleton() {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-[40px]"><Skeleton className="h-4 w-4" /></TableHead>
+          <TableHead><Skeleton className="h-4 w-24" /></TableHead>
+          <TableHead className="text-right"><Skeleton className="h-4 w-14 ml-auto" /></TableHead>
+          <TableHead className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableHead>
+          <TableHead className="text-right"><Skeleton className="h-4 w-14 ml-auto" /></TableHead>
+          <TableHead className="text-right w-[120px]"><Skeleton className="h-4 w-14 ml-auto" /></TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {Array.from({ length: 8 }).map((_, i) => (
+          <TableRow key={i}>
+            <TableCell><Skeleton className="h-4 w-4" /></TableCell>
+            <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+            <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+            <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+            <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+            <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
 
 type IncomeJson = {
   id: string;
@@ -313,7 +351,7 @@ export function IncomePageClient() {
           </div>
 
           {loading ? (
-            <p className="text-sm text-muted-foreground">{tCommon("loading")}</p>
+            <IncomeTableSkeleton />
           ) : (
             <IncomeTable
               items={items}

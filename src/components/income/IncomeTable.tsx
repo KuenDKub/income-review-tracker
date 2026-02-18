@@ -8,8 +8,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { IncomeRow } from "./IncomeRow";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Wallet } from "lucide-react";
 
 export type IncomeItem = {
   id: string;
@@ -41,7 +43,7 @@ export function IncomeTable({
   const tCommon = useTranslations("common");
   const tDashboard = useTranslations("dashboard");
   if (items.length === 0) {
-    return <p className="text-sm text-muted-foreground">{t("noIncomeEntries")}</p>;
+    return <EmptyState icon={Wallet} message={t("noIncomeEntries")} />;
   }
   const showActions = Boolean(onEdit || onDelete);
   const canSelect = Boolean(selectedIds && onToggleSelected && onToggleAllSelected);

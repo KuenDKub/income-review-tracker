@@ -25,8 +25,84 @@ import type { ReviewJobStatus } from "@/lib/schemas/reviewJob";
 import { ConfirmDeleteDialog } from "@/components/ui/ConfirmDeleteDialog";
 import { toast } from "@/lib/toast";
 import { DataTablePagination } from "@/components/ui/DataTablePagination";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import type { z } from "zod";
 import { Download } from "lucide-react";
+
+function JobsListSkeleton() {
+  const rows = 8;
+  return (
+    <div className="space-y-3">
+      <div className="lg:hidden space-y-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Card key={i} className="py-4">
+            <CardContent className="px-4 sm:px-6 space-y-3">
+              <Skeleton className="h-5 w-3/4" />
+              <div className="flex gap-2">
+                <Skeleton className="h-5 w-16" />
+                <Skeleton className="h-5 w-20" />
+              </div>
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                {Array.from({ length: 6 }).map((_, j) => (
+                  <Skeleton key={j} className="h-4 w-full" />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <div className="hidden lg:block">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[40px]">
+                <Skeleton className="h-4 w-4" />
+              </TableHead>
+              <TableHead><Skeleton className="h-4 w-24" /></TableHead>
+              <TableHead><Skeleton className="h-4 w-16" /></TableHead>
+              <TableHead><Skeleton className="h-4 w-20" /></TableHead>
+              <TableHead><Skeleton className="h-4 w-14" /></TableHead>
+              <TableHead><Skeleton className="h-4 w-20" /></TableHead>
+              <TableHead><Skeleton className="h-4 w-24" /></TableHead>
+              <TableHead><Skeleton className="h-4 w-24" /></TableHead>
+              <TableHead><Skeleton className="h-4 w-20" /></TableHead>
+              <TableHead><Skeleton className="h-4 w-24" /></TableHead>
+              <TableHead className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableHead>
+              <TableHead className="text-right w-[140px]"><Skeleton className="h-4 w-14 ml-auto" /></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {Array.from({ length: rows }).map((_, i) => (
+              <TableRow key={i}>
+                <TableCell><Skeleton className="h-4 w-4" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-full max-w-[200px]" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
 
 const STATUS_FILTER_ALL = "__all__";
 
@@ -393,7 +469,7 @@ export function JobsPageClient() {
           </div>
 
           {loading ? (
-            <p className="text-sm text-muted-foreground">{tCommon("loading")}</p>
+            <JobsListSkeleton />
           ) : (
             <JobList
               jobs={jobs}

@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, Globe, Building2, CalendarDays, Info } from "lucide-react";
+import { BarChart3, Globe, Building2, CalendarDays, Info, Inbox } from "lucide-react";
 import { MonthlySummaryCard } from "./MonthlySummaryCard";
 import { YearlySummaryCard } from "./YearlySummaryCard";
 import { RecentJobsList } from "./RecentJobsList";
@@ -78,7 +78,10 @@ export function DashboardSummary({
                 {topPlatform.name} — {t("jobsCount", { count: topPlatform.count })}
               </span>
             ) : (
-              <span className="text-muted-foreground">{t("noData")}</span>
+              <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                <Inbox className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                {t("noData")}
+              </span>
             )}
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
@@ -91,7 +94,10 @@ export function DashboardSummary({
                 {topPayer.name} — {t("jobsCount", { count: topPayer.count })}
               </span>
             ) : (
-              <span className="text-muted-foreground">{t("noData")}</span>
+              <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                <Inbox className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                {t("noData")}
+              </span>
             )}
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
@@ -105,7 +111,10 @@ export function DashboardSummary({
                 {t("jobsCount", { count: topMonth.count })}
               </span>
             ) : (
-              <span className="text-muted-foreground">{t("noData")}</span>
+              <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                <Inbox className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                {t("noData")}
+              </span>
             )}
           </div>
           <p className="flex items-start gap-2 pt-2 text-xs text-muted-foreground">

@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { ClipboardList, Inbox } from "lucide-react";
 
 type Job = { id: string; title: string; receivedDate: string | null };
@@ -41,10 +42,7 @@ export function RecentJobsList({ jobs }: RecentJobsListProps) {
       </CardHeader>
       <CardContent>
         {jobs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
-            <Inbox className="h-10 w-10 text-muted-foreground/50" />
-            <p className="text-sm text-muted-foreground">{t("noRecentJobs")}</p>
-          </div>
+          <EmptyState icon={Inbox} message={t("noRecentJobs")} className="py-8" />
         ) : (
           <ul className="space-y-3 divide-y divide-border">
             {jobs.map((job) => (

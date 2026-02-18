@@ -25,6 +25,7 @@ import {
 } from "@/lib/schemas/reviewJob";
 import { ConfirmDeleteDialog } from "@/components/ui/ConfirmDeleteDialog";
 import { toast } from "@/lib/toast";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Calendar, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDateThai } from "@/lib/formatDate";
@@ -197,7 +198,47 @@ export function JobDetailClient({ id }: { id: string }) {
 
   if (loading)
     return (
-      <p className="text-sm text-muted-foreground">{tCommon("loading")}</p>
+      <div className="space-y-8">
+        <Skeleton className="h-9 w-28" />
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <Skeleton className="h-8 w-full max-w-md" />
+          <div className="flex gap-2">
+            <Skeleton className="h-9 w-24" />
+            <Skeleton className="h-9 w-16" />
+            <Skeleton className="h-9 w-20" />
+          </div>
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-5 w-24" />
+          </CardHeader>
+          <CardContent>
+            <dl className="grid gap-4 text-sm sm:grid-cols-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i}>
+                  <Skeleton className="mb-1 h-4 w-20" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+              ))}
+            </dl>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-5 w-20" />
+          </CardHeader>
+          <CardContent>
+            <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i}>
+                  <Skeleton className="mb-1 h-4 w-24" />
+                  <Skeleton className="h-4 w-28" />
+                </div>
+              ))}
+            </dl>
+          </CardContent>
+        </Card>
+      </div>
     );
   if (!job)
     return <p className="text-sm text-muted-foreground">{t("jobNotFound")}</p>;

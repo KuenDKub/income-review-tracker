@@ -12,12 +12,13 @@ import {
 import { JobTableRow } from "./JobTableRow";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { PlatformBadges } from "./PlatformBadges";
 import { AddToCalendarButton } from "./AddToCalendarButton";
 import { Button } from "@/components/ui/button";
 import { formatTHB } from "@/lib/currency";
 import { formatDateThai } from "@/lib/formatDate";
-import { Eye, Pencil, Trash2 } from "lucide-react";
+import { ClipboardList, Eye, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   STATUS_BADGE_CLASS,
@@ -69,7 +70,7 @@ export function JobList({
   const t = useTranslations("jobs");
   const tCommon = useTranslations("common");
   if (jobs.length === 0) {
-    return <p className="text-sm text-muted-foreground">{t("noJobsFound")}</p>;
+    return <EmptyState icon={ClipboardList} message={t("noJobsFound")} />;
   }
   const showActions = Boolean(onEdit || onDelete);
   const canSelect = Boolean(

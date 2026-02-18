@@ -3,12 +3,58 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatTHB } from "@/lib/currency";
 import { TaxPeriodSelector } from "./TaxPeriodSelector";
 import { WithholdingSummary } from "./WithholdingSummary";
 import { PNDHint } from "./PNDHint";
 import { AlertCircle } from "lucide-react";
 import { Wallet, Receipt, Banknote } from "lucide-react";
+
+function TaxSummarySkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-10 w-36" />
+      </div>
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-5 w-56" />
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex justify-between">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+      <Card className="border-l-4 border-l-primary/30">
+        <CardHeader className="pb-2">
+          <Skeleton className="h-5 w-28" />
+        </CardHeader>
+        <CardContent className="space-y-3 pt-0 text-sm">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="flex justify-between gap-2">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="pb-2">
+          <Skeleton className="h-5 w-32" />
+        </CardHeader>
+        <CardContent className="pt-0">
+          <Skeleton className="h-8 w-40" />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 type TaxSummaryData = {
   year: number;
@@ -63,7 +109,7 @@ export function TaxSummaryView() {
   }
 
   if (!data) {
-    return <p className="text-sm text-muted-foreground">{tCommon("loading")}</p>;
+    return <TaxSummarySkeleton />;
   }
 
   const periodLabel = String(data.year);
