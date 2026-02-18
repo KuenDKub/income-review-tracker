@@ -28,7 +28,11 @@ import { toast } from "@/lib/toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Calendar, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatDateThai } from "@/lib/formatDate";
+import {
+  formatDateThai,
+  isNearReviewDeadline,
+  isPublishDatePassed,
+} from "@/lib/formatDate";
 import type { z } from "zod";
 import type { ReviewJobStatus } from "@/lib/schemas/reviewJob";
 
@@ -410,7 +414,17 @@ export function JobDetailClient({ id }: { id: string }) {
                     <Calendar className="h-3.5 w-3.5" />
                     {t("reviewDeadline")}
                   </dt>
-                  <dd className="mt-1">{formatDateThai(job.reviewDeadline)}</dd>
+                  <dd className="mt-1">
+                    <span
+                      className={
+                        isNearReviewDeadline(job.reviewDeadline)
+                          ? "rounded px-1 font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+                          : undefined
+                      }
+                    >
+                      {formatDateThai(job.reviewDeadline)}
+                    </span>
+                  </dd>
                 </div>
               )}
               {job.publishDate != null && job.publishDate !== "" && (
@@ -419,7 +433,17 @@ export function JobDetailClient({ id }: { id: string }) {
                     <Calendar className="h-3.5 w-3.5" />
                     {t("publishDate")}
                   </dt>
-                  <dd className="mt-1">{formatDateThai(job.publishDate)}</dd>
+                  <dd className="mt-1">
+                    <span
+                      className={
+                        isPublishDatePassed(job.publishDate)
+                          ? "rounded px-1 font-medium bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-300"
+                          : undefined
+                      }
+                    >
+                      {formatDateThai(job.publishDate)}
+                    </span>
+                  </dd>
                 </div>
               )}
               {job.paymentDate != null && job.paymentDate !== "" && (

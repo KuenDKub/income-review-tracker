@@ -17,13 +17,10 @@ import { PlatformBadges } from "./PlatformBadges";
 import { AddToCalendarButton } from "./AddToCalendarButton";
 import { Button } from "@/components/ui/button";
 import { formatTHB } from "@/lib/currency";
-import { formatDateThai } from "@/lib/formatDate";
+import { formatDateThai, isNearReviewDeadline } from "@/lib/formatDate";
 import { ClipboardList, Eye, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {
-  STATUS_BADGE_CLASS,
-  DEFAULT_STATUS_BADGE_CLASS,
-} from "./statusBadge";
+import { STATUS_BADGE_CLASS, DEFAULT_STATUS_BADGE_CLASS } from "./statusBadge";
 
 const STATUS_KEYS: Record<string, string> = {
   received: "statusReceived",
@@ -153,13 +150,25 @@ export function JobList({
                     <div className="text-xs text-muted-foreground">
                       {t("reviewDeadline")}
                     </div>
-                    <div className="mt-0.5">{formatDateThai(job.reviewDeadline)}</div>
+                    <div className="mt-0.5">
+                      <span
+                        className={
+                          isNearReviewDeadline(job.reviewDeadline)
+                            ? "rounded px-1 font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+                            : undefined
+                        }
+                      >
+                        {formatDateThai(job.reviewDeadline)}
+                      </span>
+                    </div>
                   </div>
                   <div>
                     <div className="text-xs text-muted-foreground">
                       {t("paymentDate")}
                     </div>
-                    <div className="mt-0.5">{formatDateThai(job.paymentDate)}</div>
+                    <div className="mt-0.5">
+                      {formatDateThai(job.paymentDate)}
+                    </div>
                   </div>
                   <div className="col-span-2">
                     <div className="text-xs text-muted-foreground">

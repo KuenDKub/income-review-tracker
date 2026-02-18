@@ -9,13 +9,14 @@ import type { JobItem } from "./JobList";
 import { PlatformBadges } from "./PlatformBadges";
 import { AddToCalendarButton } from "./AddToCalendarButton";
 import { formatTHB } from "@/lib/currency";
-import { formatDateThai } from "@/lib/formatDate";
+import {
+  formatDateThai,
+  isNearReviewDeadline,
+  isPublishDatePassed,
+} from "@/lib/formatDate";
 import { Eye, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {
-  STATUS_BADGE_CLASS,
-  DEFAULT_STATUS_BADGE_CLASS,
-} from "./statusBadge";
+import { STATUS_BADGE_CLASS, DEFAULT_STATUS_BADGE_CLASS } from "./statusBadge";
 
 const STATUS_KEYS: Record<string, string> = {
   received: "statusReceived",
@@ -84,8 +85,28 @@ export function JobTableRow({
         )}
       </TableCell>
       <TableCell>{formatDateThai(job.receivedDate)}</TableCell>
-      <TableCell>{formatDateThai(job.reviewDeadline)}</TableCell>
-      <TableCell>{formatDateThai(job.publishDate)}</TableCell>
+      <TableCell>
+        <span
+          className={
+            isNearReviewDeadline(job.reviewDeadline)
+              ? "rounded px-1 font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+              : undefined
+          }
+        >
+          {formatDateThai(job.reviewDeadline)}
+        </span>
+      </TableCell>
+      <TableCell>
+        <span
+          className={
+            isPublishDatePassed(job.publishDate)
+              ? "rounded px-1 font-medium bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-300"
+              : undefined
+          }
+        >
+          {formatDateThai(job.publishDate)}
+        </span>
+      </TableCell>
       <TableCell>{formatDateThai(job.paymentDate)}</TableCell>
       <TableCell className="text-right">
         {job.isBrotherJob ? (
