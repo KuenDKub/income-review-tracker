@@ -23,6 +23,8 @@ import { FileUpload } from "@/components/ui/file-upload";
 import type { z } from "zod";
 import type { reviewJobSchema } from "@/lib/schemas/reviewJob";
 import { REVIEW_JOB_STATUSES } from "@/lib/schemas/reviewJob";
+import { Badge } from "@/components/ui/badge";
+import { STATUS_BADGE_CLASS, DEFAULT_STATUS_BADGE_CLASS } from "./statusBadge";
 
 const STATUS_KEYS: Record<string, string> = {
   received: "statusReceived",
@@ -158,13 +160,41 @@ export function JobFormFields({
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder={t("status")} />
+                    <span
+                      className={
+                        field.value
+                          ? "relative flex flex-1 items-center **:data-[slot=select-value]:opacity-0"
+                          : "flex flex-1 items-center"
+                      }
+                    >
+                      <SelectValue placeholder={t("status")} />
+                      {field.value ? (
+                        <span className="absolute inset-0 flex items-center pointer-events-none">
+                          <Badge
+                            variant="outline"
+                            className={
+                              STATUS_BADGE_CLASS[field.value] ??
+                              DEFAULT_STATUS_BADGE_CLASS
+                            }
+                          >
+                            {t(STATUS_KEYS[field.value] ?? "statusReceived")}
+                          </Badge>
+                        </span>
+                      ) : null}
+                    </span>
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
                   {REVIEW_JOB_STATUSES.map((s) => (
                     <SelectItem key={s} value={s}>
-                      {t(STATUS_KEYS[s] ?? "statusReceived")}
+                      <Badge
+                        variant="outline"
+                        className={
+                          STATUS_BADGE_CLASS[s] ?? DEFAULT_STATUS_BADGE_CLASS
+                        }
+                      >
+                        {t(STATUS_KEYS[s] ?? "statusReceived")}
+                      </Badge>
                     </SelectItem>
                   ))}
                 </SelectContent>

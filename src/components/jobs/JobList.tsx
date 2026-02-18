@@ -19,6 +19,10 @@ import { formatTHB } from "@/lib/currency";
 import { formatDateThai } from "@/lib/formatDate";
 import { Eye, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  STATUS_BADGE_CLASS,
+  DEFAULT_STATUS_BADGE_CLASS,
+} from "./statusBadge";
 
 const STATUS_KEYS: Record<string, string> = {
   received: "statusReceived",
@@ -121,9 +125,19 @@ export function JobList({
                       {t("status")}
                     </div>
                     <div className="mt-0.5">
-                      {job.status
-                        ? t(STATUS_KEYS[job.status] ?? "statusReceived")
-                        : "—"}
+                      {job.status ? (
+                        <Badge
+                          variant="outline"
+                          className={
+                            STATUS_BADGE_CLASS[job.status] ??
+                            DEFAULT_STATUS_BADGE_CLASS
+                          }
+                        >
+                          {t(STATUS_KEYS[job.status] ?? "statusReceived")}
+                        </Badge>
+                      ) : (
+                        "—"
+                      )}
                     </div>
                   </div>
                   <div>

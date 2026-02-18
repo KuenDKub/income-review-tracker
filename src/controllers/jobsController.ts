@@ -18,6 +18,7 @@ export async function listJobs(opts?: {
   payerName?: string;
   platform?: string;
   contentType?: string;
+  status?: string;
 }): Promise<PaginatedResult<ReviewJobJson>> {
   const page = Math.max(1, opts?.page ?? 1);
   const pageSize = Math.min(100, Math.max(1, opts?.pageSize ?? 10));
@@ -27,10 +28,15 @@ export async function listJobs(opts?: {
   const payerName = (opts?.payerName ?? "").trim();
   const platform = (opts?.platform ?? "").trim();
   const contentType = (opts?.contentType ?? "").trim();
+  const status = (opts?.status ?? "").trim();
 
   const where: string[] = [];
   const values: unknown[] = [];
 
+  if (status) {
+    values.push(status);
+    where.push(`status = $${values.length}`);
+  }
   if (search) {
     values.push(`%${search}%`);
     values.push(`%${search}%`);

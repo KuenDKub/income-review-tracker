@@ -109,6 +109,7 @@
     "withholdingAmount": "Tax (THB)",
     "isBrotherJob": "Barter job (review items only, no income)",
     "brotherBadge": "Barter job",
+    "allStatuses": "All statuses",
     "searchPlaceholder": "Search jobs..."
   },
   "payers": {

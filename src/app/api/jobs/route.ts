@@ -67,6 +67,7 @@ export async function GET(request: NextRequest) {
       payerName: sp.get("payerName")?.trim() ?? "",
       platform: sp.get("platform")?.trim() ?? "",
       contentType: sp.get("contentType")?.trim() ?? "",
+      status: sp.get("status")?.trim() ?? "",
     });
     return NextResponse.json(result);
   } catch (err) {

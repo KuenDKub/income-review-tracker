@@ -8,6 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlatformBadges } from "./PlatformBadges";
 import {
+  STATUS_BADGE_CLASS,
+  DEFAULT_STATUS_BADGE_CLASS,
+} from "./statusBadge";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -36,24 +40,6 @@ const STATUS_KEYS: Record<string, string> = {
   approved_pending: "statusApprovedPending",
   paid: "statusPaid",
 };
-
-const STATUS_BADGE_CLASS: Record<string, string> = {
-  received:
-    "bg-slate-100 text-slate-800 dark:bg-slate-800/50 dark:text-slate-300 border-slate-200 dark:border-slate-700",
-  script_sent:
-    "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-800",
-  in_progress:
-    "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800",
-  waiting_edit:
-    "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 border-orange-200 dark:border-orange-800",
-  waiting_review:
-    "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800",
-  approved_pending:
-    "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
-  paid: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border-green-200 dark:border-green-800",
-};
-const DEFAULT_STATUS_BADGE_CLASS =
-  "bg-muted text-muted-foreground border-border";
 
 type ReviewJobJson = {
   id: string;

@@ -11,6 +11,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { JobList, type JobItem } from "./JobList";
 import { JobForm } from "./JobForm";
 import { reviewJobCreateSchema, REVIEW_JOB_STATUSES } from "@/lib/schemas/reviewJob";
@@ -20,6 +27,18 @@ import { toast } from "@/lib/toast";
 import { DataTablePagination } from "@/components/ui/DataTablePagination";
 import type { z } from "zod";
 import { Download } from "lucide-react";
+
+const STATUS_FILTER_ALL = "__all__";
+
+const STATUS_KEYS: Record<string, string> = {
+  received: "statusReceived",
+  script_sent: "statusScriptSent",
+  in_progress: "statusInProgress",
+  waiting_edit: "statusWaitingEdit",
+  waiting_review: "statusWaitingReview",
+  approved_pending: "statusApprovedPending",
+  paid: "statusPaid",
+};
 
 type ReviewJobJson = {
   id: string;
@@ -54,6 +73,7 @@ export function JobsPageClient() {
   const [payerNameFilter, setPayerNameFilter] = useState("");
   const [platform, setPlatform] = useState("");
   const [contentType, setContentType] = useState("");
+  const [statusFilter, setStatusFilter] = useState(STATUS_FILTER_ALL);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
@@ -70,6 +90,7 @@ export function JobsPageClient() {
       if (payerNameFilter.trim()) qs.set("payerName", payerNameFilter.trim());
       if (platform.trim()) qs.set("platform", platform.trim());
       if (contentType.trim()) qs.set("contentType", contentType.trim());
+      if (statusFilter && statusFilter !== STATUS_FILTER_ALL) qs.set("status", statusFilter);
       const res = await fetch(`/api/jobs?${qs.toString()}`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? t("loadingError"));
@@ -78,7 +99,7 @@ export function JobsPageClient() {
       toast.error(t("loadingError"), String(e));
       return { data: [], total: 0, page, pageSize } as Paginated<ReviewJobJson>;
     }
-  }, [page, pageSize, search, payerNameFilter, platform, contentType, t]);
+  }, [page, pageSize, search, payerNameFilter, platform, contentType, statusFilter, t]);
 
   const fetchPayerNames = useCallback(async () => {
     try {
@@ -295,7 +316,7 @@ export function JobsPageClient() {
       <Card>
         <CardContent className="space-y-4 px-4 pt-4 sm:px-6 sm:pt-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-            <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-5">
               <Input
                 placeholder={`${tCommon("search")}...`}
                 value={search}
@@ -312,6 +333,25 @@ export function JobsPageClient() {
                   setPage(1);
                 }}
               />
+              <Select
+                value={statusFilter}
+                onValueChange={(v) => {
+                  setStatusFilter(v);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={t("allStatuses")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={STATUS_FILTER_ALL}>{t("allStatuses")}</SelectItem>
+                  {REVIEW_JOB_STATUSES.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {t(STATUS_KEYS[s] ?? "statusReceived")}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Input
                 placeholder={t("platform")}
                 value={platform}
@@ -341,6 +381,7 @@ export function JobsPageClient() {
                 onClick={() => {
                   setSearch("");
                   setPayerNameFilter("");
+                  setStatusFilter(STATUS_FILTER_ALL);
                   setPlatform("");
                   setContentType("");
                   setPage(1);

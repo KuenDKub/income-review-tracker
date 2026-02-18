@@ -109,6 +109,7 @@
     "withholdingAmount": "ภาษี (บาท)",
     "isBrotherJob": "งาน Barter (รับแต่ของรีวิว ไม่มีรายได้)",
     "brotherBadge": "งาน Barter",
+    "allStatuses": "ทุกสถานะ",
     "searchPlaceholder": "ค้นหางาน..."
   },
   "payers": {
