@@ -343,8 +343,13 @@ export function JobsPageClient() {
               ? firstIncome.withholdingAmount > 0
                 ? {
                     hasWithholdingTax: true as const,
-                    netAmount: firstIncome.netAmount,
-                    withholdingAmount: firstIncome.withholdingAmount,
+                    amount: firstIncome.grossAmount,
+                    withholdingRate:
+                      firstIncome.grossAmount > 0
+                        ? (firstIncome.withholdingAmount /
+                            firstIncome.grossAmount) *
+                          100
+                        : 3,
                   }
                 : {
                     hasWithholdingTax: false as const,

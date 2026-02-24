@@ -271,8 +271,11 @@ export function JobDetailClient({ id }: { id: string }) {
         ? jobIncome.withholdingAmount > 0
           ? {
               hasWithholdingTax: true as const,
-              netAmount: jobIncome.netAmount,
-              withholdingAmount: jobIncome.withholdingAmount,
+              amount: jobIncome.grossAmount,
+              withholdingRate:
+                jobIncome.grossAmount > 0
+                  ? (jobIncome.withholdingAmount / jobIncome.grossAmount) * 100
+                  : 3,
             }
           : {
               hasWithholdingTax: false as const,

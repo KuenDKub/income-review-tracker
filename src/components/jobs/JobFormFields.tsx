@@ -25,6 +25,7 @@ import type { reviewJobSchema } from "@/lib/schemas/reviewJob";
 import { REVIEW_JOB_STATUSES } from "@/lib/schemas/reviewJob";
 import { Badge } from "@/components/ui/badge";
 import { STATUS_BADGE_CLASS, DEFAULT_STATUS_BADGE_CLASS } from "./statusBadge";
+import { computeWithholdingAndNet } from "@/lib/tax";
 
 const STATUS_KEYS: Record<string, string> = {
   received: "statusReceived",
@@ -75,6 +76,8 @@ export function JobFormFields({
   const payerValue = form.watch("payerName") ?? "";
   const statusValue = form.watch("status");
   const hasWithholdingTax = form.watch("hasWithholdingTax") ?? false;
+  const amountValue = form.watch("amount") ?? 0;
+  const withholdingRateValue = form.watch("withholdingRate") ?? 3;
   const isBrotherJob = form.watch("isBrotherJob") ?? false;
   const receivedDate = form.watch("receivedDate");
   const reviewDeadline = form.watch("reviewDeadline");
@@ -376,67 +379,84 @@ export function JobFormFields({
                 )}
               />
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 max-w-md">
-                <FormField
-                  control={form.control}
-                  name="netAmount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("netAmount")}</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min={0}
-                          placeholder="0"
-                          {...field}
-                          value={
-                            field.value === undefined || field.value === null
-                              ? ""
-                              : field.value
-                          }
-                          onChange={(e) => {
-                            const v =
-                              e.target.value === ""
-                                ? undefined
-                                : Number(e.target.value);
-                            field.onChange(v);
-                          }}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="withholdingAmount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t("withholdingAmount")}</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min={0}
-                          placeholder="0"
-                          {...field}
-                          value={
-                            field.value === undefined || field.value === null
-                              ? ""
-                              : field.value
-                          }
-                          onChange={(e) => {
-                            const v =
-                              e.target.value === ""
-                                ? undefined
-                                : Number(e.target.value);
-                            field.onChange(v);
-                          }}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
+              <div className="space-y-3">
+                <div className="grid gap-4 sm:grid-cols-2 max-w-md">
+                  <FormField
+                    control={form.control}
+                    name="amount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("grossAmount")}</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min={0}
+                            placeholder="0"
+                            {...field}
+                            value={
+                              field.value === undefined || field.value === null
+                                ? ""
+                                : field.value
+                            }
+                            onChange={(e) => {
+                              const v =
+                                e.target.value === ""
+                                  ? undefined
+                                  : Number(e.target.value);
+                              field.onChange(v);
+                            }}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="withholdingRate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t("withholdingRate")}</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min={0}
+                            max={100}
+                            placeholder="3"
+                            {...field}
+                            value={
+                              field.value === undefined || field.value === null
+                                ? "3"
+                                : field.value
+                            }
+                            onChange={(e) => {
+                              const v =
+                                e.target.value === ""
+                                  ? 3
+                                  : Number(e.target.value);
+                              field.onChange(v);
+                            }}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                {amountValue > 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    {t("taxResult", {
+                      tax: computeWithholdingAndNet(
+                        amountValue,
+                        withholdingRateValue
+                      ).withholdingAmount.toLocaleString("th-TH"),
+                      net: computeWithholdingAndNet(
+                        amountValue,
+                        withholdingRateValue
+                      ).netAmount.toLocaleString("th-TH"),
+                    })}
+                  </p>
+                )}
               </div>
             )}
           </>

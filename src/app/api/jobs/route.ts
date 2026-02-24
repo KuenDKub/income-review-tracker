@@ -3,6 +3,7 @@ import { listJobs, createJob } from "@/controllers/jobsController";
 import { createIncome } from "@/controllers/incomeController";
 import { reviewJobCreateSchema } from "@/lib/schemas/reviewJob";
 import { parsePagination } from "@/lib/pagination";
+import { computeWithholdingAndNet } from "@/lib/tax";
 
 function buildIncomeFromJobPayload(
   _reviewJobId: string,
@@ -10,8 +11,7 @@ function buildIncomeFromJobPayload(
     hasWithholdingTax?: boolean;
     isBrotherJob?: boolean;
     amount?: number;
-    netAmount?: number;
-    withholdingAmount?: number;
+    withholdingRate?: number;
     paymentDate?: string | null;
     receivedDate?: string | null;
     publishDate?: string | null;
@@ -33,13 +33,14 @@ function buildIncomeFromJobPayload(
     return null;
   }
   if (payload.hasWithholdingTax) {
-    const net = Number(payload.netAmount ?? 0);
-    const withholding = Number(payload.withholdingAmount ?? 0);
-    if (net <= 0 && withholding <= 0) return null;
+    const gross = Number(payload.amount ?? 0);
+    const rate = Number(payload.withholdingRate ?? 3);
+    if (gross <= 0) return null;
+    const { withholdingAmount, netAmount } = computeWithholdingAndNet(gross, rate);
     return {
-      grossAmount: net + withholding,
-      withholdingAmount: withholding,
-      netAmount: net,
+      grossAmount: gross,
+      withholdingAmount,
+      netAmount,
       paymentDate,
     };
   }

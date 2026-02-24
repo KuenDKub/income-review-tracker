@@ -26,6 +26,7 @@ const reviewJobBaseSchema = z.object({
   hasWithholdingTax: z.boolean().default(false),
   isBrotherJob: z.boolean().default(false),
   amount: z.coerce.number().min(0).optional(),
+  withholdingRate: z.coerce.number().min(0).max(100).default(3).optional(),
   netAmount: z.coerce.number().min(0).optional(),
   withholdingAmount: z.coerce.number().min(0).optional(),
 });
@@ -37,18 +38,11 @@ export const reviewJobSchema = reviewJobBaseSchema.superRefine((data, ctx) => {
   }
 
   if (data.hasWithholdingTax) {
-    if (data.netAmount == null || data.netAmount === undefined || data.netAmount < 0) {
+    if (data.amount == null || data.amount === undefined || data.amount <= 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Net amount is required when withholding tax is applied",
-        path: ["netAmount"],
-      });
-    }
-    if (data.withholdingAmount == null || data.withholdingAmount === undefined || data.withholdingAmount < 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Withholding amount is required when withholding tax is applied",
-        path: ["withholdingAmount"],
+        message: "Gross amount (full price) is required when withholding tax is applied",
+        path: ["amount"],
       });
     }
   } else {
