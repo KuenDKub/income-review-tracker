@@ -37,6 +37,44 @@ import {
 import type { z } from "zod";
 import { Download } from "lucide-react";
 
+function DialogFormSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-14" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+        <div className="space-y-2 sm:col-span-2">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <Skeleton className="h-4 w-4" />
+        <Skeleton className="h-4 w-48" />
+      </div>
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-10 w-40" />
+      </div>
+      <Skeleton className="h-10 w-24" />
+    </div>
+  );
+}
+
 function JobsListSkeleton() {
   const rows = 8;
   return (
@@ -130,6 +168,9 @@ type ReviewJobJson = {
   tags: string[];
   notes: string | null;
   grossAmount?: number | null;
+  withholdingAmount?: number | null;
+  netAmount?: number | null;
+  withholdingRate?: number | null;
   isBrotherJob?: boolean;
 };
 
@@ -204,6 +245,9 @@ export function JobsPageClient() {
         publishDate: j.publishDate ?? undefined,
         paymentDate: j.paymentDate ?? undefined,
         grossAmount: j.grossAmount ?? undefined,
+        withholdingAmount: j.withholdingAmount ?? undefined,
+        netAmount: j.netAmount ?? undefined,
+        withholdingRate: j.withholdingRate ?? undefined,
         isBrotherJob: j.isBrotherJob ?? false,
       }))
     );
@@ -519,7 +563,7 @@ export function JobsPageClient() {
           <DialogHeader>
             <DialogTitle>{editingId ? t("editJob") : t("createJob")}</DialogTitle>
           </DialogHeader>
-          {showForm && (
+          {showForm ? (
             <JobForm
               schema={reviewJobCreateSchema}
               defaultValues={editingId ? editDefaultValues : undefined}
@@ -540,7 +584,9 @@ export function JobsPageClient() {
                 }
               }}
             />
-          )}
+          ) : dialogOpen && editingId ? (
+            <DialogFormSkeleton />
+          ) : null}
         </DialogContent>
       </Dialog>
 

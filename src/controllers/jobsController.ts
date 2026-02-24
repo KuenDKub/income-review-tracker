@@ -74,23 +74,62 @@ export async function listJobs(opts?: {
   );
 
   const jobIds = rows.map((r) => r.id);
-  const incomeByJob = new Map<string, number>();
+  const incomeByJob = new Map<
+    string,
+    { gross: number; withholding: number; net: number; rate: number | null }
+  >();
   if (jobIds.length > 0) {
-    const incomeRows = await query<{ review_job_id: string; total_gross: string }>(
-      `SELECT review_job_id, COALESCE(SUM(gross_amount), 0)::numeric AS total_gross FROM income WHERE review_job_id = ANY($1::uuid[]) GROUP BY review_job_id`,
+    const incomeRows = await query<{
+      review_job_id: string;
+      total_gross: string;
+      total_withholding: string;
+      total_net: string;
+    }>(
+      `SELECT review_job_id,
+        COALESCE(SUM(gross_amount), 0)::numeric AS total_gross,
+        COALESCE(SUM(withholding_amount), 0)::numeric AS total_withholding,
+        COALESCE(SUM(net_amount), 0)::numeric AS total_net
+       FROM income WHERE review_job_id = ANY($1::uuid[]) GROUP BY review_job_id`,
       [jobIds]
     );
     for (const r of incomeRows.rows) {
-      const amount = typeof r.total_gross === "string" ? parseFloat(r.total_gross) : r.total_gross;
-      if (!Number.isNaN(amount) && amount > 0) incomeByJob.set(r.review_job_id, amount);
+      const gross = parseFloat(
+        typeof r.total_gross === "string" ? r.total_gross : String(r.total_gross)
+      );
+      const withholding = parseFloat(
+        typeof r.total_withholding === "string"
+          ? r.total_withholding
+          : String(r.total_withholding)
+      );
+      const net = parseFloat(
+        typeof r.total_net === "string" ? r.total_net : String(r.total_net)
+      );
+      const rate =
+        !Number.isNaN(gross) && gross > 0 && !Number.isNaN(withholding)
+          ? Math.round((withholding / gross) * 100 * 100) / 100
+          : null;
+      if (!Number.isNaN(gross) && gross > 0) {
+        incomeByJob.set(r.review_job_id, {
+          gross,
+          withholding: Number.isNaN(withholding) ? 0 : withholding,
+          net: Number.isNaN(net) ? gross : net,
+          rate,
+        });
+      }
     }
   }
 
   return {
     data: rows.map((row) => {
       const job = serializeReviewJob(row);
-      const grossAmount = incomeByJob.get(row.id) ?? null;
-      return { ...job, grossAmount };
+      const income = incomeByJob.get(row.id);
+      return {
+        ...job,
+        grossAmount: income?.gross ?? null,
+        withholdingAmount: income?.withholding ?? null,
+        netAmount: income?.net ?? null,
+        withholdingRate: income?.rate ?? null,
+      };
     }),
     total,
     page,

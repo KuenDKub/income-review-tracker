@@ -44,6 +44,9 @@ export type JobItem = {
   publishDate?: string | null;
   paymentDate?: string | null;
   grossAmount?: number | null;
+  withholdingAmount?: number | null;
+  netAmount?: number | null;
+  withholdingRate?: number | null;
   isBrotherJob?: boolean;
 };
 
@@ -174,7 +177,7 @@ export function JobList({
                     <div className="text-xs text-muted-foreground">
                       {t("income")}
                     </div>
-                    <div className="mt-0.5 tabular-nums">
+                    <div className="mt-0.5 tabular-nums text-xs">
                       {job.isBrotherJob ? (
                         <Badge
                           variant="outline"
@@ -183,7 +186,15 @@ export function JobList({
                           {t("brotherBadge")}
                         </Badge>
                       ) : job.grossAmount != null ? (
-                        `${formatTHB(job.grossAmount)} THB`
+                        (job.withholdingAmount ?? 0) > 0 && job.netAmount != null && job.withholdingRate != null ? (
+                          t("incomeWithholdingFormat", {
+                            gross: formatTHB(job.grossAmount),
+                            rate: job.withholdingRate,
+                            net: formatTHB(job.netAmount),
+                          })
+                        ) : (
+                          `${formatTHB(job.grossAmount)} THB`
+                        )
                       ) : (
                         "—"
                       )}

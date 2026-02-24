@@ -103,6 +103,7 @@
     "removeImageError": "ลบรูปไม่สำเร็จ",
     "uploadError": "อัปโหลดไฟล์ไม่สำเร็จ",
     "income": "รายได้",
+    "incomeWithholdingFormat": "ราคาเต็ม {gross} · หัก {rate}% · ได้สุทธิ {net}",
     "hasWithholdingTax": "หักภาษี ณ ที่จ่ายหรือไม่",
     "amount": "รายได้ (บาท)",
     "grossAmount": "ราคาเต็ม (บาท)",

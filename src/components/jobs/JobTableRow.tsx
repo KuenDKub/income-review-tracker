@@ -108,7 +108,7 @@ export function JobTableRow({
         </span>
       </TableCell>
       <TableCell>{formatDateThai(job.paymentDate)}</TableCell>
-      <TableCell className="text-right">
+      <TableCell className="text-right tabular-nums text-xs">
         {job.isBrotherJob ? (
           <Badge
             variant="outline"
@@ -117,7 +117,17 @@ export function JobTableRow({
             {t("brotherBadge")}
           </Badge>
         ) : job.grossAmount != null ? (
-          `${formatTHB(job.grossAmount)} THB`
+          (job.withholdingAmount ?? 0) > 0 &&
+          job.netAmount != null &&
+          job.withholdingRate != null ? (
+            t("incomeWithholdingFormat", {
+              gross: formatTHB(job.grossAmount),
+              rate: job.withholdingRate,
+              net: formatTHB(job.netAmount),
+            })
+          ) : (
+            `${formatTHB(job.grossAmount)} THB`
+          )
         ) : (
           "—"
         )}

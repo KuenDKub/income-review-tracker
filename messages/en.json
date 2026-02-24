@@ -103,6 +103,7 @@
     "removeImageError": "Failed to remove image",
     "uploadError": "Failed to upload file",
     "income": "Income",
+    "incomeWithholdingFormat": "Full price {gross} · {rate}% withheld · Net {net}",
     "hasWithholdingTax": "Withholding tax applied?",
     "amount": "Amount (THB)",
     "grossAmount": "Full price (THB)",
