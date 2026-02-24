@@ -6,6 +6,14 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { PlatformBadges } from "./PlatformBadges";
 import {
   STATUS_BADGE_CLASS,
@@ -33,6 +41,7 @@ import {
   isNearReviewDeadline,
   isPublishDatePassed,
 } from "@/lib/formatDate";
+import { formatTHB } from "@/lib/currency";
 import type { z } from "zod";
 import type { ReviewJobStatus } from "@/lib/schemas/reviewJob";
 
@@ -73,6 +82,7 @@ export function JobDetailClient({ id }: { id: string }) {
   const router = useRouter();
   const t = useTranslations("jobs");
   const tCommon = useTranslations("common");
+  const tDashboard = useTranslations("dashboard");
   const [job, setJob] = useState<ReviewJobJson | null>(null);
   const [payerNames, setPayerNames] = useState<string[]>([]);
   const [documents, setDocuments] = useState<DocumentJson[]>([]);
@@ -394,6 +404,55 @@ export function JobDetailClient({ id }: { id: string }) {
           </dl>
         </CardContent>
       </Card>
+
+      {(jobIncome || job.isBrotherJob) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{t("income")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {job.isBrotherJob ? (
+              <Badge
+                variant="outline"
+                className="text-xs bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-200 dark:border-purple-800"
+              >
+                {t("brotherBadge")}
+              </Badge>
+            ) : jobIncome ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-right">{t("grossAmount")}</TableHead>
+                    <TableHead className="text-right">{t("withholdingRate")}</TableHead>
+                    <TableHead className="text-right">{tDashboard("withholding")}</TableHead>
+                    <TableHead className="text-right">{tDashboard("net")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell className="text-right tabular-nums">
+                      {formatTHB(jobIncome.grossAmount)} THB
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {jobIncome.withholdingAmount > 0 && jobIncome.grossAmount > 0
+                        ? `${Math.round((jobIncome.withholdingAmount / jobIncome.grossAmount) * 100 * 100) / 100}%`
+                        : "—"}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {jobIncome.withholdingAmount > 0
+                        ? `${formatTHB(jobIncome.withholdingAmount)} THB`
+                        : "—"}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatTHB(jobIncome.netAmount)} THB
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            ) : null}
+          </CardContent>
+        </Card>
+      )}
 
       {hasAnyDate && (
         <Card>
