@@ -202,26 +202,6 @@ export function JobList({
                       </div>
                       <div>
                         <div className="text-xs text-muted-foreground">
-                          {t("withholdingRate")}
-                        </div>
-                        <div className="mt-0.5 tabular-nums text-xs">
-                          {(job.withholdingAmount ?? 0) > 0 && job.withholdingRate != null
-                            ? `${job.withholdingRate}%`
-                            : "—"}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground">
-                          {tDashboard("withholding")}
-                        </div>
-                        <div className="mt-0.5 tabular-nums text-xs">
-                          {(job.withholdingAmount ?? 0) > 0
-                            ? `${formatTHB(job.withholdingAmount!)} THB`
-                            : "—"}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground">
                           {tDashboard("net")}
                         </div>
                         <div className="mt-0.5 tabular-nums text-xs">
@@ -315,8 +295,6 @@ export function JobList({
               <TableHead>{t("publishDate")}</TableHead>
               <TableHead>{t("paymentDate")}</TableHead>
               <TableHead className="text-right">{t("grossAmount")}</TableHead>
-              <TableHead className="text-right">{t("withholdingRate")}</TableHead>
-              <TableHead className="text-right">{tDashboard("withholding")}</TableHead>
               <TableHead className="text-right">{tDashboard("net")}</TableHead>
               {showActions && (
                 <TableHead className="text-right w-[140px]">

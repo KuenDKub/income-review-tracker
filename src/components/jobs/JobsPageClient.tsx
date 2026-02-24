@@ -114,8 +114,6 @@ function JobsListSkeleton() {
               <TableHead><Skeleton className="h-4 w-20" /></TableHead>
               <TableHead><Skeleton className="h-4 w-24" /></TableHead>
               <TableHead className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableHead>
-              <TableHead className="text-right"><Skeleton className="h-4 w-12 ml-auto" /></TableHead>
-              <TableHead className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableHead>
               <TableHead className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableHead>
               <TableHead className="text-right w-[140px]"><Skeleton className="h-4 w-14 ml-auto" /></TableHead>
             </TableRow>
@@ -134,8 +132,6 @@ function JobsListSkeleton() {
                 <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                 <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
-                <TableCell className="text-right"><Skeleton className="h-4 w-12 ml-auto" /></TableCell>
                 <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
                 <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
                 <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
