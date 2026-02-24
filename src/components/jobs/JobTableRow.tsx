@@ -108,30 +108,42 @@ export function JobTableRow({
         </span>
       </TableCell>
       <TableCell>{formatDateThai(job.paymentDate)}</TableCell>
-      <TableCell className="text-right tabular-nums text-xs">
-        {job.isBrotherJob ? (
+      {job.isBrotherJob ? (
+        <TableCell
+          colSpan={4}
+          className="text-right"
+        >
           <Badge
             variant="outline"
             className="text-xs bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-200 dark:border-purple-800"
           >
             {t("brotherBadge")}
           </Badge>
-        ) : job.grossAmount != null ? (
-          (job.withholdingAmount ?? 0) > 0 &&
-          job.netAmount != null &&
-          job.withholdingRate != null ? (
-            t("incomeWithholdingFormat", {
-              gross: formatTHB(job.grossAmount),
-              rate: job.withholdingRate,
-              net: formatTHB(job.netAmount),
-            })
-          ) : (
-            `${formatTHB(job.grossAmount)} THB`
-          )
-        ) : (
-          "—"
-        )}
-      </TableCell>
+        </TableCell>
+      ) : (
+        <>
+          <TableCell className="text-right tabular-nums text-xs">
+            {job.grossAmount != null ? `${formatTHB(job.grossAmount)} THB` : "—"}
+          </TableCell>
+          <TableCell className="text-right tabular-nums text-xs">
+            {(job.withholdingAmount ?? 0) > 0 && job.withholdingRate != null
+              ? `${job.withholdingRate}%`
+              : "—"}
+          </TableCell>
+          <TableCell className="text-right tabular-nums text-xs">
+            {(job.withholdingAmount ?? 0) > 0
+              ? `${formatTHB(job.withholdingAmount!)} THB`
+              : "—"}
+          </TableCell>
+          <TableCell className="text-right tabular-nums text-xs">
+            {job.netAmount != null
+              ? `${formatTHB(job.netAmount)} THB`
+              : job.grossAmount != null
+                ? `${formatTHB(job.grossAmount)} THB`
+                : "—"}
+          </TableCell>
+        </>
+      )}
       {(onEdit || onDelete) && (
         <TableCell className="text-right">
           <div className="flex justify-end items-center gap-1">
