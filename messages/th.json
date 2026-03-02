@@ -46,6 +46,8 @@
   },
   "jobs": {
     "title": "งานรีวิว",
+    "boardTitle": "งาน",
+    "emptyColumn": "วางที่นี่",
     "backToJobs": "กลับไปรายการงาน",
     "listPlaceholder": "รายการงาน",
     "detailPlaceholder": "งาน",

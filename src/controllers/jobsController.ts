@@ -14,6 +14,7 @@ import type { PaginatedResult } from "@/lib/pagination";
 export async function listJobs(opts?: {
   page?: number;
   pageSize?: number;
+  maxPageSize?: number;
   search?: string;
   payerName?: string;
   platform?: string;
@@ -21,7 +22,8 @@ export async function listJobs(opts?: {
   status?: string;
 }): Promise<PaginatedResult<ReviewJobJson>> {
   const page = Math.max(1, opts?.page ?? 1);
-  const pageSize = Math.min(100, Math.max(1, opts?.pageSize ?? 10));
+  const maxPageSize = opts?.maxPageSize ?? 100;
+  const pageSize = Math.min(maxPageSize, Math.max(1, opts?.pageSize ?? 10));
   const offset = (page - 1) * pageSize;
 
   const search = (opts?.search ?? "").trim();

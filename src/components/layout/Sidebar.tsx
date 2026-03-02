@@ -2,12 +2,19 @@
 
 import { Link } from "@/i18n/navigation";
 import { usePathname } from "@/i18n/navigation";
-import { LayoutDashboard, Briefcase, Wallet, Receipt } from "lucide-react";
+import {
+  LayoutDashboard,
+  Briefcase,
+  Columns,
+  Wallet,
+  Receipt,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const navItems = [
   { href: "/", labelKey: "dashboard", icon: LayoutDashboard },
   { href: "/jobs", labelKey: "jobs", icon: Briefcase },
+  { href: "/jobs-dnd", labelKey: "jobsDnd", icon: Columns },
   { href: "/income", labelKey: "income", icon: Wallet },
   { href: "/tax", labelKey: "tax", icon: Receipt },
 ] as const;
@@ -24,7 +31,8 @@ export function Sidebar({ labels }: SidebarProps) {
       <nav className="flex flex-col gap-1">
         {navItems.map(({ href, labelKey, icon: Icon }) => {
           const isActive =
-            pathname === href || (href !== "/" && pathname.startsWith(href));
+            pathname === href ||
+            (href !== "/" && pathname.startsWith(href + "/"));
           const label = labels[labelKey] ?? labelKey;
           return (
             <Link

@@ -46,6 +46,8 @@
   },
   "jobs": {
     "title": "Review Jobs",
+    "boardTitle": "Jobs",
+    "emptyColumn": "Drop here",
     "backToJobs": "Back to jobs",
     "listPlaceholder": "Jobs list",
     "detailPlaceholder": "Job",

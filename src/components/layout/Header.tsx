@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 type NavLabels = {
   dashboard: string;
   jobs: string;
+  jobsDnd: string;
   income: string;
   tax: string;
 };
@@ -23,6 +24,7 @@ type HeaderProps = {
 const defaultNavLabels: NavLabels = {
   dashboard: "Dashboard",
   jobs: "Jobs",
+  jobsDnd: "Jobs Board",
   income: "Income",
   tax: "Tax",
 };
@@ -48,18 +50,13 @@ export function Header({
 
         {/* Desktop nav: visible from lg up */}
         <nav className="hidden shrink-0 gap-2 lg:flex">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/">{labels.dashboard}</Link>
-          </Button>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/jobs">{labels.jobs}</Link>
-          </Button>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/income">{labels.income}</Link>
-          </Button>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/tax">{labels.tax}</Link>
-          </Button>
+          {navItems.map(({ href, labelKey }) => (
+            <Button key={href} variant="ghost" size="sm" asChild>
+              <Link href={href === "/" ? "/" : href}>
+                {labels[labelKey] ?? labelKey}
+              </Link>
+            </Button>
+          ))}
         </nav>
 
         {/* Mobile/tablet: hamburger opens sheet */}
@@ -88,7 +85,7 @@ export function Header({
                     onClick={() => setSheetOpen(false)}
                     className={cn(
                       "flex items-center gap-3 rounded-md px-3 py-3 text-sm font-medium transition-colors touch-manipulation",
-                      pathname === href || (href !== "/" && pathname.startsWith(href))
+                      pathname === href || (href !== "/" && pathname.startsWith(href + "/"))
                         ? "bg-primary text-primary-foreground"
                         : "hover:bg-muted",
                     )}

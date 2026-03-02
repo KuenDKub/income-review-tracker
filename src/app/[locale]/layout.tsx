@@ -33,6 +33,7 @@ export default async function LocaleLayout({ children, params }: Props) {
   const navLabels = {
     dashboard: (await getTranslations("dashboard"))("title"),
     jobs: (await getTranslations("jobs"))("title"),
+    jobsDnd: (await getTranslations("jobs"))("boardTitle"),
     income: (await getTranslations("income"))("title"),
     tax: (await getTranslations("tax"))("title"),
   };
@@ -43,7 +44,7 @@ export default async function LocaleLayout({ children, params }: Props) {
         <Header title={t("title")} navLabels={navLabels} />
         <div className="flex flex-1">
           <Sidebar labels={navLabels} />
-          <main className="flex-1 p-4 sm:p-6">
+          <main className="min-w-0 flex-1 p-4 sm:p-6">
             <div className="mb-4 flex justify-end">
               <LocaleSwitcher />
             </div>

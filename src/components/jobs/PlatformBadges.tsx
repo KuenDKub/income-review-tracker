@@ -1,25 +1,27 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { Facebook, Globe, Instagram, Twitter, Youtube } from "lucide-react";
+import { Globe, Instagram, Twitter, Youtube } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/** Official brand colors: background and text per platform */
 const PLATFORM_BADGE_CLASS: Record<string, string> = {
   TikTok:
-    "bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300 border-pink-200 dark:border-pink-800",
+    "bg-[#000000] text-[#FFFFFF] border-[#000000] dark:bg-[#000000] dark:text-[#FFFFFF] dark:border-white/20",
   YouTube:
-    "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border-red-200 dark:border-red-800",
+    "bg-[#FF0000] text-[#FFFFFF] border-[#CC0000] dark:bg-[#FF0000] dark:text-[#FFFFFF] dark:border-[#CC0000]",
   Instagram:
-    "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border-purple-200 dark:border-purple-800",
-  Lemon8:
-    "bg-lime-100 text-lime-800 dark:bg-lime-900/30 dark:text-lime-300 border-lime-200 dark:border-lime-800",
+    "bg-[#E1306C] text-[#FFFFFF] border-[#E1306C] dark:bg-[#E1306C] dark:text-[#FFFFFF] dark:border-[#E1306C]/80",
   Facebook:
-    "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border-blue-200 dark:border-blue-800",
+    "bg-[#1877F2] text-[#FFFFFF] border-[#1877F2] dark:bg-[#1877F2] dark:text-[#FFFFFF] dark:border-[#1877F2]/80",
   Twitter:
-    "bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300 border-sky-200 dark:border-sky-800",
+    "bg-[#1DA1F2] text-[#FFFFFF] border-[#1DA1F2] dark:bg-[#1DA1F2] dark:text-[#FFFFFF] dark:border-[#1DA1F2]/80",
   "Twitter/X":
-    "bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300 border-sky-200 dark:border-sky-800",
-  Other: "bg-muted text-muted-foreground border-border",
+    "bg-[#1DA1F2] text-[#FFFFFF] border-[#1DA1F2] dark:bg-[#1DA1F2] dark:text-[#FFFFFF] dark:border-[#1DA1F2]/80",
+  Lemon8:
+    "bg-[#F5E642] text-[#000000] border-[#F5E642] dark:bg-[#F5E642] dark:text-[#000000] dark:border-[#F5E642]/80",
+  Other:
+    "bg-[#F3F4F6] text-[#374151] border-[#E5E7EB] dark:bg-[#374151] dark:text-[#F3F4F6] dark:border-[#4B5563]",
 };
 
 const DEFAULT_BADGE_CLASS = "bg-muted text-muted-foreground border-border";
@@ -39,12 +41,26 @@ function TikTokIcon({ className }: { className?: string }) {
   );
 }
 
+/** Official Facebook "f" logo (letter only, for use on colored badge) */
+function FacebookIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={cn(className)}
+      fill="currentColor"
+      aria-hidden
+    >
+      <path d="M18.77 7.46H14.5v-1.9c0-.9.6-1.1 1-1.1h3V.5L14.5.5C10.5.5 9 3.44 9 6.32v1.15h-3v4h3v12h5v-12h3.85l.92-4z" />
+    </svg>
+  );
+}
+
 const PLATFORM_ICONS: Record<string, React.ReactNode> = {
   TikTok: <TikTokIcon className={ICON_CLASS} />,
   YouTube: <Youtube className={ICON_CLASS} />,
   Instagram: <Instagram className={ICON_CLASS} />,
   Lemon8: <Globe className={ICON_CLASS} />,
-  Facebook: <Facebook className={ICON_CLASS} />,
+  Facebook: <FacebookIcon className={ICON_CLASS} />,
   Twitter: <Twitter className={ICON_CLASS} />,
   "Twitter/X": <Twitter className={ICON_CLASS} />,
   Other: <Globe className={ICON_CLASS} />,
