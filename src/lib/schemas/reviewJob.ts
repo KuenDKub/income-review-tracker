@@ -18,8 +18,8 @@ const reviewJobBaseSchema = z.object({
   contentType: z.string().min(1, "Content type is required"),
   title: z.string().min(1, "Title is required"),
   receivedDate: z.string().min(1, "Received date is required"), // ISO date string
-  reviewDeadline: z.string().min(1, "Review deadline is required"),
-  publishDate: z.string().min(1, "Publish date is required"),
+  reviewDeadline: z.string().optional().nullable(),
+  publishDate: z.string().optional().nullable(),
   paymentDate: z.string().optional().nullable(),
   tags: z.array(z.string()).optional().default([]),
   notes: z.string().optional().nullable(),
