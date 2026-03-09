@@ -165,6 +165,26 @@
     "refund": "เงินคืน",
     "refundAmount": "จำนวนเงินคืน"
   },
+  "storyline": {
+    "title": "AI สร้างสตอรี่ไลน์",
+    "promptLabel": "Prompt งานรีวิว",
+    "promptPlaceholder": "เช่น รีวิวร้านอาหารญี่ปุ่น บรรยากาศดี ราคากลาง",
+    "generateButton": "สร้าง Storyline",
+    "generating": "กำลังสร้าง...",
+    "downloadDocx": "ดาวน์โหลด Storyline.docx",
+    "livePreview": "พรีวิวแบบเรียลไทม์",
+    "sectionTitle": "ชื่อเรื่อง",
+    "sectionHook": "ฮุก",
+    "sectionVibe": "Vibe / อารมณ์คลิป",
+    "sectionCta": "CTA",
+    "sectionCaptionIdea": "แคปชั่น + แฮชแท็ก",
+    "sectionSubtitle": "ซับไตเติล",
+    "scenesTableTitle": "Scenes",
+    "tableHeaderScene": "Scene (มุมกล้อง/outdoor)",
+    "tableHeaderText": "Text",
+    "tableHeaderSoundtrack": "Soundtrack",
+    "tableEmpty": "กำลังรอฉาก…"
+  },
   "ui": {
     "uploadImage": "อัปโหลดรูป",
     "uploadImages": "อัปโหลดรูป",

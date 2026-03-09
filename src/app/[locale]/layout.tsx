@@ -36,6 +36,7 @@ export default async function LocaleLayout({ children, params }: Props) {
     jobsDnd: (await getTranslations("jobs"))("boardTitle"),
     income: (await getTranslations("income"))("title"),
     tax: (await getTranslations("tax"))("title"),
+    storyline: (await getTranslations("storyline"))("title"),
   };
 
   return (

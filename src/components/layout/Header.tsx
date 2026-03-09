@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, usePathname } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { navItems } from "@/components/layout/Sidebar";
 import { Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -14,6 +19,7 @@ type NavLabels = {
   jobsDnd: string;
   income: string;
   tax: string;
+  storyline: string;
 };
 
 type HeaderProps = {
@@ -27,6 +33,7 @@ const defaultNavLabels: NavLabels = {
   jobsDnd: "Jobs Board",
   income: "Income",
   tax: "Tax",
+  storyline: "AI Storyline",
 };
 
 export function Header({
@@ -36,10 +43,6 @@ export function Header({
   const labels = { ...defaultNavLabels, ...navLabels };
   const [sheetOpen, setSheetOpen] = useState(false);
   const pathname = usePathname();
-
-  useEffect(() => {
-    setSheetOpen(false);
-  }, [pathname]);
 
   return (
     <header className="border-b bg-card px-4 py-4 sm:px-6">
@@ -75,7 +78,9 @@ export function Header({
             </Button>
             <SheetContent side="left" className="p-0">
               <SheetHeader className="border-b px-6 py-4">
-                <SheetTitle className="text-base font-semibold">{title}</SheetTitle>
+                <SheetTitle className="text-base font-semibold">
+                  {title}
+                </SheetTitle>
               </SheetHeader>
               <nav className="flex flex-col gap-1 p-4">
                 {navItems.map(({ href, labelKey, icon: Icon }) => (
@@ -85,7 +90,8 @@ export function Header({
                     onClick={() => setSheetOpen(false)}
                     className={cn(
                       "flex items-center gap-3 rounded-md px-3 py-3 text-sm font-medium transition-colors touch-manipulation",
-                      pathname === href || (href !== "/" && pathname.startsWith(href + "/"))
+                      pathname === href ||
+                        (href !== "/" && pathname.startsWith(href + "/"))
                         ? "bg-primary text-primary-foreground"
                         : "hover:bg-muted",
                     )}

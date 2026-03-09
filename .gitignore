@@ -44,3 +44,7 @@ next-env.d.ts
 # uploads (keep directory but ignore files)
 public/uploads/*
 !public/uploads/.gitkeep
+
+# generated storyline docx outputs
+public/outputs/*
+!public/outputs/.gitkeep

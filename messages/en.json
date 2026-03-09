@@ -165,6 +165,26 @@
     "refund": "Refund",
     "refundAmount": "Refund amount"
   },
+  "storyline": {
+    "title": "AI Storyline",
+    "promptLabel": "Review prompt",
+    "promptPlaceholder": "e.g. Review of a Japanese restaurant, good atmosphere, mid-range price",
+    "generateButton": "Generate Storyline",
+    "generating": "Generating...",
+    "downloadDocx": "Download Storyline.docx",
+    "livePreview": "Live preview",
+    "sectionTitle": "Title",
+    "sectionHook": "Hook",
+    "sectionVibe": "Vibe",
+    "sectionCta": "CTA",
+    "sectionCaptionIdea": "Caption + hashtag",
+    "sectionSubtitle": "Subtitle",
+    "scenesTableTitle": "Scenes",
+    "tableHeaderScene": "Scene (camera/location/action)",
+    "tableHeaderText": "Text",
+    "tableHeaderSoundtrack": "Soundtrack",
+    "tableEmpty": "Waiting for scenes…"
+  },
   "ui": {
     "uploadImage": "Upload Image",
     "uploadImages": "Upload Images",
