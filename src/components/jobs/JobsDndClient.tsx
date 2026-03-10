@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import {
@@ -21,13 +21,22 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, GripVertical } from "lucide-react";
 import { formatDateThai } from "@/lib/formatDate";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { FileUpload } from "@/components/ui/file-upload";
+import {
   REVIEW_JOB_STATUSES,
   type ReviewJobStatus,
 } from "@/lib/schemas/reviewJob";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
 import {
-  STATUS_BADGE_CLASS,
   DEFAULT_STATUS_BADGE_CLASS,
 } from "./statusBadge";
 
@@ -232,8 +241,26 @@ function groupJobsByStatus(jobs: JobItem[]): JobsByStatus {
 
 export function JobsDndClient() {
   const t = useTranslations("jobs");
+  const tCommon = useTranslations("common");
   const [jobs, setJobs] = useState<JobItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [paidDialogOpen, setPaidDialogOpen] = useState(false);
+  const [paidDialogSaving, setPaidDialogSaving] = useState(false);
+  const [pendingPaidJob, setPendingPaidJob] = useState<JobItem | null>(null);
+  const [paidPaymentDate, setPaidPaymentDate] = useState<string>("");
+  const [paidEvidenceFiles, setPaidEvidenceFiles] = useState<File[]>([]);
+
+  const pendingPrevStatusRef = useRef<string | null>(null);
+  const pendingPrevPaymentDateRef = useRef<string | null>(null);
+
+  const pendingMinPaymentDate = useMemo(() => {
+    const job = pendingPaidJob;
+    if (!job) return undefined;
+    const received = (job.receivedDate ?? "").trim() || null;
+    const review = (job.reviewDeadline ?? "").trim() || null;
+    const publish = (job.publishDate ?? "").trim() || null;
+    return publish || review || received || undefined;
+  }, [pendingPaidJob]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -279,6 +306,15 @@ export function JobsDndClient() {
     fetchJobs();
   }, [fetchJobs]);
 
+  const resetPaidDialogState = useCallback(() => {
+    setPaidDialogSaving(false);
+    setPendingPaidJob(null);
+    setPaidPaymentDate("");
+    setPaidEvidenceFiles([]);
+    pendingPrevStatusRef.current = null;
+    pendingPrevPaymentDateRef.current = null;
+  }, []);
+
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
       const { active, over } = event;
@@ -292,6 +328,24 @@ export function JobsDndClient() {
         return;
       }
       if (currentStatus === newStatus) return;
+
+      if (newStatus === "paid") {
+        pendingPrevStatusRef.current = currentStatus ?? job.status ?? null;
+        pendingPrevPaymentDateRef.current = job.paymentDate ?? null;
+        setPendingPaidJob(job);
+        const min = (job.publishDate ?? job.reviewDeadline ?? job.receivedDate ?? "")
+          .toString()
+          .trim();
+        const todayIso = new Date().toISOString().slice(0, 10);
+        const defaultDate =
+          job.paymentDate?.trim() ||
+          (min && todayIso < min ? min : todayIso) ||
+          todayIso;
+        setPaidPaymentDate(defaultDate);
+        setPaidEvidenceFiles([]);
+        setPaidDialogOpen(true);
+        return;
+      }
 
       const prevJobs = [...jobs];
       setJobs((prev) =>
@@ -314,6 +368,93 @@ export function JobsDndClient() {
     },
     [jobs, t]
   );
+
+  const handlePaidDialogCancel = useCallback(() => {
+    if (paidDialogSaving) return;
+    setPaidDialogOpen(false);
+    resetPaidDialogState();
+  }, [paidDialogSaving, resetPaidDialogState]);
+
+  const handlePaidDialogSave = useCallback(async () => {
+    const job = pendingPaidJob;
+    if (!job) return;
+    const paymentDate = paidPaymentDate.trim();
+    if (!paymentDate) {
+      toast.error(t("updateError"), t("paidDialogPaymentDateRequired"));
+      return;
+    }
+
+    setPaidDialogSaving(true);
+
+    const prevStatus = pendingPrevStatusRef.current ?? job.status ?? "received";
+    const prevPaymentDate = pendingPrevPaymentDateRef.current ?? job.paymentDate ?? null;
+
+    try {
+      const patchRes = await fetch(`/api/jobs/${job.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "paid", paymentDate }),
+      });
+      const patchJson = await patchRes.json();
+      if (!patchRes.ok) throw new Error(patchJson.error ?? t("updateError"));
+
+      if (paidEvidenceFiles.length > 0) {
+        for (const file of paidEvidenceFiles) {
+          const formData = new FormData();
+          formData.append("file", file);
+          const uploadRes = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          });
+          if (!uploadRes.ok) throw new Error(t("uploadError"));
+          const uploadJson = await uploadRes.json();
+          const docRes = await fetch("/api/documents", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              reviewJobId: job.id,
+              kind: "evidence",
+              filePath: uploadJson.filePath,
+            }),
+          });
+          if (!docRes.ok) throw new Error(t("uploadError"));
+        }
+      }
+
+      setJobs((prev) =>
+        prev.map((j) =>
+          j.id === job.id ? { ...j, status: "paid", paymentDate } : j
+        )
+      );
+      toast.success(t("updateSuccess"));
+      setPaidDialogOpen(false);
+      resetPaidDialogState();
+    } catch (e) {
+      toast.error(t("updateError"), String(e));
+      try {
+        await fetch(`/api/jobs/${job.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: prevStatus,
+            paymentDate: prevPaymentDate,
+          }),
+        });
+      } catch {
+        // best-effort revert
+      }
+      setPaidDialogOpen(false);
+      resetPaidDialogState();
+    } finally {
+      setPaidDialogSaving(false);
+    }
+  }, [
+    paidEvidenceFiles,
+    paidPaymentDate,
+    pendingPaidJob,
+    resetPaidDialogState,
+    t,
+  ]);
 
   const grouped = groupJobsByStatus(jobs);
 
@@ -360,6 +501,62 @@ export function JobsDndClient() {
           </div>
         </DndContext>
       )}
+
+      <Dialog
+        open={paidDialogOpen}
+        onOpenChange={(open) => {
+          if (open) setPaidDialogOpen(true);
+          else handlePaidDialogCancel();
+        }}
+      >
+        <DialogContent showCloseButton={!paidDialogSaving}>
+          <DialogHeader>
+            <DialogTitle>{t("paidDialogTitle")}</DialogTitle>
+            <DialogDescription>{t("paidDialogDescription")}</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t("paymentDate")}</label>
+              <Input
+                type="date"
+                value={paidPaymentDate}
+                min={pendingMinPaymentDate}
+                onChange={(e) => setPaidPaymentDate(e.target.value)}
+                disabled={paidDialogSaving}
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="text-sm font-medium">{t("evidenceOptional")}</div>
+              <FileUpload
+                value={paidEvidenceFiles}
+                onChange={setPaidEvidenceFiles}
+                accept="image/*"
+                multiple
+                className={paidDialogSaving ? "opacity-70 pointer-events-none" : undefined}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handlePaidDialogCancel}
+              disabled={paidDialogSaving}
+            >
+              {tCommon("cancel")}
+            </Button>
+            <Button
+              type="button"
+              onClick={handlePaidDialogSave}
+              disabled={paidDialogSaving}
+            >
+              {tCommon("save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
