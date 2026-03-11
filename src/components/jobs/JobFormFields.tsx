@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -26,6 +27,7 @@ import { REVIEW_JOB_STATUSES } from "@/lib/schemas/reviewJob";
 import { Badge } from "@/components/ui/badge";
 import { STATUS_BADGE_CLASS, DEFAULT_STATUS_BADGE_CLASS } from "./statusBadge";
 import { computeWithholdingAndNet } from "@/lib/tax";
+import { X } from "lucide-react";
 
 const STATUS_KEYS: Record<string, string> = {
   received: "statusReceived",
@@ -273,12 +275,27 @@ export function JobFormFields({
             <FormItem>
               <FormLabel>{t("reviewDeadline")}</FormLabel>
               <FormControl>
-                <Input
-                  type="date"
-                  {...field}
-                  value={field.value ?? ""}
-                  min={minReviewDeadline}
-                />
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="date"
+                    {...field}
+                    value={field.value ?? ""}
+                    min={minReviewDeadline}
+                    className="flex-1"
+                  />
+                  {field.value && String(field.value).trim() !== "" && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => field.onChange("")}
+                      className="shrink-0"
+                    >
+                      <X className="h-4 w-4" />
+                      <span className="sr-only">Clear review deadline</span>
+                    </Button>
+                  )}
+                </div>
               </FormControl>
             </FormItem>
           )}
@@ -290,12 +307,27 @@ export function JobFormFields({
             <FormItem>
               <FormLabel>{t("publishDate")}</FormLabel>
               <FormControl>
-                <Input
-                  type="date"
-                  {...field}
-                  value={field.value ?? ""}
-                  min={minPublishDate}
-                />
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="date"
+                    {...field}
+                    value={field.value ?? ""}
+                    min={minPublishDate}
+                    className="flex-1"
+                  />
+                  {field.value && String(field.value).trim() !== "" && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => field.onChange("")}
+                      className="shrink-0"
+                    >
+                      <X className="h-4 w-4" />
+                      <span className="sr-only">Clear publish date</span>
+                    </Button>
+                  )}
+                </div>
               </FormControl>
             </FormItem>
           )}
@@ -472,12 +504,27 @@ export function JobFormFields({
               <FormItem>
                 <FormLabel>{t("paymentDate")}</FormLabel>
                 <FormControl>
-                  <Input
-                    type="date"
-                    {...field}
-                    value={field.value ?? ""}
-                    min={minPublishDate}
-                  />
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="date"
+                      {...field}
+                      value={field.value ?? ""}
+                      min={minPublishDate}
+                      className="flex-1"
+                    />
+                    {field.value && String(field.value).trim() !== "" && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => field.onChange("")}
+                        className="shrink-0"
+                      >
+                        <X className="h-4 w-4" />
+                        <span className="sr-only">Clear payment date</span>
+                      </Button>
+                    )}
+                  </div>
                 </FormControl>
               </FormItem>
             )}

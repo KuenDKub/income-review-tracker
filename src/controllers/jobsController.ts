@@ -210,19 +210,39 @@ export async function updateJob(
 ): Promise<ReviewJobJson | null> {
   const existing = await getJobById(id);
   if (!existing) return null;
+
+  const has = (key: keyof typeof body) =>
+    Object.prototype.hasOwnProperty.call(body, key);
+
   const data = deserializeReviewJobBody({
-    payerName: body.payerName ?? existing.payerName ?? "",
-    status: body.status ?? existing.status,
-    platforms: body.platforms ?? existing.platforms,
-    contentType: body.contentType ?? existing.contentType,
-    title: body.title ?? existing.title,
-    receivedDate: body.receivedDate ?? existing.receivedDate ?? null,
-    reviewDeadline: body.reviewDeadline ?? existing.reviewDeadline ?? null,
-    publishDate: body.publishDate ?? existing.publishDate ?? null,
-    paymentDate: body.paymentDate ?? existing.paymentDate ?? null,
-    tags: body.tags ?? existing.tags,
-    notes: body.notes ?? existing.notes,
-    isBrotherJob: body.isBrotherJob ?? existing.isBrotherJob ?? false,
+    payerName: has("payerName")
+      ? body.payerName ?? ""
+      : existing.payerName ?? "",
+    status: has("status") ? body.status ?? existing.status : existing.status,
+    platforms: has("platforms")
+      ? body.platforms ?? existing.platforms
+      : existing.platforms,
+    contentType: has("contentType")
+      ? body.contentType ?? existing.contentType
+      : existing.contentType,
+    title: has("title") ? body.title ?? existing.title : existing.title,
+    receivedDate: has("receivedDate")
+      ? body.receivedDate ?? null
+      : existing.receivedDate ?? null,
+    reviewDeadline: has("reviewDeadline")
+      ? body.reviewDeadline ?? null
+      : existing.reviewDeadline ?? null,
+    publishDate: has("publishDate")
+      ? body.publishDate ?? null
+      : existing.publishDate ?? null,
+    paymentDate: has("paymentDate")
+      ? body.paymentDate ?? null
+      : existing.paymentDate ?? null,
+    tags: has("tags") ? body.tags ?? existing.tags : existing.tags,
+    notes: has("notes") ? body.notes ?? existing.notes : existing.notes,
+    isBrotherJob: has("isBrotherJob")
+      ? body.isBrotherJob ?? false
+      : existing.isBrotherJob ?? false,
   });
   const { rows } = await query<ReviewJobRow>(
     `UPDATE review_jobs SET payer_name = $1, status = $2, platforms = $3::text[], content_type = $4, title = $5, received_date = $6::date, review_deadline = $7::date, publish_date = $8::date, payment_date = $9::date, tags = $10::text[], notes = $11, is_brother_job = $12
