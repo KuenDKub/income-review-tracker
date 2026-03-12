@@ -14,7 +14,7 @@ export type ReviewJobStatus = (typeof REVIEW_JOB_STATUSES)[number];
 const reviewJobBaseSchema = z.object({
   payerName: z.string(),
   status: z.enum(REVIEW_JOB_STATUSES).default("received"),
-  platforms: z.array(z.string()).min(1, "At least one platform is required"),
+  platforms: z.array(z.string()).optional().default([]),
   contentType: z.string().min(1, "Content type is required"),
   title: z.string().min(1, "Title is required"),
   receivedDate: z.string().min(1, "Received date is required"), // ISO date string
