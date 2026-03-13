@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,7 +31,13 @@ type StorylineResult = {
 
 export default function StorylineGenerator() {
   const t = useTranslations("storyline");
-  const [prompt, setPrompt] = useState("");
+  const [brandName, setBrandName] = useState("");
+  const [productName, setProductName] = useState("");
+  const [details, setDetails] = useState("");
+  const [conditions, setConditions] = useState("");
+  const [sellingPoints, setSellingPoints] = useState("");
+  const [vibeMood, setVibeMood] = useState("");
+  const [extraNotes, setExtraNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<StorylineResult | null>(null);
   const [liveParsed, setLiveParsed] = useState<StorylineParseResult | null>(
@@ -50,6 +56,10 @@ export default function StorylineGenerator() {
   const hook = showSections?.HOOK ?? "";
   const vibe = showSections?.VIBE ?? "";
 
+  const isFormValid = useMemo(() => {
+    return brandName.trim() && productName.trim() && details.trim();
+  }, [brandName, productName, details]);
+
   const formatSceneCell = (row: StorylineSceneRow) => {
     const cleaned = (row.action ?? "")
       .trim()
@@ -59,7 +69,7 @@ export default function StorylineGenerator() {
   };
 
   const generate = useCallback(async () => {
-    if (!prompt.trim()) return;
+    if (!isFormValid) return;
     setLoading(true);
     setError("");
     setResult(null);
@@ -69,7 +79,18 @@ export default function StorylineGenerator() {
       const res = await fetch("/api/storyline", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reviewPrompt: prompt, stream: true }),
+        body: JSON.stringify({
+          stream: true,
+          brief: {
+            brandName,
+            productName,
+            details,
+            conditions,
+            sellingPoints,
+            vibeMood,
+            extraNotes,
+          },
+        }),
       });
 
       const contentType = res.headers.get("Content-Type") ?? "";
@@ -80,6 +101,14 @@ export default function StorylineGenerator() {
         const decoder = new TextDecoder();
         let buffer = "";
         let accumulated = "";
+        let chunkCountSinceParse = 0;
+        let lastParsedAtLen = 0;
+        const flushParse = () => {
+          if (!accumulated.trim()) return;
+          if (accumulated.length === lastParsedAtLen) return;
+          lastParsedAtLen = accumulated.length;
+          setLiveParsed(parseStoryline(accumulated));
+        };
 
         while (true) {
           const { done, value } = await reader.read();
@@ -101,7 +130,11 @@ export default function StorylineGenerator() {
                   | { error?: string };
                 if (currentEvent === "delta" && "delta" in data && data.delta) {
                   accumulated += data.delta;
-                  setLiveParsed(parseStoryline(accumulated));
+                  chunkCountSinceParse += 1;
+                  if (chunkCountSinceParse >= 3) {
+                    chunkCountSinceParse = 0;
+                    flushParse();
+                  }
                 } else if (currentEvent === "reset") {
                   accumulated = "";
                   setLiveParsed(null);
@@ -122,6 +155,7 @@ export default function StorylineGenerator() {
             }
           }
         }
+        flushParse();
       } else {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Request failed");
@@ -132,7 +166,16 @@ export default function StorylineGenerator() {
     } finally {
       setLoading(false);
     }
-  }, [prompt]);
+  }, [
+    isFormValid,
+    brandName,
+    productName,
+    details,
+    conditions,
+    sellingPoints,
+    vibeMood,
+    extraNotes,
+  ]);
 
   const handleDownload = useCallback(async () => {
     if (!result) return;
@@ -173,18 +216,97 @@ export default function StorylineGenerator() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="storyline-brand">{t("brandLabel")}</Label>
+              <input
+                id="storyline-brand"
+                value={brandName}
+                onChange={(e) => setBrandName(e.target.value)}
+                placeholder={t("brandPlaceholder")}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="storyline-product">{t("productLabel")}</Label>
+              <input
+                id="storyline-product"
+                value={productName}
+                onChange={(e) => setProductName(e.target.value)}
+                placeholder={t("productPlaceholder")}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
+          </div>
+
           <div className="space-y-2">
-            <Label htmlFor="storyline-prompt">{t("promptLabel")}</Label>
+            <Label htmlFor="storyline-details">{t("detailsLabel")}</Label>
             <textarea
-              id="storyline-prompt"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder={t("promptPlaceholder")}
+              id="storyline-details"
+              value={details}
+              onChange={(e) => setDetails(e.target.value)}
+              placeholder={t("detailsPlaceholder")}
               rows={4}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
-          <Button onClick={generate} disabled={loading || !prompt.trim()}>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="storyline-selling-points">{t("sellingPointsLabel")}</Label>
+              <textarea
+                id="storyline-selling-points"
+                value={sellingPoints}
+                onChange={(e) => setSellingPoints(e.target.value)}
+                placeholder={t("sellingPointsPlaceholder")}
+                rows={3}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="storyline-vibe">{t("vibeMoodLabel")}</Label>
+              <textarea
+                id="storyline-vibe"
+                value={vibeMood}
+                onChange={(e) => setVibeMood(e.target.value)}
+                placeholder={t("vibeMoodPlaceholder")}
+                rows={3}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="storyline-conditions">{t("conditionsLabel")}</Label>
+            <textarea
+              id="storyline-conditions"
+              value={conditions}
+              onChange={(e) => setConditions(e.target.value)}
+              placeholder={t("conditionsPlaceholder")}
+              rows={3}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="storyline-extra">{t("extraNotesLabel")}</Label>
+            <textarea
+              id="storyline-extra"
+              value={extraNotes}
+              onChange={(e) => setExtraNotes(e.target.value)}
+              placeholder={t("extraNotesPlaceholder")}
+              rows={2}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            />
+          </div>
+
+          {!isFormValid && (
+            <p className="text-sm text-muted-foreground">
+              {t("formHintRequired")}
+            </p>
+          )}
+
+          <Button onClick={generate} disabled={loading || !isFormValid}>
             {loading ? t("generating") : t("generateButton")}
           </Button>
 

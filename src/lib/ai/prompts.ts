@@ -39,16 +39,53 @@ Style guide (match this document/table style):
 - ACTION: บอกภาพ/มุม/โลเคชันแบบตรงไปตรงมา เช่น "บรรยากาศ outdoor ถือของใกล้กล้อง" หรือ "ซูมรากผม เห็นความมันชัดๆ"
 - TEXT: สั้นและคม อาจขึ้นเป็น 2 บรรทัด เช่นชื่อสินค้า (อนุญาตอังกฤษ)
 - SOUNDTRACK: เล่าเป็นจังหวะ มีเหตุผล/ผลลัพธ์ชัด ใช้คำเชื่อมแบบพูดจริง (แต่ไม่เวิ่น)
-
-Mini-example (for style only; your real output must follow the required format):
-SCENE 1
-ACTION: บรรยากาศ outdoor ผมมัน+ลีบ แถมต้องถ่ายงาน
-TEXT: ปัญหาผมมัน…\nผมมัน
-SOUNDTRACK: ถ้าแกเคยสระผมเมื่อวานแล้ววันนี้ต้องออกไปเจอคน…\nนี่แหละชีวิตจริง\nเดี๋ยวดูตอนจบ`;
+`;
 }
 
 export function buildUserPrompt(reviewPrompt: string): string {
   return `สร้าง storyline สไตล์ TikTok influencer เป็นภาษาไทย สำหรับคอนเทนต์รีวิวนี้: ${reviewPrompt}
 
 คิดแบบ content creator ที่รู้จัก algorithm — hook แรง, เนื้อหากระชับ, ปิดให้คนอยากกด share`;
+}
+
+export type StorylineBrief = {
+  brandName?: string;
+  productName?: string;
+  details?: string;
+  conditions?: string;
+  sellingPoints?: string;
+  vibeMood?: string;
+  extraNotes?: string;
+};
+
+function normalizeMultiline(value: string | undefined): string {
+  return (value ?? "").trim().replace(/\r\n/g, "\n");
+}
+
+export function buildUserPromptFromBrief(brief: StorylineBrief): string {
+  const brandName = normalizeMultiline(brief.brandName);
+  const productName = normalizeMultiline(brief.productName);
+  const details = normalizeMultiline(brief.details);
+  const conditions = normalizeMultiline(brief.conditions);
+  const sellingPoints = normalizeMultiline(brief.sellingPoints);
+  const vibeMood = normalizeMultiline(brief.vibeMood);
+  const extraNotes = normalizeMultiline(brief.extraNotes);
+
+  const lines: string[] = [];
+  lines.push("สร้าง storyline สไตล์ TikTok influencer เป็นภาษาไทย โดยต้องทำตาม format ที่กำหนดอย่างเคร่งครัด");
+  lines.push("");
+  lines.push("[BRIEF]");
+  if (brandName) lines.push(`- Brand: ${brandName}`);
+  if (productName) lines.push(`- Product: ${productName}`);
+  if (details) lines.push(`- รายละเอียด/บริบท: ${details}`);
+  if (sellingPoints) lines.push(`- จุดขายหลัก (USP): ${sellingPoints}`);
+  if (vibeMood) lines.push(`- Vibe/Mood ที่ต้องการ: ${vibeMood}`);
+  if (conditions) lines.push(`- เงื่อนไข/ข้อห้าม/ข้อควรมี: ${conditions}`);
+  if (extraNotes) lines.push(`- โน้ตเพิ่มเติม: ${extraNotes}`);
+  lines.push("");
+  lines.push("[GOAL]");
+  lines.push("- Hook แรงใน 3 วินาทีแรก, pacing กระชับ, ภาษาพูดแบบ influencer");
+  lines.push("- ใส่เหตุผล/ผลลัพธ์ชัดเจน และจบด้วย CTA + CAPTION_IDEA ที่คนอยากคอมเมนต์/เซฟ/แชร์");
+
+  return lines.join("\n").trim();
 }
