@@ -3,7 +3,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { Plus, MessageSquare, Trash2 } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Plus, MessageSquare, Trash2, PanelLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import StorylineGenerator, {
   type StorylineFormData,
@@ -43,14 +49,17 @@ export default function StorylinePageLayout() {
   const [items, setItems] = useState<StorylineFormItem[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   useEffect(() => {
     const cached = readStorylineCache();
-    setItems(cached);
-    if (cached.length > 0 && !activeId) {
-      setActiveId(cached[0].id);
-    }
-    setHydrated(true);
+    queueMicrotask(() => {
+      setItems(cached);
+      if (cached.length > 0) {
+        setActiveId((prev) => prev ?? cached[0].id);
+      }
+      setHydrated(true);
+    });
   }, []);
 
   useEffect(() => {
@@ -114,78 +123,125 @@ export default function StorylinePageLayout() {
     );
   }
 
-  return (
-    <div className="flex min-h-0 flex-1 gap-4">
-      {/* Sidebar: New + list (AI chat style) */}
-      <aside className="flex w-56 shrink-0 flex-col border-r bg-muted/20 p-3 lg:w-64">
-        <Button
-          variant="outline"
-          className="mb-3 w-full justify-start gap-2"
-          onClick={handleNewForm}
-        >
-          <Plus className="size-4" />
-          {t("newChat")}
-        </Button>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          {t("myForms")}
-        </p>
-        <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto">
-          {items.length === 0 ? (
-            <p className="py-2 text-sm text-muted-foreground">
-              {t("noForms")}
-            </p>
-          ) : (
-            items.map((item) => (
-              <div
-                key={item.id}
+  const openFormListLabel = activeItem
+    ? activeItem.title
+    : t("openFormList");
+
+  const formListContent = (
+    <>
+      <Button
+        variant="outline"
+        className="mb-3 w-full justify-start gap-2 min-h-[44px] touch-manipulation"
+        onClick={() => {
+          handleNewForm();
+          setSheetOpen(false);
+        }}
+      >
+        <Plus className="size-4" />
+        {t("newChat")}
+      </Button>
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {t("myForms")}
+      </p>
+      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto min-h-0">
+        {items.length === 0 ? (
+          <p className="py-2 text-sm text-muted-foreground">
+            {t("noForms")}
+          </p>
+        ) : (
+          items.map((item) => (
+            <div
+              key={item.id}
+              className={cn(
+                "flex items-center gap-1 rounded-md group",
+                activeId === item.id && "bg-primary text-primary-foreground"
+              )}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveId(item.id);
+                  setSheetOpen(false);
+                }}
                 className={cn(
-                  "flex items-center gap-1 rounded-md group",
-                  activeId === item.id && "bg-primary text-primary-foreground"
+                  "flex min-w-0 flex-1 items-center gap-2 rounded-md px-3 py-2.5 text-left text-sm transition-colors min-h-[44px] touch-manipulation",
+                  activeId === item.id
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-muted"
                 )}
               >
-                <button
-                  type="button"
-                  onClick={() => setActiveId(item.id)}
-                  className={cn(
-                    "flex min-w-0 flex-1 items-center gap-2 rounded-md px-3 py-2.5 text-left text-sm transition-colors",
-                    activeId === item.id
-                      ? "bg-primary text-primary-foreground"
-                      : "hover:bg-muted"
-                  )}
-                >
-                  <MessageSquare className="size-4 shrink-0" />
-                  <span className="min-w-0 truncate">{item.title}</span>
-                </button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    "h-8 w-8 shrink-0 rounded-md opacity-70 hover:opacity-100",
-                    activeId === item.id
-                      ? "text-primary-foreground hover:bg-primary-foreground/20"
-                      : "text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                  )}
-                  onClick={(e) => handleDeleteForm(e, item.id)}
-                  title={t("deleteForm")}
-                  aria-label={t("deleteForm")}
-                >
-                  <Trash2 className="size-4" />
-                </Button>
-              </div>
-            ))
-          )}
-        </nav>
+                <MessageSquare className="size-4 shrink-0" />
+                <span className="min-w-0 truncate">{item.title}</span>
+              </button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-10 w-10 shrink-0 rounded-md opacity-70 hover:opacity-100 touch-manipulation",
+                  activeId === item.id
+                    ? "text-primary-foreground hover:bg-primary-foreground/20"
+                    : "text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                )}
+                onClick={(e) => handleDeleteForm(e, item.id)}
+                title={t("deleteForm")}
+                aria-label={t("deleteForm")}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </div>
+          ))
+        )}
+      </nav>
+    </>
+  );
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row lg:min-h-0">
+      {/* Mobile/tablet: button to open form list sheet */}
+      <div className="shrink-0 lg:hidden">
+        <Button
+          variant="outline"
+          className="w-full justify-start gap-2 min-h-[44px] touch-manipulation rounded border-b-0"
+          onClick={() => setSheetOpen(true)}
+          aria-expanded={sheetOpen}
+          aria-label={t("openFormList")}
+        >
+          <PanelLeft className="size-5 shrink-0" />
+          <span className="min-w-0 truncate">{openFormListLabel}</span>
+        </Button>
+        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+          <SheetContent
+            side="left"
+            className="flex h-full max-h-dvh w-[280px] max-w-[85vw] flex-col gap-4 p-0"
+          >
+            <SheetHeader className="border-b px-4 py-4 sm:px-6">
+              <SheetTitle className="text-base font-semibold">
+                {t("myForms")}
+              </SheetTitle>
+            </SheetHeader>
+            <div className="flex flex-1 min-h-0 flex-col overflow-hidden px-4 pb-6 sm:px-6">
+              {formListContent}
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      {/* Sidebar: desktop only (lg+) */}
+      <aside className="hidden w-56 shrink-0 flex-col border-r bg-muted/20 p-3 lg:flex lg:w-64">
+        {formListContent}
       </aside>
 
       {/* Main: form + export */}
-      <main className="min-w-0 flex-1">
+      <main className="min-h-0 min-w-0 flex-1 flex flex-col overflow-hidden">
         {activeItem ? (
-          <StorylineGenerator
-            key={activeItem.id}
-            initialData={activeItem.formData}
-            onDataChange={handleDataChange(activeItem.id)}
-          />
+          <div className="mx-auto w-full max-w-3xl min-h-0 flex-1 flex flex-col">
+            <StorylineGenerator
+              key={activeItem.id}
+              initialData={activeItem.formData}
+              onDataChange={handleDataChange(activeItem.id)}
+            />
+          </div>
         ) : (
           <div className="flex min-h-[300px] flex-col items-center justify-center gap-4 rounded-lg border border-dashed p-8 text-center text-muted-foreground">
             <p>{t("selectOrCreate")}</p>

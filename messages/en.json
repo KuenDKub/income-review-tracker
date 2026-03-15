@@ -217,6 +217,7 @@
     "newForm": "New product",
     "selectOrCreate": "Select a form from the list or click New form to create one.",
     "deleteForm": "Delete form",
+    "openFormList": "Select form",
     "loading": "Loading..."
   },
   "ui": {

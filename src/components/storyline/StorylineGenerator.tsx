@@ -137,26 +137,26 @@ export default function StorylineGenerator({
                   : "sectionCaptionIdea";
 
   return (
-    <div className="space-y-6">
-      <Card className="overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <CardHeader className="border-b bg-muted/20">
           <CardTitle className="flex items-center gap-2">
             <Film className="size-5" />
             {t("title")}
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
           {/* Document-style body: TikTok → Storyline → Table → CTA → Caption */}
-          <article className="bg-background">
+          <article className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-background">
             {/* 1. TikTok (fixed) */}
-            <section className="border-b px-6 py-4">
+            <section className="border-b px-4 py-3 sm:px-6 sm:py-4">
               <p className="text-sm font-medium text-muted-foreground">
                 TikTok : {TIKTOK_FIXED}
               </p>
             </section>
 
             {/* 2. Storyline title */}
-            <section className="border-b px-6 py-4">
+            <section className="border-b px-4 py-3 sm:px-6 sm:py-4">
               <Label htmlFor="storyline-TITLE" className="text-sm font-medium">
                 {t("storylineLabel")}
               </Label>
@@ -170,7 +170,7 @@ export default function StorylineGenerator({
             </section>
 
             {/* 3. Scenes table (Scene | Text | Soundtrack) */}
-            <section className="border-b px-6 py-4">
+            <section className="border-b px-4 py-3 sm:px-6 sm:py-4">
               <ScenesTable
                 scenesTable={scenesTable}
                 onScenesTableChange={updateScenesTable}
@@ -179,7 +179,7 @@ export default function StorylineGenerator({
             </section>
 
             {/* 4. Caption Idea */}
-            <section className="px-6 py-4">
+            <section className="px-4 py-3 sm:px-6 sm:py-4">
               <Label
                 htmlFor="storyline-CAPTION_IDEA"
                 className="text-sm font-medium"
@@ -199,7 +199,7 @@ export default function StorylineGenerator({
             </section>
 
             {/* Extra sections (Subtitle, Genre, Hook, Vibe) in collapsible */}
-            <details className="border-t px-6 py-3">
+            <details className="border-t px-4 py-3 sm:px-6">
               <summary className="cursor-pointer text-sm font-medium text-muted-foreground">
                 {t("extraSections")}
               </summary>
@@ -239,14 +239,23 @@ export default function StorylineGenerator({
           </article>
 
           {error && (
-            <p className="mx-6 mb-4 text-sm text-destructive" role="alert">
+            <p className="shrink-0 mx-4 mb-4 text-sm text-destructive sm:mx-6" role="alert">
               {error}
             </p>
           )}
 
-          <div className="flex flex-wrap gap-2 border-t bg-muted/10 px-6 py-4">
-            <Button onClick={handleDownloadDocx}>{t("downloadDocx")}</Button>
-            <Button variant="outline" onClick={handleCopyText}>
+          <div className="flex shrink-0 flex-wrap gap-2 border-t bg-muted/10 px-4 py-4 sm:px-6">
+            <Button
+              onClick={handleDownloadDocx}
+              className="min-h-[44px] touch-manipulation"
+            >
+              {t("downloadDocx")}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleCopyText}
+              className="min-h-[44px] touch-manipulation"
+            >
               {t("copyAsText")}
             </Button>
           </div>
