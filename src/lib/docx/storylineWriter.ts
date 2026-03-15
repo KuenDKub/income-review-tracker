@@ -8,6 +8,8 @@ const TEMPLATE_PATH = path.join(
   "storyline_template.docx"
 );
 
+const COLORS = { muted: "6B7280", accent: "4B5563" };
+
 function escapeXml(str: string): string {
   return str
     .replace(/&/g, "&amp;")
@@ -36,6 +38,18 @@ function paragraphsXmlFromText(text: string): string {
       </w:p>`;
     })
     .join("");
+}
+
+/** Optional section block: only output when content is non-empty. */
+function optionalSectionBlock(label: string, content: string): string {
+  const trimmed = (content ?? "").trim();
+  if (!trimmed) return "";
+  const labelPara = `    <w:p>
+      <w:pPr><w:pStyle w:val="MetaLabel"/></w:pPr>
+      <w:r><w:rPr><w:b/><w:bCs/><w:color w:val="${COLORS.muted}"/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr><w:t>${escapeXml(label)}</w:t></w:r>
+    </w:p>`;
+  const contentXml = paragraphsXmlFromText(trimmed);
+  return labelPara + "\n" + contentXml;
 }
 
 function normalizeAction(action: string): string {
@@ -67,7 +81,28 @@ function buildDocxZip(
   const rowsXml = (scenesTable ?? []).map(sceneRowXml).join("");
   xml = xml.replaceAll("{{SCENES_TABLE_ROWS}}", rowsXml);
 
+  // Optional blocks: only include when section has content
+  const optionalDressCode = optionalSectionBlock(
+    "Dress code",
+    sections.DRESS_CODE ?? ""
+  );
+  const optionalCta = optionalSectionBlock("CTA", sections.CTA ?? "");
+  const optionalVibe = optionalSectionBlock("Vibe", sections.VIBE ?? "");
+  const optionalCaption = optionalSectionBlock(
+    "CAPTION IDEA",
+    sections.CAPTION_IDEA ?? ""
+  );
+  xml = xml.replaceAll("{{OPTIONAL_DRESS_CODE}}", optionalDressCode);
+  xml = xml.replaceAll("{{OPTIONAL_CTA}}", optionalCta);
+  xml = xml.replaceAll("{{OPTIONAL_VIBE}}", optionalVibe);
+  xml = xml.replaceAll("{{OPTIONAL_CAPTION}}", optionalCaption);
+
+  // Title is always "Storyline - <title>"
+  const titleDisplay = "Storyline - " + (sections.TITLE ?? "").trim();
+  xml = xml.replaceAll("{{TITLE}}", escapeXml(titleDisplay));
+
   for (const [key, value] of Object.entries(sections)) {
+    if (key === "CTA" || key === "CAPTION_IDEA" || key === "TITLE" || key === "DRESS_CODE" || key === "VIBE") continue; // already handled
     const safe = escapeXml(value ?? "");
     xml = xml.replaceAll(`{{${key}}}`, safe);
   }

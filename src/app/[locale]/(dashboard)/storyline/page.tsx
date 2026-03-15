@@ -1,5 +1,5 @@
-import StorylineGenerator from "@/components/storyline/StorylineGenerator";
+import StorylinePageLayout from "@/components/storyline/StorylinePageLayout";
 
 export default function StorylinePage() {
-  return <StorylineGenerator />;
+  return <StorylinePageLayout />;
 }

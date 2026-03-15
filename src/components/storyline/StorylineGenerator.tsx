@@ -1,191 +1,93 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Film } from "lucide-react";
-import { parseStoryline } from "@/lib/ai/storylineParser";
-import type {
-  StorylineParseResult,
-  StorylineSceneRow,
-  StorylineSections,
-} from "@/lib/ai/storylineParser";
+import type { StorylineSceneRow, StorylineSections } from "@/lib/ai/storylineParser";
+import { buildStorylinePlainText } from "@/lib/storylineExport";
+import { toast } from "@/lib/toast";
 
-const SECTION_LABEL_KEYS: Record<keyof StorylineSections, string> = {
-  TITLE: "sectionTitle",
-  SUBTITLE: "sectionSubtitle",
-  GENRE: "sectionGenre",
-  HOOK: "sectionHook",
-  VIBE: "sectionVibe",
-  CTA: "sectionCta",
-  CAPTION_IDEA: "sectionCaptionIdea",
+const TIKTOK_FIXED = "francfoil";
+
+/** Document order: Storyline title first, then table, then CTA, Caption. Extra sections in details. */
+const MAIN_SECTION_ORDER: (keyof StorylineSections)[] = [
+  "TITLE",
+  "CTA",
+  "CAPTION_IDEA",
+];
+const EXTRA_SECTION_ORDER: (keyof StorylineSections)[] = [
+  "VIBE",
+  "CTA",
+  "DRESS_CODE",
+];
+
+const EMPTY_SECTIONS: StorylineSections = {
+  TITLE: "",
+  SUBTITLE: "",
+  GENRE: "",
+  HOOK: "",
+  VIBE: "",
+  CTA: "",
+  CAPTION_IDEA: "",
+  DRESS_CODE: "",
 };
 
-type StorylineResult = {
-  success: true;
+const inputClass =
+  "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+
+export type StorylineFormData = {
   sections: StorylineSections;
   scenesTable: StorylineSceneRow[];
 };
 
-export default function StorylineGenerator() {
+type StorylineGeneratorProps = {
+  initialData?: StorylineFormData | null;
+  onDataChange?: (data: StorylineFormData) => void;
+};
+
+export default function StorylineGenerator({
+  initialData,
+  onDataChange,
+}: StorylineGeneratorProps) {
   const t = useTranslations("storyline");
-  const [brandName, setBrandName] = useState("");
-  const [productName, setProductName] = useState("");
-  const [details, setDetails] = useState("");
-  const [conditions, setConditions] = useState("");
-  const [sellingPoints, setSellingPoints] = useState("");
-  const [vibeMood, setVibeMood] = useState("");
-  const [extraNotes, setExtraNotes] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<StorylineResult | null>(null);
-  const [liveParsed, setLiveParsed] = useState<StorylineParseResult | null>(
-    null
+  const [sections, setSections] = useState<StorylineSections>(
+    () => initialData?.sections ?? { ...EMPTY_SECTIONS }
+  );
+  const [scenesTable, setScenesTable] = useState<StorylineSceneRow[]>(
+    () => initialData?.scenesTable ?? []
   );
   const [error, setError] = useState("");
 
-  const showSections = liveParsed?.sections ?? result?.sections ?? null;
-  const showScenes = liveParsed?.scenesTable ?? result?.scenesTable ?? [];
-  const isStreaming = loading && liveParsed !== null;
+  const updateSection = useCallback(
+    (key: keyof StorylineSections, value: string) => {
+      const next = { ...sections, [key]: value };
+      setSections(next);
+      onDataChange?.({ sections: next, scenesTable });
+    },
+    [sections, scenesTable, onDataChange]
+  );
 
-  const title = showSections?.TITLE ?? "";
-  const subtitle = showSections?.SUBTITLE ?? "";
-  const cta = showSections?.CTA ?? "";
-  const captionIdea = showSections?.CAPTION_IDEA ?? "";
-  const hook = showSections?.HOOK ?? "";
-  const vibe = showSections?.VIBE ?? "";
+  const updateScenesTable = useCallback(
+    (next: StorylineSceneRow[]) => {
+      setScenesTable(next);
+      onDataChange?.({ sections, scenesTable: next });
+    },
+    [sections, onDataChange]
+  );
 
-  const isFormValid = useMemo(() => {
-    return brandName.trim() && productName.trim() && details.trim();
-  }, [brandName, productName, details]);
-
-  const formatSceneCell = (row: StorylineSceneRow) => {
-    const cleaned = (row.action ?? "")
-      .trim()
-      .replace(/^\(?\s*scene\s*\d+\s*\)?\s*[:：-]?\s*/i, "")
-      .trim();
-    return cleaned ? `(Scene ${row.index}) : ${cleaned}` : `(Scene ${row.index})`;
-  };
-
-  const generate = useCallback(async () => {
-    if (!isFormValid) return;
-    setLoading(true);
+  const handleDownloadDocx = useCallback(async () => {
     setError("");
-    setResult(null);
-    setLiveParsed(null);
-
-    try {
-      const res = await fetch("/api/storyline", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          stream: true,
-          brief: {
-            brandName,
-            productName,
-            details,
-            conditions,
-            sellingPoints,
-            vibeMood,
-            extraNotes,
-          },
-        }),
-      });
-
-      const contentType = res.headers.get("Content-Type") ?? "";
-
-      if (contentType.includes("text/event-stream")) {
-        const reader = res.body?.getReader();
-        if (!reader) throw new Error("No response body");
-        const decoder = new TextDecoder();
-        let buffer = "";
-        let accumulated = "";
-        let chunkCountSinceParse = 0;
-        let lastParsedAtLen = 0;
-        const flushParse = () => {
-          if (!accumulated.trim()) return;
-          if (accumulated.length === lastParsedAtLen) return;
-          lastParsedAtLen = accumulated.length;
-          setLiveParsed(parseStoryline(accumulated));
-        };
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() ?? "";
-
-          let currentEvent = "";
-          for (const line of lines) {
-            if (line.startsWith("event: ")) {
-              currentEvent = line.slice(7).trim();
-            } else if (line.startsWith("data: ") && currentEvent) {
-              try {
-                const data = JSON.parse(line.slice(6)) as
-                  | { delta?: string }
-                  | { sections?: StorylineSections; scenesTable?: StorylineSceneRow[] }
-                  | Record<string, never>
-                  | { error?: string };
-                if (currentEvent === "delta" && "delta" in data && data.delta) {
-                  accumulated += data.delta;
-                  chunkCountSinceParse += 1;
-                  if (chunkCountSinceParse >= 3) {
-                    chunkCountSinceParse = 0;
-                    flushParse();
-                  }
-                } else if (currentEvent === "reset") {
-                  accumulated = "";
-                  setLiveParsed(null);
-                } else if (currentEvent === "done" && "sections" in data) {
-                  setResult({
-                    success: true,
-                    sections: data.sections ?? ({} as StorylineSections),
-                    scenesTable: (data as { scenesTable?: StorylineSceneRow[] }).scenesTable ?? [],
-                  });
-                  setLiveParsed(null);
-                } else if (currentEvent === "error" && "error" in data) {
-                  setError(data.error ?? "Unknown error");
-                }
-              } catch {
-                // skip malformed line
-              }
-              currentEvent = "";
-            }
-          }
-        }
-        flushParse();
-      } else {
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? "Request failed");
-        setResult(data as StorylineResult);
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Unknown error");
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    isFormValid,
-    brandName,
-    productName,
-    details,
-    conditions,
-    sellingPoints,
-    vibeMood,
-    extraNotes,
-  ]);
-
-  const handleDownload = useCallback(async () => {
-    if (!result) return;
     try {
       const res = await fetch("/api/storyline/docx", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sections: result.sections,
-          scenesTable: result.scenesTable,
+          sections,
+          scenesTable,
         }),
       });
       if (!res.ok) {
@@ -196,267 +98,306 @@ export default function StorylineGenerator() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "storyline.docx";
+      const titleForFile = (sections.TITLE ?? "").trim().replace(/[/\\:*?"<>|]/g, "").slice(0, 100);
+      a.download = titleForFile ? `storyline - ${titleForFile}.docx` : "storyline.docx";
       document.body.appendChild(a);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unknown error");
+      setError(e instanceof Error ? e.message : "Download failed");
     }
-  }, [result]);
+  }, [sections, scenesTable]);
+
+  const handleCopyText = useCallback(async () => {
+    const text = buildStorylinePlainText(sections, scenesTable);
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(t("copySuccess"));
+    } catch {
+      toast.error(t("copyError"));
+    }
+  }, [sections, scenesTable, t]);
+
+  const sectionLabelKey = (key: keyof StorylineSections) =>
+    key === "TITLE"
+      ? "sectionTitle"
+      : key === "SUBTITLE"
+        ? "sectionSubtitle"
+        : key === "GENRE"
+          ? "sectionGenre"
+          : key === "HOOK"
+            ? "sectionHook"
+            : key === "VIBE"
+              ? "sectionVibe"
+              : key === "CTA"
+                ? "sectionCta"
+                : key === "DRESS_CODE"
+                  ? "sectionDressCode"
+                  : "sectionCaptionIdea";
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
+      <Card className="overflow-hidden">
+        <CardHeader className="border-b bg-muted/20">
           <CardTitle className="flex items-center gap-2">
             <Film className="size-5" />
             {t("title")}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="storyline-brand">{t("brandLabel")}</Label>
-              <input
-                id="storyline-brand"
-                value={brandName}
-                onChange={(e) => setBrandName(e.target.value)}
-                placeholder={t("brandPlaceholder")}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="storyline-product">{t("productLabel")}</Label>
-              <input
-                id="storyline-product"
-                value={productName}
-                onChange={(e) => setProductName(e.target.value)}
-                placeholder={t("productPlaceholder")}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              />
-            </div>
-          </div>
+        <CardContent className="p-0">
+          {/* Document-style body: TikTok → Storyline → Table → CTA → Caption */}
+          <article className="bg-background">
+            {/* 1. TikTok (fixed) */}
+            <section className="border-b px-6 py-4">
+              <p className="text-sm font-medium text-muted-foreground">
+                TikTok : {TIKTOK_FIXED}
+              </p>
+            </section>
 
-          <div className="space-y-2">
-            <Label htmlFor="storyline-details">{t("detailsLabel")}</Label>
-            <textarea
-              id="storyline-details"
-              value={details}
-              onChange={(e) => setDetails(e.target.value)}
-              placeholder={t("detailsPlaceholder")}
-              rows={4}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            />
-          </div>
+            {/* 2. Storyline title */}
+            <section className="border-b px-6 py-4">
+              <Label htmlFor="storyline-TITLE" className="text-sm font-medium">
+                {t("storylineLabel")}
+              </Label>
+              <Input
+                id="storyline-TITLE"
+                value={sections.TITLE}
+                onChange={(e) => updateSection("TITLE", e.target.value)}
+                placeholder={t("sectionTitle")}
+                className={`mt-1.5 ${inputClass}`}
+              />
+            </section>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="storyline-selling-points">{t("sellingPointsLabel")}</Label>
+            {/* 3. Scenes table (Scene | Text | Soundtrack) */}
+            <section className="border-b px-6 py-4">
+              <ScenesTable
+                scenesTable={scenesTable}
+                onScenesTableChange={updateScenesTable}
+                t={t}
+              />
+            </section>
+
+            {/* 4. Caption Idea */}
+            <section className="px-6 py-4">
+              <Label
+                htmlFor="storyline-CAPTION_IDEA"
+                className="text-sm font-medium"
+              >
+                {t("sectionCaptionIdea")}
+              </Label>
               <textarea
-                id="storyline-selling-points"
-                value={sellingPoints}
-                onChange={(e) => setSellingPoints(e.target.value)}
-                placeholder={t("sellingPointsPlaceholder")}
-                rows={3}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                id="storyline-CAPTION_IDEA"
+                value={sections.CAPTION_IDEA}
+                onChange={(e) =>
+                  updateSection("CAPTION_IDEA", e.target.value)
+                }
+                placeholder={t("sectionCaptionIdea")}
+                rows={2}
+                className={`mt-1.5 ${inputClass}`}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="storyline-vibe">{t("vibeMoodLabel")}</Label>
-              <textarea
-                id="storyline-vibe"
-                value={vibeMood}
-                onChange={(e) => setVibeMood(e.target.value)}
-                placeholder={t("vibeMoodPlaceholder")}
-                rows={3}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              />
-            </div>
-          </div>
+            </section>
 
-          <div className="space-y-2">
-            <Label htmlFor="storyline-conditions">{t("conditionsLabel")}</Label>
-            <textarea
-              id="storyline-conditions"
-              value={conditions}
-              onChange={(e) => setConditions(e.target.value)}
-              placeholder={t("conditionsPlaceholder")}
-              rows={3}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="storyline-extra">{t("extraNotesLabel")}</Label>
-            <textarea
-              id="storyline-extra"
-              value={extraNotes}
-              onChange={(e) => setExtraNotes(e.target.value)}
-              placeholder={t("extraNotesPlaceholder")}
-              rows={2}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            />
-          </div>
-
-          {!isFormValid && (
-            <p className="text-sm text-muted-foreground">
-              {t("formHintRequired")}
-            </p>
-          )}
-
-          <Button onClick={generate} disabled={loading || !isFormValid}>
-            {loading ? t("generating") : t("generateButton")}
-          </Button>
+            {/* Extra sections (Subtitle, Genre, Hook, Vibe) in collapsible */}
+            <details className="border-t px-6 py-3">
+              <summary className="cursor-pointer text-sm font-medium text-muted-foreground">
+                {t("extraSections")}
+              </summary>
+              <div className="mt-4 space-y-4">
+                {EXTRA_SECTION_ORDER.map((key) => {
+                  const isShort = key === "DRESS_CODE";
+                  return (
+                    <div key={key} className="space-y-1.5">
+                      <Label htmlFor={`storyline-extra-${key}`}>
+                        {t(sectionLabelKey(key))}
+                      </Label>
+                      {isShort ? (
+                        <Input
+                          id={`storyline-extra-${key}`}
+                          value={sections[key]}
+                          onChange={(e) => updateSection(key, e.target.value)}
+                          placeholder={t(sectionLabelKey(key))}
+                          className={inputClass}
+                        />
+                      ) : (
+                        <textarea
+                          id={`storyline-extra-${key}`}
+                          value={sections[key]}
+                          onChange={(e) =>
+                            updateSection(key, e.target.value)
+                          }
+                          placeholder={t(sectionLabelKey(key))}
+                          rows={2}
+                          className={inputClass}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </details>
+          </article>
 
           {error && (
-            <p className="text-sm text-destructive" role="alert">
+            <p className="mx-6 mb-4 text-sm text-destructive" role="alert">
               {error}
             </p>
           )}
 
-          {showSections && (
-            <div className="space-y-4">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                {t("livePreview")}
-              </p>
-              {/* Document-style preview: paper look, readable typography */}
-              <article className="rounded-lg border bg-[#fafafa] dark:bg-[#1a1a1a] shadow-sm max-w-[21cm] mx-auto overflow-hidden">
-                <div className="px-8 py-10 sm:px-12 sm:py-14 min-h-160">
-                  <header className="text-center">
-                    {title && (
-                      <h2 className="text-2xl sm:text-[28px] font-bold text-foreground leading-tight">
-                        {title}
-                      </h2>
-                    )}
-                    {subtitle && (
-                      <p className="text-lg sm:text-xl font-semibold text-foreground mt-1">
-                        {subtitle}
-                      </p>
-                    )}
-                    <div className="mx-auto mt-4 h-px w-40 bg-slate-600/70 dark:bg-slate-400/60" />
-                  </header>
-
-                  {/* Scenes table */}
-                  <section className="mt-8">
-                    <div className="overflow-x-auto rounded-md border border-slate-300/80 dark:border-slate-700/80 bg-white dark:bg-[#111111]">
-                      <table className="w-full text-sm table-fixed">
-                        <thead className="bg-slate-100 dark:bg-slate-800/60">
-                          <tr>
-                            <th className="text-left font-semibold p-3 w-2/5 text-slate-700 dark:text-slate-200">
-                              {t("tableHeaderScene")}
-                            </th>
-                            <th className="text-left font-semibold p-3 w-1/5 text-slate-700 dark:text-slate-200">
-                              {t("tableHeaderText")}
-                            </th>
-                            <th className="text-left font-semibold p-3 w-2/5 text-slate-700 dark:text-slate-200">
-                              {t("tableHeaderSoundtrack")}
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(showScenes ?? []).map((row) => (
-                            <tr key={row.index} className="border-t border-slate-200 dark:border-slate-800 align-top">
-                              <td className="p-3 whitespace-pre-line text-[13px] leading-relaxed">
-                                {formatSceneCell(row)}
-                              </td>
-                              <td className="p-3 whitespace-pre-line text-[13px] leading-relaxed">
-                                {row.text}
-                              </td>
-                              <td className="p-3 whitespace-pre-line text-[13px] leading-relaxed">
-                                {row.soundtrack}
-                              </td>
-                            </tr>
-                          ))}
-                          {(!showScenes || showScenes.length === 0) && (
-                            <tr className="border-t border-slate-200 dark:border-slate-800">
-                              <td className="p-3 text-muted-foreground" colSpan={3}>
-                                {t("tableEmpty")}
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </section>
-
-                  {(cta || captionIdea) && (
-                    <section className="mt-8 space-y-4">
-                      {cta && (
-                        <div>
-                          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-                            {t(SECTION_LABEL_KEYS.CTA)}
-                          </h3>
-                          <p className="text-[14px] leading-relaxed text-foreground whitespace-pre-line">
-                            {cta}
-                          </p>
-                        </div>
-                      )}
-                      {captionIdea && (
-                        <div>
-                          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-                            {t(SECTION_LABEL_KEYS.CAPTION_IDEA)}
-                          </h3>
-                          <p className="text-[14px] leading-relaxed text-foreground whitespace-pre-line">
-                            {captionIdea}
-                          </p>
-                        </div>
-                      )}
-                    </section>
-                  )}
-
-                  {(hook || vibe) && (
-                    <section className="mt-8">
-                      <details className="rounded-md border border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-white/5 px-4 py-3">
-                        <summary className="cursor-pointer text-sm font-medium text-foreground">
-                          {t("sectionHook")} / {t("sectionVibe")}
-                        </summary>
-                        <div className="mt-3 space-y-4">
-                          {hook && (
-                            <div>
-                              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-                                {t(SECTION_LABEL_KEYS.HOOK)}
-                              </h3>
-                              <p className="text-[14px] leading-relaxed text-foreground whitespace-pre-line">
-                                {hook}
-                              </p>
-                            </div>
-                          )}
-                          {vibe && (
-                            <div>
-                              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-                                {t(SECTION_LABEL_KEYS.VIBE)}
-                              </h3>
-                              <p className="text-[14px] leading-relaxed text-foreground whitespace-pre-line">
-                                {vibe}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      </details>
-                    </section>
-                  )}
-
-                  {isStreaming && (
-                    <span className="inline-block w-2 h-4 bg-primary animate-pulse ml-0.5 align-baseline" />
-                  )}
-                </div>
-              </article>
-
-              {result && (
-                <button
-                  type="button"
-                  onClick={handleDownload}
-                  className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground h-9 px-4 py-2 hover:bg-primary/90"
-                >
-                  {t("downloadDocx")}
-                </button>
-              )}
-            </div>
-          )}
+          <div className="flex flex-wrap gap-2 border-t bg-muted/10 px-6 py-4">
+            <Button onClick={handleDownloadDocx}>{t("downloadDocx")}</Button>
+            <Button variant="outline" onClick={handleCopyText}>
+              {t("copyAsText")}
+            </Button>
+          </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+type ScenesTableProps = {
+  scenesTable: StorylineSceneRow[];
+  onScenesTableChange: (next: StorylineSceneRow[]) => void;
+  t: (key: string) => string;
+};
+
+function ScenesTable({
+  scenesTable,
+  onScenesTableChange,
+  t,
+}: ScenesTableProps) {
+  const addRow = useCallback(() => {
+    const nextIndex =
+      scenesTable.length > 0
+        ? Math.max(...scenesTable.map((r) => r.index)) + 1
+        : 1;
+    onScenesTableChange([
+      ...scenesTable,
+      { index: nextIndex, action: "", text: "", soundtrack: "" },
+    ]);
+  }, [scenesTable, onScenesTableChange]);
+
+  const removeRow = useCallback(
+    (index: number) => {
+      onScenesTableChange(
+        scenesTable.filter((r) => r.index !== index).map((r, i) => ({ ...r, index: i + 1 }))
+      );
+    },
+    [scenesTable, onScenesTableChange]
+  );
+
+  const updateRow = useCallback(
+    (index: number, field: keyof StorylineSceneRow, value: string | number) => {
+      onScenesTableChange(
+        scenesTable.map((r) =>
+          r.index === index ? { ...r, [field]: value } : r
+        )
+      );
+    },
+    [scenesTable, onScenesTableChange]
+  );
+
+  const inputClass =
+    "w-full min-w-0 rounded border border-input bg-background px-2 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <Label>{t("scenesTableTitle")}</Label>
+        <Button type="button" variant="outline" size="sm" onClick={addRow}>
+          {t("addScene")}
+        </Button>
+      </div>
+      <div className="overflow-x-auto rounded-md border border-slate-300/80 dark:border-slate-700/80 bg-white dark:bg-[#111111]">
+        <table className="w-full text-sm table-fixed">
+          <thead className="bg-slate-100 dark:bg-slate-800/60">
+            <tr>
+              <th className="text-left font-semibold p-2 w-2/5 text-slate-700 dark:text-slate-200">
+                {t("tableHeaderScene")}
+              </th>
+              <th className="text-left font-semibold p-2 w-1/5 text-slate-700 dark:text-slate-200">
+                {t("tableHeaderText")}
+              </th>
+              <th className="text-left font-semibold p-2 w-2/5 text-slate-700 dark:text-slate-200">
+                {t("tableHeaderSoundtrack")}
+              </th>
+              <th className="w-16" />
+            </tr>
+          </thead>
+          <tbody>
+            {scenesTable.length === 0 ? (
+              <tr className="border-t border-slate-200 dark:border-slate-800">
+                <td
+                  className="p-3 text-muted-foreground text-center"
+                  colSpan={4}
+                >
+                  {t("tableEmpty")}
+                </td>
+              </tr>
+            ) : (
+              [...scenesTable]
+                .sort((a, b) => a.index - b.index)
+                .map((row) => (
+                  <tr
+                    key={row.index}
+                    className="border-t border-slate-200 dark:border-slate-800 align-top"
+                  >
+                    <td className="p-2">
+                      <div className="flex items-start gap-1">
+                        <span className="shrink-0 text-muted-foreground">
+                          (Scene {row.index}) :
+                        </span>
+                        <textarea
+                          value={row.action}
+                          onChange={(e) =>
+                            updateRow(row.index, "action", e.target.value)
+                          }
+                          placeholder={t("tableHeaderScene")}
+                          rows={2}
+                          className={`min-w-0 flex-1 ${inputClass}`}
+                        />
+                      </div>
+                    </td>
+                    <td className="p-2">
+                      <textarea
+                        value={row.text}
+                        onChange={(e) =>
+                          updateRow(row.index, "text", e.target.value)
+                        }
+                        placeholder={t("tableHeaderText")}
+                        rows={2}
+                        className={inputClass}
+                      />
+                    </td>
+                    <td className="p-2">
+                      <textarea
+                        value={row.soundtrack}
+                        onChange={(e) =>
+                          updateRow(row.index, "soundtrack", e.target.value)
+                        }
+                        placeholder={t("tableHeaderSoundtrack")}
+                        rows={2}
+                        className={inputClass}
+                      />
+                    </td>
+                    <td className="p-2 align-middle">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeRow(row.index)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        {t("removeScene")}
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

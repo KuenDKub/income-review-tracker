@@ -6,6 +6,7 @@ export type StorylineSections = {
   VIBE: string;
   CTA: string;
   CAPTION_IDEA: string;
+  DRESS_CODE: string;
 };
 
 export type StorylineSceneRow = {
@@ -29,6 +30,7 @@ const SECTION_KEYS: (keyof StorylineSections | "SCENES")[] = [
   "VIBE",
   "CTA",
   "CAPTION_IDEA",
+  "DRESS_CODE",
   "SCENES",
 ];
 
@@ -40,6 +42,7 @@ const EMPTY_SECTIONS: StorylineSections = {
   VIBE: "",
   CTA: "",
   CAPTION_IDEA: "",
+  DRESS_CODE: "",
 };
 
 function parseScenesBlock(block: string): StorylineSceneRow[] {

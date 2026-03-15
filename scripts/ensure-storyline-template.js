@@ -11,7 +11,7 @@ const AdmZip = require("adm-zip");
 const path = require("path");
 const fs = require("fs");
 
-const PLACEHOLDERS = ["TITLE", "SUBTITLE", "CTA", "CAPTION_IDEA"];
+const PLACEHOLDERS = ["TITLE", "CTA", "CAPTION_IDEA"];
 
 // Clean-gray theme (slate accent). Word expects hex without '#'.
 const COLORS = {
@@ -61,7 +61,7 @@ const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
     <w:basedOn w:val="Normal"/>
     <w:qFormat/>
     <w:pPr>
-      <w:spacing w:after="120"/>
+      <w:spacing w:after="60"/>
     </w:pPr>
     <w:rPr>
       <w:b/>
@@ -69,22 +69,6 @@ const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
       <w:color w:val="${COLORS.text}"/>
       <w:sz w:val="32"/>
       <w:szCs w:val="32"/>
-    </w:rPr>
-  </w:style>
-
-  <w:style w:type="paragraph" w:styleId="Subtitle">
-    <w:name w:val="Subtitle"/>
-    <w:basedOn w:val="Normal"/>
-    <w:qFormat/>
-    <w:pPr>
-      <w:spacing w:after="200"/>
-    </w:pPr>
-    <w:rPr>
-      <w:b/>
-      <w:bCs/>
-      <w:color w:val="${COLORS.text}"/>
-      <w:sz w:val="28"/>
-      <w:szCs w:val="28"/>
     </w:rPr>
   </w:style>
 
@@ -111,25 +95,27 @@ const settingsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 </w:settings>`;
 
 function buildDocumentXml() {
+  const tikTokLine = `    <w:p>
+      <w:pPr><w:pStyle w:val="MetaLabel"/><w:jc w:val="center"/><w:spacing w:after="80"/></w:pPr>
+      <w:r><w:rPr><w:b/><w:bCs/><w:color w:val="${COLORS.muted}"/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr><w:t>TikTok : francfoil</w:t></w:r>
+    </w:p>`;
+
   const title = `    <w:p>
       <w:pPr><w:pStyle w:val="Title"/><w:jc w:val="center"/></w:pPr>
       <w:r><w:t>{{TITLE}}</w:t></w:r>
     </w:p>`;
 
-  const subtitle = `    <w:p>
-      <w:pPr><w:pStyle w:val="Subtitle"/><w:jc w:val="center"/></w:pPr>
-      <w:r><w:t>{{SUBTITLE}}</w:t></w:r>
-    </w:p>`;
-
-  // Thin accent divider under the subtitle (keep a space so the border renders).
   const divider = `    <w:p>
       <w:pPr>
         <w:jc w:val="center"/>
         <w:pBdr><w:bottom w:val="single" w:sz="8" w:space="6" w:color="${COLORS.accent}"/></w:pBdr>
-        <w:spacing w:after="260"/>
+        <w:spacing w:before="0" w:after="120"/>
       </w:pPr>
       <w:r><w:t xml:space="preserve"> </w:t></w:r>
     </w:p>`;
+
+  // Optional: Dress code (after title, before table)
+  const optionalDressCodePlaceholder = `{{OPTIONAL_DRESS_CODE}}`;
 
   const tableHeader = `
     <w:tbl>
@@ -197,17 +183,10 @@ function buildDocumentXml() {
 
   const afterTableSpacing = `    <w:p><w:pPr><w:spacing w:before="240" w:after="120"/></w:pPr><w:r><w:t xml:space="preserve"> </w:t></w:r></w:p>`;
 
-  const ctaLabel = `    <w:p>
-      <w:pPr><w:pStyle w:val="MetaLabel"/></w:pPr>
-      <w:r><w:t>CTA</w:t></w:r>
-    </w:p>`;
-  const cta = `    <w:p><w:pPr><w:spacing w:after="160"/></w:pPr><w:r><w:t>{{CTA}}</w:t></w:r></w:p>`;
-
-  const captionLabel = `    <w:p>
-      <w:pPr><w:pStyle w:val="MetaLabel"/></w:pPr>
-      <w:r><w:t>CAPTION IDEA</w:t></w:r>
-    </w:p>`;
-  const caption = `    <w:p><w:pPr><w:spacing w:after="0"/></w:pPr><w:r><w:t>{{CAPTION_IDEA}}</w:t></w:r></w:p>`;
+  // Optional blocks: replaced by writer with full block or empty when section has no content
+  const optionalCtaPlaceholder = `{{OPTIONAL_CTA}}`;
+  const optionalVibePlaceholder = `{{OPTIONAL_VIBE}}`;
+  const optionalCaptionPlaceholder = `{{OPTIONAL_CAPTION}}`;
 
   const sectPr = `    <w:sectPr>
       <w:pgSz w:w="11906" w:h="16838"/>
@@ -217,21 +196,25 @@ function buildDocumentXml() {
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <w:body>
+${tikTokLine}
 ${title}
-${subtitle}
 ${divider}
+${optionalDressCodePlaceholder}
+${optionalVibePlaceholder}
 ${tableHeader}
 ${afterTableSpacing}
-${ctaLabel}
-${cta}
-${captionLabel}
-${caption}
+${optionalCtaPlaceholder}
+${optionalCaptionPlaceholder}
 ${sectPr}
   </w:body>
 </w:document>`;
 }
 
-const outPath = path.join(process.cwd(), "templates", "storyline_template.docx");
+const outPath = path.join(
+  process.cwd(),
+  "templates",
+  "storyline_template.docx",
+);
 const dir = path.dirname(outPath);
 if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
