@@ -35,6 +35,7 @@ const STATUS_KEYS: Record<string, string> = {
   in_progress: "statusInProgress",
   waiting_edit: "statusWaitingEdit",
   waiting_review: "statusWaitingReview",
+  approved_waiting_to_publish: "statusApprovedWaitingToPublish",
   approved_pending: "statusApprovedPending",
   paid: "statusPaid",
 };
@@ -480,11 +481,11 @@ export function JobFormFields({
                     {t("taxResult", {
                       tax: computeWithholdingAndNet(
                         amountValue,
-                        withholdingRateValue
+                        withholdingRateValue,
                       ).withholdingAmount.toLocaleString("th-TH"),
                       net: computeWithholdingAndNet(
                         amountValue,
-                        withholdingRateValue
+                        withholdingRateValue,
                       ).netAmount.toLocaleString("th-TH"),
                     })}
                   </p>

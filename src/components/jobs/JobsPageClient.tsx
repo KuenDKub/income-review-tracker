@@ -20,7 +20,10 @@ import {
 } from "@/components/ui/select";
 import { JobList, type JobItem } from "./JobList";
 import { JobForm } from "./JobForm";
-import { reviewJobCreateSchema, REVIEW_JOB_STATUSES } from "@/lib/schemas/reviewJob";
+import {
+  reviewJobCreateSchema,
+  REVIEW_JOB_STATUSES,
+} from "@/lib/schemas/reviewJob";
 import type { ReviewJobStatus } from "@/lib/schemas/reviewJob";
 import { ConfirmDeleteDialog } from "@/components/ui/ConfirmDeleteDialog";
 import { toast } from "@/lib/toast";
@@ -104,37 +107,89 @@ function JobsListSkeleton() {
               <TableHead className="w-[40px]">
                 <Skeleton className="h-4 w-4" />
               </TableHead>
-              <TableHead><Skeleton className="h-4 w-24" /></TableHead>
-              <TableHead><Skeleton className="h-4 w-16" /></TableHead>
-              <TableHead><Skeleton className="h-4 w-20" /></TableHead>
-              <TableHead><Skeleton className="h-4 w-14" /></TableHead>
-              <TableHead><Skeleton className="h-4 w-20" /></TableHead>
-              <TableHead><Skeleton className="h-4 w-24" /></TableHead>
-              <TableHead><Skeleton className="h-4 w-24" /></TableHead>
-              <TableHead><Skeleton className="h-4 w-20" /></TableHead>
-              <TableHead><Skeleton className="h-4 w-24" /></TableHead>
-              <TableHead className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableHead>
-              <TableHead className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableHead>
-              <TableHead className="text-right w-[140px]"><Skeleton className="h-4 w-14 ml-auto" /></TableHead>
+              <TableHead>
+                <Skeleton className="h-4 w-24" />
+              </TableHead>
+              <TableHead>
+                <Skeleton className="h-4 w-16" />
+              </TableHead>
+              <TableHead>
+                <Skeleton className="h-4 w-20" />
+              </TableHead>
+              <TableHead>
+                <Skeleton className="h-4 w-14" />
+              </TableHead>
+              <TableHead>
+                <Skeleton className="h-4 w-20" />
+              </TableHead>
+              <TableHead>
+                <Skeleton className="h-4 w-24" />
+              </TableHead>
+              <TableHead>
+                <Skeleton className="h-4 w-24" />
+              </TableHead>
+              <TableHead>
+                <Skeleton className="h-4 w-20" />
+              </TableHead>
+              <TableHead>
+                <Skeleton className="h-4 w-24" />
+              </TableHead>
+              <TableHead className="text-right">
+                <Skeleton className="h-4 w-16 ml-auto" />
+              </TableHead>
+              <TableHead className="text-right">
+                <Skeleton className="h-4 w-16 ml-auto" />
+              </TableHead>
+              <TableHead className="text-right w-[140px]">
+                <Skeleton className="h-4 w-14 ml-auto" />
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {Array.from({ length: rows }).map((_, i) => (
               <TableRow key={i}>
-                <TableCell><Skeleton className="h-4 w-4" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-full max-w-[200px]" /></TableCell>
-                <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
-                <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
-                <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-4" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-full max-w-[200px]" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-5 w-16" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-20" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-24" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-5 w-16" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-20" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-20" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-20" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-20" />
+                </TableCell>
+                <TableCell>
+                  <Skeleton className="h-4 w-20" />
+                </TableCell>
+                <TableCell className="text-right">
+                  <Skeleton className="h-4 w-16 ml-auto" />
+                </TableCell>
+                <TableCell className="text-right">
+                  <Skeleton className="h-4 w-16 ml-auto" />
+                </TableCell>
+                <TableCell className="text-right">
+                  <Skeleton className="h-8 w-20 ml-auto" />
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -152,6 +207,7 @@ const STATUS_KEYS: Record<string, string> = {
   in_progress: "statusInProgress",
   waiting_edit: "statusWaitingEdit",
   waiting_review: "statusWaitingReview",
+  approved_waiting_to_publish: "statusApprovedWaitingToPublish",
   approved_pending: "statusApprovedPending",
   paid: "statusPaid",
 };
@@ -176,7 +232,12 @@ type ReviewJobJson = {
   isBrotherJob?: boolean;
 };
 
-type Paginated<T> = { data: T[]; total: number; page: number; pageSize: number };
+type Paginated<T> = {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
 
 export function JobsPageClient() {
   const t = useTranslations("jobs");
@@ -198,7 +259,9 @@ export function JobsPageClient() {
   const [total, setTotal] = useState(0);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
-  const [existingEvidenceImages, setExistingEvidenceImages] = useState<Array<{ id: string; url: string }>>([]);
+  const [existingEvidenceImages, setExistingEvidenceImages] = useState<
+    Array<{ id: string; url: string }>
+  >([]);
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -209,7 +272,8 @@ export function JobsPageClient() {
       if (payerNameFilter.trim()) qs.set("payerName", payerNameFilter.trim());
       if (platform.trim()) qs.set("platform", platform.trim());
       if (contentType.trim()) qs.set("contentType", contentType.trim());
-      if (statusFilter && statusFilter !== STATUS_FILTER_ALL) qs.set("status", statusFilter);
+      if (statusFilter && statusFilter !== STATUS_FILTER_ALL)
+        qs.set("status", statusFilter);
       const res = await fetch(`/api/jobs?${qs.toString()}`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? t("loadingError"));
@@ -218,7 +282,16 @@ export function JobsPageClient() {
       toast.error(t("loadingError"), String(e));
       return { data: [], total: 0, page, pageSize } as Paginated<ReviewJobJson>;
     }
-  }, [page, pageSize, search, payerNameFilter, platform, contentType, statusFilter, t]);
+  }, [
+    page,
+    pageSize,
+    search,
+    payerNameFilter,
+    platform,
+    contentType,
+    statusFilter,
+    t,
+  ]);
 
   const fetchPayerNames = useCallback(async () => {
     try {
@@ -233,7 +306,10 @@ export function JobsPageClient() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [jobsData, namesData] = await Promise.all([fetchJobs(), fetchPayerNames()]);
+    const [jobsData, namesData] = await Promise.all([
+      fetchJobs(),
+      fetchPayerNames(),
+    ]);
     setJobs(
       (jobsData.data ?? []).map((j) => ({
         id: j.id,
@@ -251,7 +327,7 @@ export function JobsPageClient() {
         netAmount: j.netAmount ?? undefined,
         withholdingRate: j.withholdingRate ?? undefined,
         isBrotherJob: j.isBrotherJob ?? false,
-      }))
+      })),
     );
     setTotal(jobsData.total ?? 0);
     setSelectedIds(new Set());
@@ -279,7 +355,9 @@ export function JobsPageClient() {
     setDeleteId(id);
   };
 
-  const handleDialogSubmit = async (data: z.infer<typeof reviewJobCreateSchema>) => {
+  const handleDialogSubmit = async (
+    data: z.infer<typeof reviewJobCreateSchema>,
+  ) => {
     try {
       let jobId: string;
       if (editingId) {
@@ -353,7 +431,9 @@ export function JobsPageClient() {
     }
   };
 
-  const [editDefaultValues, setEditDefaultValues] = useState<Partial<z.infer<typeof reviewJobCreateSchema>> | undefined>(undefined);
+  const [editDefaultValues, setEditDefaultValues] = useState<
+    Partial<z.infer<typeof reviewJobCreateSchema>> | undefined
+  >(undefined);
 
   useEffect(() => {
     if (!dialogOpen || !editingId) {
@@ -366,12 +446,16 @@ export function JobsPageClient() {
     Promise.all([
       fetch(`/api/jobs/${editingId}`).then((r) => r.json()),
       fetch(`/api/documents?reviewJobId=${editingId}`).then((r) => r.json()),
-      fetch(`/api/income?reviewJobId=${editingId}&pageSize=1`).then((r) => r.json()),
+      fetch(`/api/income?reviewJobId=${editingId}&pageSize=1`).then((r) =>
+        r.json(),
+      ),
     ])
       .then(([jobJson, docsJson, incomeJson]) => {
         if (cancelled || !jobJson.data) return;
         const d = jobJson.data as ReviewJobJson;
-        const status: ReviewJobStatus = REVIEW_JOB_STATUSES.includes(d.status as ReviewJobStatus)
+        const status: ReviewJobStatus = REVIEW_JOB_STATUSES.includes(
+          d.status as ReviewJobStatus,
+        )
           ? (d.status as ReviewJobStatus)
           : "received";
         const incomeList = (incomeJson?.data ?? []) as Array<{
@@ -381,27 +465,26 @@ export function JobsPageClient() {
         }>;
         const firstIncome = incomeList[0];
         const isBrotherJob = d.isBrotherJob === true;
-        const incomeDefaults =
-          isBrotherJob
-            ? { isBrotherJob: true as const }
-            : firstIncome &&
+        const incomeDefaults = isBrotherJob
+          ? { isBrotherJob: true as const }
+          : firstIncome &&
               (firstIncome.grossAmount > 0 || firstIncome.netAmount > 0)
-              ? firstIncome.withholdingAmount > 0
-                ? {
-                    hasWithholdingTax: true as const,
-                    amount: firstIncome.grossAmount,
-                    withholdingRate:
-                      firstIncome.grossAmount > 0
-                        ? (firstIncome.withholdingAmount /
-                            firstIncome.grossAmount) *
-                          100
-                        : 3,
-                  }
-                : {
-                    hasWithholdingTax: false as const,
-                    amount: firstIncome.grossAmount,
-                  }
-              : { hasWithholdingTax: false as const };
+            ? firstIncome.withholdingAmount > 0
+              ? {
+                  hasWithholdingTax: true as const,
+                  amount: firstIncome.grossAmount,
+                  withholdingRate:
+                    firstIncome.grossAmount > 0
+                      ? (firstIncome.withholdingAmount /
+                          firstIncome.grossAmount) *
+                        100
+                      : 3,
+                }
+              : {
+                  hasWithholdingTax: false as const,
+                  amount: firstIncome.grossAmount,
+                }
+            : { hasWithholdingTax: false as const };
         setEditDefaultValues({
           payerName: d.payerName ?? "",
           status,
@@ -416,21 +499,27 @@ export function JobsPageClient() {
           notes: d.notes,
           ...incomeDefaults,
         });
-        const docs = (docsJson.data ?? []) as Array<{ id: string; filePath: string }>;
+        const docs = (docsJson.data ?? []) as Array<{
+          id: string;
+          filePath: string;
+        }>;
         setExistingEvidenceImages(
           docs
             .filter((doc) => doc.filePath)
-            .map((doc) => ({ id: doc.id, url: doc.filePath }))
+            .map((doc) => ({ id: doc.id, url: doc.filePath })),
         );
       })
       .catch(() => {
         setEditDefaultValues(undefined);
         setExistingEvidenceImages([]);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [dialogOpen, editingId]);
 
-  const showForm = dialogOpen && (editingId === null || editDefaultValues !== undefined);
+  const showForm =
+    dialogOpen && (editingId === null || editDefaultValues !== undefined);
 
   return (
     <div className="space-y-6">
@@ -471,7 +560,9 @@ export function JobsPageClient() {
                   <SelectValue placeholder={t("allStatuses")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={STATUS_FILTER_ALL}>{t("allStatuses")}</SelectItem>
+                  <SelectItem value={STATUS_FILTER_ALL}>
+                    {t("allStatuses")}
+                  </SelectItem>
                   {REVIEW_JOB_STATUSES.map((s) => (
                     <SelectItem key={s} value={s}>
                       {t(STATUS_KEYS[s] ?? "statusReceived")}
@@ -497,7 +588,12 @@ export function JobsPageClient() {
               />
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:justify-end">
-              <Button type="button" variant="outline" disabled className="w-full sm:w-auto">
+              <Button
+                type="button"
+                variant="outline"
+                disabled
+                className="w-full sm:w-auto"
+              >
                 <Download className="mr-2 h-4 w-4" />
                 {tCommon("export")}
               </Button>
@@ -537,7 +633,8 @@ export function JobsPageClient() {
               }}
               onToggleAllSelected={() => {
                 setSelectedIds((prev) => {
-                  const allSelected = jobs.length > 0 && jobs.every((j) => prev.has(j.id));
+                  const allSelected =
+                    jobs.length > 0 && jobs.every((j) => prev.has(j.id));
                   if (allSelected) return new Set();
                   return new Set(jobs.map((j) => j.id));
                 });
@@ -563,7 +660,9 @@ export function JobsPageClient() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingId ? t("editJob") : t("createJob")}</DialogTitle>
+            <DialogTitle>
+              {editingId ? t("editJob") : t("createJob")}
+            </DialogTitle>
           </DialogHeader>
           {showForm ? (
             <JobForm
@@ -577,9 +676,13 @@ export function JobsPageClient() {
               existingEvidenceImages={existingEvidenceImages}
               onRemoveExistingEvidence={async (docId) => {
                 try {
-                  const res = await fetch(`/api/documents/${docId}`, { method: "DELETE" });
+                  const res = await fetch(`/api/documents/${docId}`, {
+                    method: "DELETE",
+                  });
                   if (!res.ok) throw new Error(t("deleteDocError"));
-                  setExistingEvidenceImages((prev) => prev.filter((img) => img.id !== docId));
+                  setExistingEvidenceImages((prev) =>
+                    prev.filter((img) => img.id !== docId),
+                  );
                   toast.success(t("removeImageSuccess"));
                 } catch (e) {
                   toast.error(t("removeImageError"), String(e));

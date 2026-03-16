@@ -52,8 +52,10 @@ const STATUS_COLUMN_CLASS: Record<string, string> = {
     "bg-rose-50 text-rose-800 dark:bg-rose-950/40 dark:text-rose-200 border-rose-200 dark:border-rose-700",
   waiting_review:
     "bg-violet-50 text-violet-800 dark:bg-violet-950/40 dark:text-violet-200 border-violet-200 dark:border-violet-700",
-  approved_pending:
+  approved_waiting_to_publish:
     "bg-teal-50 text-teal-800 dark:bg-teal-950/40 dark:text-teal-200 border-teal-200 dark:border-teal-700",
+  approved_pending:
+    "bg-teal-100 text-teal-900 dark:bg-teal-900/45 dark:text-teal-100 border-teal-300 dark:border-teal-700",
   paid: "bg-green-50 text-green-800 dark:bg-green-950/40 dark:text-green-200 border-green-200 dark:border-green-700",
 };
 
@@ -63,6 +65,7 @@ const STATUS_KEYS: Record<string, string> = {
   in_progress: "statusInProgress",
   waiting_edit: "statusWaitingEdit",
   waiting_review: "statusWaitingReview",
+  approved_waiting_to_publish: "statusApprovedWaitingToPublish",
   approved_pending: "statusApprovedPending",
   paid: "statusPaid",
 };

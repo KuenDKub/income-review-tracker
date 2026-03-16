@@ -9,6 +9,8 @@ export const STATUS_BADGE_CLASS: Record<string, string> = {
     "bg-rose-200 text-rose-900 dark:bg-rose-900/50 dark:text-rose-200 border-rose-400 dark:border-rose-600",
   waiting_review:
     "bg-violet-200 text-violet-900 dark:bg-violet-900/50 dark:text-violet-200 border-violet-400 dark:border-violet-600",
+  approved_waiting_to_publish:
+    "bg-teal-100 text-teal-900 dark:bg-teal-900/40 dark:text-teal-100 border-teal-300 dark:border-teal-700",
   approved_pending:
     "bg-teal-200 text-teal-900 dark:bg-teal-900/50 dark:text-teal-200 border-teal-400 dark:border-teal-600",
   paid: "bg-green-300 text-green-900 dark:bg-green-800/60 dark:text-green-100 border-green-500 dark:border-green-600",

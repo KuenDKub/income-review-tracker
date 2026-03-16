@@ -6,6 +6,7 @@ export const REVIEW_JOB_STATUSES = [
   "in_progress",
   "waiting_edit",
   "waiting_review",
+  "approved_waiting_to_publish",
   "approved_pending",
   "paid",
 ] as const;
@@ -41,7 +42,8 @@ export const reviewJobSchema = reviewJobBaseSchema.superRefine((data, ctx) => {
     if (data.amount == null || data.amount === undefined || data.amount <= 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Gross amount (full price) is required when withholding tax is applied",
+        message:
+          "Gross amount (full price) is required when withholding tax is applied",
         path: ["amount"],
       });
     }
@@ -71,7 +73,8 @@ export const reviewJobSchema = reviewJobBaseSchema.superRefine((data, ctx) => {
   if (publish && minPublish && publish < minPublish) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Publish date must be on or after review deadline / received date",
+      message:
+        "Publish date must be on or after review deadline / received date",
       path: ["publishDate"],
     });
   }
@@ -79,7 +82,8 @@ export const reviewJobSchema = reviewJobBaseSchema.superRefine((data, ctx) => {
   if (payment && minPayment && payment < minPayment) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Payment date must be on or after publish / review / received date",
+      message:
+        "Payment date must be on or after publish / review / received date",
       path: ["paymentDate"],
     });
   }

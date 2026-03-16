@@ -28,6 +28,7 @@ const STATUS_KEYS: Record<string, string> = {
   in_progress: "statusInProgress",
   waiting_edit: "statusWaitingEdit",
   waiting_review: "statusWaitingReview",
+  approved_waiting_to_publish: "statusApprovedWaitingToPublish",
   approved_pending: "statusApprovedPending",
   paid: "statusPaid",
 };

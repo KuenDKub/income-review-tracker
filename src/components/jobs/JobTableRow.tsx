@@ -24,6 +24,7 @@ const STATUS_KEYS: Record<string, string> = {
   in_progress: "statusInProgress",
   waiting_edit: "statusWaitingEdit",
   waiting_review: "statusWaitingReview",
+  approved_waiting_to_publish: "statusApprovedWaitingToPublish",
   approved_pending: "statusApprovedPending",
   paid: "statusPaid",
 };
@@ -120,7 +121,9 @@ export function JobTableRow({
       ) : (
         <>
           <TableCell className="text-right tabular-nums text-xs">
-            {job.grossAmount != null ? `${formatTHB(job.grossAmount)} THB` : "—"}
+            {job.grossAmount != null
+              ? `${formatTHB(job.grossAmount)} THB`
+              : "—"}
           </TableCell>
           <TableCell className="text-right tabular-nums text-xs">
             {job.netAmount != null
