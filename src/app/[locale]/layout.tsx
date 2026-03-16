@@ -11,6 +11,7 @@ import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Footer } from "@/components/layout/Footer";
 import { LocaleSwitcher } from "@/components/layout/LocaleSwitcher";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 type Props = {
   children: React.ReactNode;
@@ -41,21 +42,23 @@ export default async function LocaleLayout({ children, params }: Props) {
 
   return (
     <NextIntlClientProvider messages={messages}>
-      <div className="flex min-h-screen flex-col">
-        <Header title={t("title")} navLabels={navLabels} />
-        <div className="flex flex-1">
-          <Sidebar labels={navLabels} />
-          <main className="flex min-w-0 flex-1 flex-col p-4 sm:p-6">
-            <div className="mb-4 flex shrink-0 justify-end">
-              <LocaleSwitcher />
-            </div>
-            <div className="min-h-0 flex-1 flex flex-col">
-              {children}
-            </div>
-          </main>
+      <NuqsAdapter>
+        <div className="flex min-h-screen flex-col">
+          <Header title={t("title")} navLabels={navLabels} />
+          <div className="flex flex-1">
+            <Sidebar labels={navLabels} />
+            <main className="flex min-w-0 flex-1 flex-col p-4 sm:p-6">
+              <div className="mb-4 flex shrink-0 justify-end">
+                <LocaleSwitcher />
+              </div>
+              <div className="min-h-0 flex-1 flex flex-col">
+                {children}
+              </div>
+            </main>
+          </div>
+          <Footer />
         </div>
-        <Footer />
-      </div>
+      </NuqsAdapter>
     </NextIntlClientProvider>
   );
 }

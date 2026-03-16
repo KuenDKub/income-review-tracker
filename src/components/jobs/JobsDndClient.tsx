@@ -39,6 +39,15 @@ import { cn } from "@/lib/utils";
 import {
   DEFAULT_STATUS_BADGE_CLASS,
 } from "./statusBadge";
+import { formatTHB } from "@/lib/currency";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { parseAsInteger, useQueryState } from "nuqs";
 
 /** Softer column colors for DnD board (lighter than badge) */
 const STATUS_COLUMN_CLASS: Record<string, string> = {
@@ -119,7 +128,7 @@ function JobCard({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "mb-2 cursor-grab active:cursor-grabbing transition-shadow",
+        "mb-2 cursor-grab py-2 px-2 active:cursor-grabbing transition-shadow",
         dragging && "opacity-50 shadow-lg"
       )}
     >
@@ -143,8 +152,13 @@ function JobCard({
             {job.payerName && (
               <p className="text-xs text-muted-foreground">{job.payerName}</p>
             )}
+            {job.netAmount != null && (
+              <p className="text-xs font-medium text-foreground">
+                Budget: {formatTHB(job.netAmount)} THB
+              </p>
+            )}
             <PlatformBadges platforms={job.platforms ?? []} className="gap-1" />
-            <p className="text-xs">{job.contentType || "—"}</p>
+            {/* <p className="text-xs">{job.contentType || "—"}</p> */}
             <div className="flex flex-wrap gap-x-3 gap-y-0 text-xs text-muted-foreground">
               {job.reviewDeadline && (
                 <span>
@@ -247,6 +261,10 @@ export function JobsDndClient() {
   const tCommon = useTranslations("common");
   const [jobs, setJobs] = useState<JobItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [monthsQuery, setMonthsQuery] = useQueryState(
+    "months",
+    parseAsInteger.withDefault(3)
+  );
   const [paidDialogOpen, setPaidDialogOpen] = useState(false);
   const [paidDialogSaving, setPaidDialogSaving] = useState(false);
   const [pendingPaidJob, setPendingPaidJob] = useState<JobItem | null>(null);
@@ -275,39 +293,45 @@ export function JobsDndClient() {
     useSensor(KeyboardSensor)
   );
 
-  const fetchJobs = useCallback(async () => {
-    try {
-      const res = await fetch("/api/jobs/board");
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? t("loadingError"));
-      const data = (json.data ?? []) as JobItem[];
-      setJobs(
-        data.map((j) => ({
-          id: j.id,
-          title: j.title,
-          platforms: j.platforms || [],
-          contentType: j.contentType,
-          payerName: j.payerName ?? null,
-          status: j.status,
-          receivedDate: j.receivedDate ?? null,
-          reviewDeadline: j.reviewDeadline ?? null,
-          publishDate: j.publishDate ?? null,
-          paymentDate: j.paymentDate ?? null,
-          grossAmount: j.grossAmount ?? null,
-          netAmount: j.netAmount ?? null,
-        }))
-      );
-    } catch (e) {
-      toast.error(t("loadingError"), String(e));
-      setJobs([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
+  const fetchJobs = useCallback(
+    async (months: number) => {
+      try {
+        const search =
+          Number.isFinite(months) && months > 0 ? `?months=${months}` : "";
+        const res = await fetch(`/api/jobs/board${search}`);
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error ?? t("loadingError"));
+        const data = (json.data ?? []) as JobItem[];
+        setJobs(
+          data.map((j) => ({
+            id: j.id,
+            title: j.title,
+            platforms: j.platforms || [],
+            contentType: j.contentType,
+            payerName: j.payerName ?? null,
+            status: j.status,
+            receivedDate: j.receivedDate ?? null,
+            reviewDeadline: j.reviewDeadline ?? null,
+            publishDate: j.publishDate ?? null,
+            paymentDate: j.paymentDate ?? null,
+            grossAmount: j.grossAmount ?? null,
+            netAmount: j.netAmount ?? null,
+          }))
+        );
+      } catch (e) {
+        toast.error(t("loadingError"), String(e));
+        setJobs([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [t]
+  );
 
   useEffect(() => {
-    fetchJobs();
-  }, [fetchJobs]);
+    setLoading(true);
+    fetchJobs(monthsQuery ?? 3);
+  }, [fetchJobs, monthsQuery]);
 
   const resetPaidDialogState = useCallback(() => {
     setPaidDialogSaving(false);
@@ -477,9 +501,37 @@ export function JobsDndClient() {
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-semibold sm:text-2xl">{t("boardTitle")}</h1>
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/jobs">{t("title")}</Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/jobs">{t("title")}</Link>
+          </Button>
+          <div className="flex items-center gap-2">
+            <span className="hidden text-xs text-muted-foreground sm:inline">
+              ช่วงเดือน
+            </span>
+              <Select
+              value={String(monthsQuery ?? 3)}
+              onValueChange={(value) => {
+                const next = Number(value);
+                if (!Number.isFinite(next) || next <= 0) {
+                  void setMonthsQuery(3);
+                } else {
+                  void setMonthsQuery(next);
+                }
+              }}
+              >
+              <SelectTrigger size="sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1 เดือน</SelectItem>
+                <SelectItem value="3">3 เดือน</SelectItem>
+                <SelectItem value="6">6 เดือน</SelectItem>
+                <SelectItem value="12">12 เดือน</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
 
       {loading ? (

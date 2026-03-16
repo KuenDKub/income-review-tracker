@@ -20,6 +20,7 @@ export async function listJobs(opts?: {
   platform?: string;
   contentType?: string;
   status?: string;
+  months?: number;
 }): Promise<PaginatedResult<ReviewJobJson>> {
   const page = Math.max(1, opts?.page ?? 1);
   const maxPageSize = opts?.maxPageSize ?? 100;
@@ -31,6 +32,7 @@ export async function listJobs(opts?: {
   const platform = (opts?.platform ?? "").trim();
   const contentType = (opts?.contentType ?? "").trim();
   const status = (opts?.status ?? "").trim();
+  const months = opts?.months;
 
   const where: string[] = [];
   const values: unknown[] = [];
@@ -44,7 +46,7 @@ export async function listJobs(opts?: {
     values.push(`%${search}%`);
     values.push(`%${search}%`);
     where.push(
-      `(title ILIKE $${values.length - 2} OR EXISTS (SELECT 1 FROM unnest(platforms) p WHERE p ILIKE $${values.length - 1}) OR content_type ILIKE $${values.length})`
+      `(title ILIKE $${values.length - 2} OR EXISTS (SELECT 1 FROM unnest(platforms) p WHERE p ILIKE $${values.length - 1}) OR content_type ILIKE $${values.length})`,
     );
   }
   if (payerName) {
@@ -59,12 +61,24 @@ export async function listJobs(opts?: {
     values.push(contentType);
     where.push(`content_type = $${values.length}`);
   }
+  if (typeof months === "number" && Number.isFinite(months) && months > 0) {
+    const today = new Date();
+    const end = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+    );
+    const start = new Date(end);
+    start.setMonth(start.getMonth() - months);
+    values.push(start.toISOString().slice(0, 10));
+    where.push(`COALESCE(received_date, created_at)::date >= $${values.length}`);
+  }
 
   const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
 
   const countRes = await query<{ total: string }>(
     `SELECT COUNT(*)::text AS total FROM review_jobs ${whereSql}`,
-    values
+    values,
   );
   const total = Number.parseInt(countRes.rows[0]?.total ?? "0", 10) || 0;
 
@@ -72,7 +86,7 @@ export async function listJobs(opts?: {
   values.push(offset);
   const { rows } = await query<ReviewJobRow>(
     `SELECT * FROM review_jobs ${whereSql} ORDER BY COALESCE(received_date, created_at)::date DESC, created_at DESC LIMIT $${values.length - 1} OFFSET $${values.length}`,
-    values
+    values,
   );
 
   const jobIds = rows.map((r) => r.id);
@@ -92,19 +106,21 @@ export async function listJobs(opts?: {
         COALESCE(SUM(withholding_amount), 0)::numeric AS total_withholding,
         COALESCE(SUM(net_amount), 0)::numeric AS total_net
        FROM income WHERE review_job_id = ANY($1::uuid[]) GROUP BY review_job_id`,
-      [jobIds]
+      [jobIds],
     );
     for (const r of incomeRows.rows) {
       const gross = parseFloat(
-        typeof r.total_gross === "string" ? r.total_gross : String(r.total_gross)
+        typeof r.total_gross === "string"
+          ? r.total_gross
+          : String(r.total_gross),
       );
       const withholding = parseFloat(
         typeof r.total_withholding === "string"
           ? r.total_withholding
-          : String(r.total_withholding)
+          : String(r.total_withholding),
       );
       const net = parseFloat(
-        typeof r.total_net === "string" ? r.total_net : String(r.total_net)
+        typeof r.total_net === "string" ? r.total_net : String(r.total_net),
       );
       const rate =
         !Number.isNaN(gross) && gross > 0 && !Number.isNaN(withholding)
@@ -141,7 +157,7 @@ export async function listJobs(opts?: {
 
 export async function listPayerNames(): Promise<string[]> {
   const { rows } = await query<{ payer_name: string }>(
-    `SELECT DISTINCT payer_name FROM review_jobs WHERE payer_name IS NOT NULL AND payer_name != '' ORDER BY payer_name`
+    `SELECT DISTINCT payer_name FROM review_jobs WHERE payer_name IS NOT NULL AND payer_name != '' ORDER BY payer_name`,
   );
   return rows.map((r) => r.payer_name);
 }
@@ -149,7 +165,7 @@ export async function listPayerNames(): Promise<string[]> {
 export async function getJobById(id: string): Promise<ReviewJobJson | null> {
   const { rows } = await query<ReviewJobRow>(
     "SELECT * FROM review_jobs WHERE id = $1",
-    [id]
+    [id],
   );
   if (rows.length === 0) return null;
   return serializeReviewJob(rows[0]);
@@ -186,7 +202,7 @@ export async function createJob(body: {
       data.tags,
       data.notes,
       data.is_brother_job,
-    ]
+    ],
   );
   return serializeReviewJob(rows[0]);
 }
@@ -206,7 +222,7 @@ export async function updateJob(
     tags: string[];
     notes: string | null;
     isBrotherJob: boolean;
-  }>
+  }>,
 ): Promise<ReviewJobJson | null> {
   const existing = await getJobById(id);
   if (!existing) return null;
@@ -216,33 +232,33 @@ export async function updateJob(
 
   const data = deserializeReviewJobBody({
     payerName: has("payerName")
-      ? body.payerName ?? ""
-      : existing.payerName ?? "",
-    status: has("status") ? body.status ?? existing.status : existing.status,
+      ? (body.payerName ?? "")
+      : (existing.payerName ?? ""),
+    status: has("status") ? (body.status ?? existing.status) : existing.status,
     platforms: has("platforms")
-      ? body.platforms ?? existing.platforms
+      ? (body.platforms ?? existing.platforms)
       : existing.platforms,
     contentType: has("contentType")
-      ? body.contentType ?? existing.contentType
+      ? (body.contentType ?? existing.contentType)
       : existing.contentType,
-    title: has("title") ? body.title ?? existing.title : existing.title,
+    title: has("title") ? (body.title ?? existing.title) : existing.title,
     receivedDate: has("receivedDate")
-      ? body.receivedDate ?? null
-      : existing.receivedDate ?? null,
+      ? (body.receivedDate ?? null)
+      : (existing.receivedDate ?? null),
     reviewDeadline: has("reviewDeadline")
-      ? body.reviewDeadline ?? null
-      : existing.reviewDeadline ?? null,
+      ? (body.reviewDeadline ?? null)
+      : (existing.reviewDeadline ?? null),
     publishDate: has("publishDate")
-      ? body.publishDate ?? null
-      : existing.publishDate ?? null,
+      ? (body.publishDate ?? null)
+      : (existing.publishDate ?? null),
     paymentDate: has("paymentDate")
-      ? body.paymentDate ?? null
-      : existing.paymentDate ?? null,
-    tags: has("tags") ? body.tags ?? existing.tags : existing.tags,
-    notes: has("notes") ? body.notes ?? existing.notes : existing.notes,
+      ? (body.paymentDate ?? null)
+      : (existing.paymentDate ?? null),
+    tags: has("tags") ? (body.tags ?? existing.tags) : existing.tags,
+    notes: has("notes") ? (body.notes ?? existing.notes) : existing.notes,
     isBrotherJob: has("isBrotherJob")
-      ? body.isBrotherJob ?? false
-      : existing.isBrotherJob ?? false,
+      ? (body.isBrotherJob ?? false)
+      : (existing.isBrotherJob ?? false),
   });
   const { rows } = await query<ReviewJobRow>(
     `UPDATE review_jobs SET payer_name = $1, status = $2, platforms = $3::text[], content_type = $4, title = $5, received_date = $6::date, review_deadline = $7::date, publish_date = $8::date, payment_date = $9::date, tags = $10::text[], notes = $11, is_brother_job = $12
@@ -261,14 +277,16 @@ export async function updateJob(
       data.notes,
       data.is_brother_job,
       id,
-    ]
+    ],
   );
   if (rows.length === 0) return null;
   return serializeReviewJob(rows[0]);
 }
 
 export async function deleteJob(id: string): Promise<boolean> {
-  const { rowCount } = await query("DELETE FROM review_jobs WHERE id = $1", [id]);
+  const { rowCount } = await query("DELETE FROM review_jobs WHERE id = $1", [
+    id,
+  ]);
   return (rowCount ?? 0) > 0;
 }
 
@@ -276,7 +294,7 @@ export async function deleteJob(id: string): Promise<boolean> {
 export async function listRecentJobs(limit = 10): Promise<ReviewJobJson[]> {
   const { rows } = await query<ReviewJobRow>(
     "SELECT * FROM review_jobs ORDER BY COALESCE(received_date, created_at)::date DESC, created_at DESC LIMIT $1",
-    [limit]
+    [limit],
   );
   return rows.map(serializeReviewJob);
 }
@@ -290,7 +308,7 @@ export async function getTopPlatformByJobCount(): Promise<{
     `SELECT p AS platform, COUNT(*)::text AS cnt
      FROM review_jobs, unnest(platforms) AS p
      WHERE array_length(platforms, 1) > 0
-     GROUP BY p ORDER BY cnt DESC LIMIT 1`
+     GROUP BY p ORDER BY cnt DESC LIMIT 1`,
   );
   if (rows.length === 0) return null;
   return { name: rows[0].platform, count: parseInt(rows[0].cnt, 10) || 0 };
@@ -305,7 +323,7 @@ export async function getTopPayerByJobCount(): Promise<{
     `SELECT payer_name AS name, COUNT(*)::text AS cnt
      FROM review_jobs
      WHERE payer_name IS NOT NULL AND payer_name != ''
-     GROUP BY payer_name ORDER BY cnt DESC LIMIT 1`
+     GROUP BY payer_name ORDER BY cnt DESC LIMIT 1`,
   );
   if (rows.length === 0) return null;
   return { name: rows[0].name, count: parseInt(rows[0].cnt, 10) || 0 };
@@ -324,7 +342,7 @@ export async function getTopMonthByJobCount(): Promise<{
      FROM review_jobs
      WHERE received_date IS NOT NULL
      GROUP BY EXTRACT(YEAR FROM received_date), EXTRACT(MONTH FROM received_date)
-     ORDER BY cnt DESC LIMIT 1`
+     ORDER BY cnt DESC LIMIT 1`,
   );
   if (rows.length === 0) return null;
   return {
