@@ -9,6 +9,7 @@ import {
   Wallet,
   Receipt,
   Film,
+  CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +18,7 @@ export const navItems = [
   { href: "/jobs", labelKey: "jobs", icon: Briefcase },
   { href: "/jobs-dnd", labelKey: "jobsDnd", icon: Columns },
   { href: "/income", labelKey: "income", icon: Wallet },
+  { href: "/calendar", labelKey: "calendar", icon: CalendarDays },
   { href: "/tax", labelKey: "tax", icon: Receipt },
   { href: "/storyline", labelKey: "storyline", icon: Film },
 ] as const;

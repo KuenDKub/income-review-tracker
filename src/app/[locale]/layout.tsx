@@ -36,6 +36,7 @@ export default async function LocaleLayout({ children, params }: Props) {
     jobs: (await getTranslations("jobs"))("title"),
     jobsDnd: (await getTranslations("jobs"))("boardTitle"),
     income: (await getTranslations("income"))("title"),
+    calendar: (await getTranslations("calendar"))("title"),
     tax: (await getTranslations("tax"))("title"),
     storyline: (await getTranslations("storyline"))("title"),
   };
@@ -51,9 +52,7 @@ export default async function LocaleLayout({ children, params }: Props) {
               <div className="mb-4 flex shrink-0 justify-end">
                 <LocaleSwitcher />
               </div>
-              <div className="min-h-0 flex-1 flex flex-col">
-                {children}
-              </div>
+              <div className="min-h-0 flex-1 flex flex-col">{children}</div>
             </main>
           </div>
           <Footer />

@@ -21,6 +21,9 @@ export async function listJobs(opts?: {
   contentType?: string;
   status?: string;
   months?: number;
+  /** When both set, return jobs that have at least one of review_deadline, publish_date, payment_date in [calendarFrom, calendarTo] (inclusive). */
+  calendarFrom?: string;
+  calendarTo?: string;
 }): Promise<PaginatedResult<ReviewJobJson>> {
   const page = Math.max(1, opts?.page ?? 1);
   const maxPageSize = opts?.maxPageSize ?? 100;
@@ -33,6 +36,8 @@ export async function listJobs(opts?: {
   const contentType = (opts?.contentType ?? "").trim();
   const status = (opts?.status ?? "").trim();
   const months = opts?.months;
+  const calendarFrom = opts?.calendarFrom?.trim();
+  const calendarTo = opts?.calendarTo?.trim();
 
   const where: string[] = [];
   const values: unknown[] = [];
@@ -71,7 +76,15 @@ export async function listJobs(opts?: {
     const start = new Date(end);
     start.setMonth(start.getMonth() - months);
     values.push(start.toISOString().slice(0, 10));
-    where.push(`COALESCE(received_date, created_at)::date >= $${values.length}`);
+    where.push(
+      `COALESCE(received_date, created_at)::date >= $${values.length}`,
+    );
+  }
+  if (calendarFrom && calendarTo) {
+    values.push(calendarFrom, calendarTo);
+    where.push(
+      `(review_deadline::date BETWEEN $${values.length - 1} AND $${values.length} OR publish_date::date BETWEEN $${values.length - 1} AND $${values.length} OR payment_date::date BETWEEN $${values.length - 1} AND $${values.length})`,
+    );
   }
 
   const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";

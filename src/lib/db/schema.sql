@@ -55,3 +55,16 @@ CREATE TABLE IF NOT EXISTS documents (
 
 CREATE INDEX IF NOT EXISTS idx_documents_review_job_id ON documents(review_job_id);
 CREATE INDEX IF NOT EXISTS idx_documents_income_id ON documents(income_id);
+
+-- Calendar notes (free-form notes per date, optionally linked to a review job)
+CREATE TABLE IF NOT EXISTS calendar_notes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  note_date DATE NOT NULL,
+  review_job_id UUID REFERENCES review_jobs(id) ON DELETE SET NULL,
+  text TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_calendar_notes_date ON calendar_notes(note_date);
+CREATE INDEX IF NOT EXISTS idx_calendar_notes_review_job_id ON calendar_notes(review_job_id);
