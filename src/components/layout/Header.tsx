@@ -20,6 +20,7 @@ type NavLabels = {
   income: string;
   tax: string;
   storyline: string;
+  calendar: string;
 };
 
 type HeaderProps = {
@@ -34,6 +35,7 @@ const defaultNavLabels: NavLabels = {
   income: "Income",
   tax: "Tax",
   storyline: "AI Storyline",
+  calendar: "Calendar",
 };
 
 export function Header({
