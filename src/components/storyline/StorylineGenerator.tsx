@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Film } from "lucide-react";
+import { AutoResizeTextarea } from "@/components/ui/auto-resize-textarea";
 import type { StorylineSceneRow, StorylineSections } from "@/lib/ai/storylineParser";
 import { buildStorylinePlainText } from "@/lib/storylineExport";
 import { toast } from "@/lib/toast";
@@ -186,14 +187,13 @@ export default function StorylineGenerator({
               >
                 {t("sectionCaptionIdea")}
               </Label>
-              <textarea
+              <AutoResizeTextarea
                 id="storyline-CAPTION_IDEA"
                 value={sections.CAPTION_IDEA}
                 onChange={(e) =>
                   updateSection("CAPTION_IDEA", e.target.value)
                 }
                 placeholder={t("sectionCaptionIdea")}
-                rows={2}
                 className={`mt-1.5 ${inputClass}`}
               />
             </section>
@@ -220,14 +220,13 @@ export default function StorylineGenerator({
                           className={inputClass}
                         />
                       ) : (
-                        <textarea
+                        <AutoResizeTextarea
                           id={`storyline-extra-${key}`}
                           value={sections[key]}
                           onChange={(e) =>
                             updateSection(key, e.target.value)
                           }
                           placeholder={t(sectionLabelKey(key))}
-                          rows={2}
                           className={inputClass}
                         />
                       )}
@@ -357,36 +356,33 @@ function ScenesTable({
                         <span className="shrink-0 text-muted-foreground">
                           (Scene {row.index}) :
                         </span>
-                        <textarea
+                        <AutoResizeTextarea
                           value={row.action}
                           onChange={(e) =>
                             updateRow(row.index, "action", e.target.value)
                           }
                           placeholder={t("tableHeaderScene")}
-                          rows={2}
                           className={`min-w-0 flex-1 ${inputClass}`}
                         />
                       </div>
                     </td>
                     <td className="p-2">
-                      <textarea
+                      <AutoResizeTextarea
                         value={row.text}
                         onChange={(e) =>
                           updateRow(row.index, "text", e.target.value)
                         }
                         placeholder={t("tableHeaderText")}
-                        rows={2}
                         className={inputClass}
                       />
                     </td>
                     <td className="p-2">
-                      <textarea
+                      <AutoResizeTextarea
                         value={row.soundtrack}
                         onChange={(e) =>
                           updateRow(row.index, "soundtrack", e.target.value)
                         }
                         placeholder={t("tableHeaderSoundtrack")}
-                        rows={2}
                         className={inputClass}
                       />
                     </td>
