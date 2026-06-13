@@ -59,6 +59,8 @@ export default function StorylinePageLayout() {
 
   useEffect(() => {
     const cached = readStorylineCache();
+    // Defer out of the effect body: localStorage must be read client-side (to
+    // avoid SSR hydration mismatch), and queueMicrotask avoids cascading renders.
     queueMicrotask(() => {
       setItems(cached);
       if (cached.length > 0) {
@@ -68,9 +70,11 @@ export default function StorylinePageLayout() {
     });
   }, []);
 
+  // Debounce persistence so we don't stringify all forms on every keystroke.
   useEffect(() => {
     if (!hydrated) return;
-    writeStorylineCache(items);
+    const handle = setTimeout(() => writeStorylineCache(items), 400);
+    return () => clearTimeout(handle);
   }, [hydrated, items]);
 
   const handleNewForm = useCallback(() => {
@@ -248,9 +252,8 @@ export default function StorylinePageLayout() {
         {activeItem ? (
           <div className="mx-auto w-full max-w-3xl min-h-0 flex-1 flex flex-col">
             <StorylineGenerator
-              key={activeItem.id}
-              initialData={activeItem.formData}
-              onDataChange={handleDataChange(activeItem.id)}
+              data={activeItem.formData}
+              onChange={handleDataChange(activeItem.id)}
             />
           </div>
         ) : (

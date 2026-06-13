@@ -12,14 +12,16 @@ import {
   Copy,
   Download,
   Hash,
+  Loader2,
   Plus,
   Sparkles,
   Trash2,
 } from "lucide-react";
 import { AutoResizeTextarea } from "@/components/ui/auto-resize-textarea";
-import type {
-  StorylineSceneRow,
-  StorylineSections,
+import {
+  newSceneId,
+  type StorylineSceneRow,
+  type StorylineSections,
 } from "@/lib/ai/storylineParser";
 import { buildStorylinePlainText } from "@/lib/storylineExport";
 import { toast } from "@/lib/toast";
@@ -33,15 +35,15 @@ const EXTRA_SECTION_ORDER: (keyof StorylineSections)[] = [
   "DRESS_CODE",
 ];
 
-const EMPTY_SECTIONS: StorylineSections = {
-  TITLE: "",
-  SUBTITLE: "",
-  GENRE: "",
-  HOOK: "",
-  VIBE: "",
-  CTA: "",
-  CAPTION_IDEA: "",
-  DRESS_CODE: "",
+const SECTION_LABEL_KEY: Record<keyof StorylineSections, string> = {
+  TITLE: "sectionTitle",
+  SUBTITLE: "sectionSubtitle",
+  GENRE: "sectionGenre",
+  HOOK: "sectionHook",
+  VIBE: "sectionVibe",
+  CTA: "sectionCta",
+  CAPTION_IDEA: "sectionCaptionIdea",
+  DRESS_CODE: "sectionDressCode",
 };
 
 export type StorylineFormData = {
@@ -50,8 +52,9 @@ export type StorylineFormData = {
 };
 
 type StorylineGeneratorProps = {
-  initialData?: StorylineFormData | null;
-  onDataChange?: (data: StorylineFormData) => void;
+  /** Controlled value — the single source of truth lives in the parent. */
+  data: StorylineFormData;
+  onChange: (data: StorylineFormData) => void;
 };
 
 function SectionHeading({
@@ -77,37 +80,29 @@ function SectionHeading({
 }
 
 export default function StorylineGenerator({
-  initialData,
-  onDataChange,
+  data,
+  onChange,
 }: StorylineGeneratorProps) {
   const t = useTranslations("storyline");
-  const [sections, setSections] = useState<StorylineSections>(
-    () => initialData?.sections ?? { ...EMPTY_SECTIONS }
-  );
-  const [scenesTable, setScenesTable] = useState<StorylineSceneRow[]>(
-    () => initialData?.scenesTable ?? []
-  );
-  const [error, setError] = useState("");
+  const { sections, scenesTable } = data;
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const updateSection = useCallback(
     (key: keyof StorylineSections, value: string) => {
-      const next = { ...sections, [key]: value };
-      setSections(next);
-      onDataChange?.({ sections: next, scenesTable });
+      onChange({ ...data, sections: { ...data.sections, [key]: value } });
     },
-    [sections, scenesTable, onDataChange]
+    [data, onChange]
   );
 
   const updateScenesTable = useCallback(
     (next: StorylineSceneRow[]) => {
-      setScenesTable(next);
-      onDataChange?.({ sections, scenesTable: next });
+      onChange({ ...data, scenesTable: next });
     },
-    [sections, onDataChange]
+    [data, onChange]
   );
 
   const handleDownloadDocx = useCallback(async () => {
-    setError("");
+    setIsDownloading(true);
     try {
       const res = await fetch("/api/storyline/docx", {
         method: "POST",
@@ -118,8 +113,8 @@ export default function StorylineGenerator({
         }),
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error ?? "Download failed");
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? "Download failed");
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -137,7 +132,9 @@ export default function StorylineGenerator({
       a.remove();
       URL.revokeObjectURL(url);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Download failed");
+      toast.error(e instanceof Error ? e.message : "Download failed");
+    } finally {
+      setIsDownloading(false);
     }
   }, [sections, scenesTable]);
 
@@ -150,23 +147,6 @@ export default function StorylineGenerator({
       toast.error(t("copyError"));
     }
   }, [sections, scenesTable, t]);
-
-  const sectionLabelKey = (key: keyof StorylineSections) =>
-    key === "TITLE"
-      ? "sectionTitle"
-      : key === "SUBTITLE"
-        ? "sectionSubtitle"
-        : key === "GENRE"
-          ? "sectionGenre"
-          : key === "HOOK"
-            ? "sectionHook"
-            : key === "VIBE"
-              ? "sectionVibe"
-              : key === "CTA"
-                ? "sectionCta"
-                : key === "DRESS_CODE"
-                  ? "sectionDressCode"
-                  : "sectionCaptionIdea";
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
@@ -244,21 +224,21 @@ export default function StorylineGenerator({
                         htmlFor={`storyline-extra-${key}`}
                         className="text-xs text-muted-foreground"
                       >
-                        {t(sectionLabelKey(key))}
+                        {t(SECTION_LABEL_KEY[key])}
                       </Label>
                       {isShort ? (
                         <Input
                           id={`storyline-extra-${key}`}
                           value={sections[key]}
                           onChange={(e) => updateSection(key, e.target.value)}
-                          placeholder={t(sectionLabelKey(key))}
+                          placeholder={t(SECTION_LABEL_KEY[key])}
                         />
                       ) : (
                         <AutoResizeTextarea
                           id={`storyline-extra-${key}`}
                           value={sections[key]}
                           onChange={(e) => updateSection(key, e.target.value)}
-                          placeholder={t(sectionLabelKey(key))}
+                          placeholder={t(SECTION_LABEL_KEY[key])}
                           className={fieldClass}
                         />
                       )}
@@ -269,21 +249,20 @@ export default function StorylineGenerator({
             </details>
           </CardContent>
         </Card>
-
-        {error && (
-          <p className="text-sm text-destructive" role="alert">
-            {error}
-          </p>
-        )}
       </div>
 
       {/* Action bar */}
       <div className="flex shrink-0 flex-wrap gap-2 rounded-xl border bg-card p-3">
         <Button
           onClick={handleDownloadDocx}
+          disabled={isDownloading}
           className="min-h-[44px] flex-1 touch-manipulation sm:flex-none"
         >
-          <Download className="size-4" />
+          {isDownloading ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Download className="size-4" />
+          )}
           {t("downloadDocx")}
         </Button>
         <Button
@@ -305,38 +284,43 @@ type SceneCardsProps = {
   t: (key: string) => string;
 };
 
+/** Re-derive display order (`index`) from array position. */
+function renumber(rows: StorylineSceneRow[]): StorylineSceneRow[] {
+  return rows.map((r, i) => ({ ...r, index: i + 1 }));
+}
+
 function SceneCards({ scenesTable, onScenesTableChange, t }: SceneCardsProps) {
+  const ordered = [...scenesTable].sort((a, b) => a.index - b.index);
+
   const addRow = useCallback(() => {
-    const nextIndex =
-      scenesTable.length > 0
-        ? Math.max(...scenesTable.map((r) => r.index)) + 1
-        : 1;
-    onScenesTableChange([
-      ...scenesTable,
-      { index: nextIndex, action: "", text: "", soundtrack: "" },
-    ]);
-  }, [scenesTable, onScenesTableChange]);
+    onScenesTableChange(
+      renumber([
+        ...ordered,
+        {
+          id: newSceneId(),
+          index: ordered.length + 1,
+          action: "",
+          text: "",
+          soundtrack: "",
+        },
+      ])
+    );
+  }, [ordered, onScenesTableChange]);
 
   const removeRow = useCallback(
-    (index: number) => {
-      onScenesTableChange(
-        scenesTable
-          .filter((r) => r.index !== index)
-          .map((r, i) => ({ ...r, index: i + 1 }))
-      );
+    (id: string) => {
+      onScenesTableChange(renumber(ordered.filter((r) => r.id !== id)));
     },
-    [scenesTable, onScenesTableChange]
+    [ordered, onScenesTableChange]
   );
 
   const updateRow = useCallback(
-    (index: number, field: keyof StorylineSceneRow, value: string | number) => {
+    (id: string, field: keyof StorylineSceneRow, value: string) => {
       onScenesTableChange(
-        scenesTable.map((r) =>
-          r.index === index ? { ...r, [field]: value } : r
-        )
+        ordered.map((r) => (r.id === id ? { ...r, [field]: value } : r))
       );
     },
-    [scenesTable, onScenesTableChange]
+    [ordered, onScenesTableChange]
   );
 
   const fieldClass =
@@ -344,77 +328,68 @@ function SceneCards({ scenesTable, onScenesTableChange, t }: SceneCardsProps) {
 
   return (
     <div className="space-y-3">
-      {scenesTable.length === 0 ? (
+      {ordered.length === 0 ? (
         <p className="rounded-lg border border-dashed py-6 text-center text-sm text-muted-foreground">
           {t("tableEmpty")}
         </p>
       ) : (
-        [...scenesTable]
-          .sort((a, b) => a.index - b.index)
-          .map((row) => (
-            <div
-              key={row.index}
-              className="rounded-xl border bg-muted/30 p-3 sm:p-4"
-            >
-              <div className="mb-2.5 flex items-center justify-between gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-                  <Clapperboard className="size-3" />
-                  Scene {row.index}
-                </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-9 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                  onClick={() => removeRow(row.index)}
-                  aria-label={t("removeScene")}
-                >
-                  <Trash2 className="size-4" />
-                </Button>
+        ordered.map((row) => (
+          <div key={row.id} className="rounded-xl border bg-muted/30 p-3 sm:p-4">
+            <div className="mb-2.5 flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                <Clapperboard className="size-3" />
+                {t("sceneLabel")} {row.index}
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-9 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => removeRow(row.id)}
+                aria-label={t("removeScene")}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </div>
+            <div className="grid gap-2.5 sm:grid-cols-2">
+              <div className="space-y-1 sm:col-span-2">
+                <Label className="text-xs text-muted-foreground">
+                  {t("tableHeaderScene")}
+                </Label>
+                <AutoResizeTextarea
+                  value={row.action}
+                  onChange={(e) => updateRow(row.id, "action", e.target.value)}
+                  placeholder={t("tableHeaderScene")}
+                  className={fieldClass}
+                />
               </div>
-              <div className="grid gap-2.5 sm:grid-cols-2">
-                <div className="space-y-1 sm:col-span-2">
-                  <Label className="text-xs text-muted-foreground">
-                    {t("tableHeaderScene")}
-                  </Label>
-                  <AutoResizeTextarea
-                    value={row.action}
-                    onChange={(e) =>
-                      updateRow(row.index, "action", e.target.value)
-                    }
-                    placeholder={t("tableHeaderScene")}
-                    className={fieldClass}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">
-                    {t("tableHeaderText")}
-                  </Label>
-                  <AutoResizeTextarea
-                    value={row.text}
-                    onChange={(e) =>
-                      updateRow(row.index, "text", e.target.value)
-                    }
-                    placeholder={t("tableHeaderText")}
-                    className={fieldClass}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">
-                    {t("tableHeaderSoundtrack")}
-                  </Label>
-                  <AutoResizeTextarea
-                    value={row.soundtrack}
-                    onChange={(e) =>
-                      updateRow(row.index, "soundtrack", e.target.value)
-                    }
-                    placeholder={t("tableHeaderSoundtrack")}
-                    className={fieldClass}
-                  />
-                </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">
+                  {t("tableHeaderText")}
+                </Label>
+                <AutoResizeTextarea
+                  value={row.text}
+                  onChange={(e) => updateRow(row.id, "text", e.target.value)}
+                  placeholder={t("tableHeaderText")}
+                  className={fieldClass}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">
+                  {t("tableHeaderSoundtrack")}
+                </Label>
+                <AutoResizeTextarea
+                  value={row.soundtrack}
+                  onChange={(e) =>
+                    updateRow(row.id, "soundtrack", e.target.value)
+                  }
+                  placeholder={t("tableHeaderSoundtrack")}
+                  className={fieldClass}
+                />
               </div>
             </div>
-          ))
+          </div>
+        ))
       )}
 
       <button

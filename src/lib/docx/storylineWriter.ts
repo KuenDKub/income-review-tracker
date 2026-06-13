@@ -8,7 +8,12 @@ const TEMPLATE_PATH = path.join(
   "storyline_template.docx"
 );
 
-const COLORS = { muted: "6B7280", accent: "4B5563" };
+// Formal neutral palette — this doc is shared with business partners.
+const COLORS = {
+  label: "4B5563", // gray-600 — section labels
+  sceneTag: "374151", // gray-700 — scene number tag
+  stripe: "F9FAFB", // gray-50 — subtle zebra striping on even rows
+};
 
 function escapeXml(str: string): string {
   return str
@@ -44,9 +49,10 @@ function paragraphsXmlFromText(text: string): string {
 function optionalSectionBlock(label: string, content: string): string {
   const trimmed = (content ?? "").trim();
   if (!trimmed) return "";
+  // Section heading: uppercase, letter-spaced, underlined with a hairline rule.
   const labelPara = `    <w:p>
-      <w:pPr><w:pStyle w:val="MetaLabel"/></w:pPr>
-      <w:r><w:rPr><w:b/><w:bCs/><w:color w:val="${COLORS.muted}"/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr><w:t>${escapeXml(label)}</w:t></w:r>
+      <w:pPr><w:pStyle w:val="MetaLabel"/><w:spacing w:before="360" w:after="120"/><w:pBdr><w:bottom w:val="single" w:sz="6" w:space="4" w:color="D1D5DB"/></w:pBdr></w:pPr>
+      <w:r><w:rPr><w:b/><w:bCs/><w:color w:val="${COLORS.label}"/><w:spacing w:val="40"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:t>${escapeXml(label.toUpperCase())}</w:t></w:r>
     </w:p>`;
   const contentXml = paragraphsXmlFromText(trimmed);
   return labelPara + "\n" + contentXml;
@@ -63,11 +69,22 @@ function normalizeAction(action: string): string {
 
 function sceneRowXml(row: StorylineSceneRow): string {
   const cleaned = normalizeAction(row.action);
-  const action = cleaned ? `(Scene ${row.index}) : ${cleaned}` : `(Scene ${row.index})`;
+  // Scene number as a bold pink tag, action text underneath in body color.
+  const sceneTag = `<w:p><w:pPr><w:spacing w:after="${cleaned ? 40 : 0}" w:line="276" w:lineRule="auto"/></w:pPr><w:r><w:rPr><w:b/><w:bCs/><w:color w:val="${COLORS.sceneTag}"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:t>Scene ${row.index}</w:t></w:r></w:p>`;
+  const actionCell = sceneTag + (cleaned ? paragraphsXmlFromText(cleaned) : "");
+
+  // Subtle zebra striping on even rows.
+  const stripe =
+    row.index % 2 === 0
+      ? `<w:shd w:val="clear" w:color="auto" w:fill="${COLORS.stripe}"/>`
+      : "";
+  const cell = (w: number, inner: string) =>
+    `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/>${stripe}</w:tcPr>${inner}</w:tc>`;
+
   return `<w:tr>
-    <w:tc><w:tcPr><w:tcW w:w="3600" w:type="dxa"/></w:tcPr>${paragraphsXmlFromText(action)}</w:tc>
-    <w:tc><w:tcPr><w:tcW w:w="1800" w:type="dxa"/></w:tcPr>${paragraphsXmlFromText(row.text)}</w:tc>
-    <w:tc><w:tcPr><w:tcW w:w="3600" w:type="dxa"/></w:tcPr>${paragraphsXmlFromText(row.soundtrack)}</w:tc>
+    ${cell(3600, actionCell)}
+    ${cell(1800, paragraphsXmlFromText(row.text))}
+    ${cell(3600, paragraphsXmlFromText(row.soundtrack))}
   </w:tr>`;
 }
 

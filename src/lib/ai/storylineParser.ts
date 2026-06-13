@@ -10,11 +10,21 @@ export type StorylineSections = {
 };
 
 export type StorylineSceneRow = {
+  /** Stable identity for React keys / reordering. `index` is display/export order only. */
+  id: string;
   index: number;
   action: string;
   text: string;
   soundtrack: string;
 };
+
+/** Stable id generator usable on both server (parser) and client. */
+export function newSceneId(): string {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `scene-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
 
 export type StorylineParseResult = {
   sections: StorylineSections;
@@ -90,7 +100,7 @@ function parseScenesBlock(block: string): StorylineSceneRow[] {
     const text = buf.TEXT.join("\n").trim();
     const soundtrack = buf.SOUNDTRACK.join("\n").trim();
     if (action || text || soundtrack) {
-      rows.push({ index, action, text, soundtrack });
+      rows.push({ id: newSceneId(), index, action, text, soundtrack });
     }
   }
 
