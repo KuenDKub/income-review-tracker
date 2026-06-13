@@ -3,6 +3,12 @@
     "title": "Review Income & Tax Tracker",
     "description": "Review Income & Tax Tracker (Thailand-focused)"
   },
+  "nav": {
+    "workspace": "Workspace",
+    "tools": "Tools",
+    "collapse": "Collapse",
+    "expand": "Expand sidebar"
+  },
   "common": {
     "add": "Add",
     "edit": "Edit",
@@ -22,7 +28,14 @@
     "view": "View",
     "action": "Action",
     "selectPlaceholder": "Select...",
-    "selectedCount": "{count} selected"
+    "selectedCount": "{count} selected",
+    "more": "More",
+    "filters": "Filters",
+    "done": "Done",
+    "language": "Language",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -42,7 +55,15 @@
     "topMonth": "Top month",
     "jobsCount": "{count} jobs",
     "noData": "No data",
-    "dataSourceNote": "Stats based on review jobs: platform, payer name, and received date."
+    "dataSourceNote": "Stats based on review jobs: platform, payer name, and received date.",
+    "quickActions": "Quick actions",
+    "addJob": "Add job",
+    "openBoard": "Open board",
+    "subtitle": "Your freelance income at a glance",
+    "periodMonth": "Month",
+    "periodYear": "Year",
+    "period": "Period",
+    "takeHome": "take-home"
   },
   "calendar": {
     "title": "Calendar",
@@ -66,11 +87,17 @@
     "filterPublish": "Publish dates",
     "filterPayment": "Payment dates",
     "monthLabel": "Month",
-    "today": "Today"
+    "today": "Today",
+    "viewMonth": "Month",
+    "viewAgenda": "Agenda",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "noEventsThisMonth": "No events this month"
   },
   "jobs": {
     "title": "Review Jobs",
     "boardTitle": "Jobs",
+    "board": "Board",
     "emptyColumn": "Drop here",
     "backToJobs": "Back to jobs",
     "listPlaceholder": "Jobs list",
@@ -144,7 +171,22 @@
     "isBrotherJob": "Barter job (review items only, no income)",
     "brotherBadge": "Barter job",
     "allStatuses": "All statuses",
-    "searchPlaceholder": "Search jobs..."
+    "searchPlaceholder": "Search jobs...",
+    "budget": "Budget",
+    "monthsRange": "Range",
+    "monthsOption": "{count} months",
+    "dueOverdue": "Overdue {days}d",
+    "dueToday": "Due today",
+    "dueInDays": "Due in {days}d",
+    "moveToStatus": "Move to status",
+    "viewDetails": "View details",
+    "collapseColumn": "Collapse column",
+    "expandColumn": "Expand column",
+    "dragPickedUp": "Picked up {title}",
+    "dragOverColumn": "Over {column}",
+    "dragDropped": "Moved {title} to {column}",
+    "dragCanceled": "Move cancelled",
+    "dragInstructions": "Press space or enter to pick up a card, use arrow keys to move it between columns, press space or enter again to drop."
   },
   "payers": {
     "title": "Payers",

@@ -1,16 +1,12 @@
 import { NextIntlClientProvider } from "next-intl";
-import {
-  getMessages,
-  getTranslations,
-  setRequestLocale,
-} from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { hasLocale } from "next-intl";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { BottomNav } from "@/components/layout/BottomNav";
 import { Footer } from "@/components/layout/Footer";
-import { LocaleSwitcher } from "@/components/layout/LocaleSwitcher";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 type Props = {
@@ -29,33 +25,25 @@ export default async function LocaleLayout({ children, params }: Props) {
   }
   setRequestLocale(locale);
 
-  const messages = await getMessages();
   const t = await getTranslations("app");
-  const navLabels = {
-    dashboard: (await getTranslations("dashboard"))("title"),
-    jobs: (await getTranslations("jobs"))("title"),
-    jobsDnd: (await getTranslations("jobs"))("boardTitle"),
-    income: (await getTranslations("income"))("title"),
-    calendar: (await getTranslations("calendar"))("title"),
-    tax: (await getTranslations("tax"))("title"),
-    storyline: (await getTranslations("storyline"))("title"),
-  };
 
   return (
-    <NextIntlClientProvider messages={messages}>
+    <NextIntlClientProvider>
       <NuqsAdapter>
-        <div className="flex min-h-screen flex-col">
-          <Header title={t("title")} navLabels={navLabels} />
-          <div className="flex flex-1">
-            <Sidebar labels={navLabels} />
-            <main className="flex min-w-0 flex-1 flex-col p-4 sm:p-6">
-              <div className="mb-4 flex shrink-0 justify-end">
-                <LocaleSwitcher />
+        <div className="flex min-h-dvh">
+          <Sidebar />
+          <div className="flex min-w-0 flex-1 flex-col bg-muted/30 dark:bg-background">
+            <Header title={t("title")} />
+            <main className="flex min-w-0 flex-1 flex-col p-4 pb-24 sm:p-6 lg:pb-8">
+              <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col">
+                {children}
               </div>
-              <div className="min-h-0 flex-1 flex flex-col">{children}</div>
             </main>
+            <div className="hidden lg:block">
+              <Footer />
+            </div>
+            <BottomNav />
           </div>
-          <Footer />
         </div>
       </NuqsAdapter>
     </NextIntlClientProvider>

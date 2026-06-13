@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { ClipboardList, Inbox } from "lucide-react";
+import { ChevronRight, ClipboardList, FileText, Inbox } from "lucide-react";
 
 type Job = { id: string; title: string; receivedDate: string | null };
 
@@ -44,23 +44,28 @@ export function RecentJobsList({ jobs }: RecentJobsListProps) {
         {jobs.length === 0 ? (
           <EmptyState icon={Inbox} message={t("noRecentJobs")} className="py-8" />
         ) : (
-          <ul className="space-y-3 divide-y divide-border">
+          <ul className="space-y-1">
             {jobs.map((job) => (
-              <li
-                key={job.id}
-                className="flex items-center justify-between gap-2 py-2 first:pt-0 last:pb-0"
-              >
+              <li key={job.id}>
                 <Link
                   href={`/jobs/${job.id}`}
-                  className="flex-1 text-sm font-medium text-primary hover:underline"
+                  className="-mx-2 flex min-h-[52px] items-center gap-3 rounded-xl px-2 py-2 transition-colors touch-manipulation hover:bg-muted active:bg-muted"
                 >
-                  {job.title}
-                </Link>
-                {job.receivedDate && (
-                  <span className="shrink-0 text-xs text-muted-foreground">
-                    {formatDateThai(job.receivedDate)}
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                    <FileText className="size-4" />
                   </span>
-                )}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium">
+                      {job.title}
+                    </span>
+                    {job.receivedDate && (
+                      <span className="block text-xs text-muted-foreground">
+                        {formatDateThai(job.receivedDate)}
+                      </span>
+                    )}
+                  </span>
+                  <ChevronRight className="size-4 shrink-0 text-muted-foreground/60" />
+                </Link>
               </li>
             ))}
           </ul>

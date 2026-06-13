@@ -81,7 +81,7 @@ export function IncomeForm({
             <FormItem>
               <FormLabel>{t("grossAmount")}</FormLabel>
               <FormControl>
-                <Input type="number" step="0.01" {...field} value={field.value ?? ""} />
+                <Input type="number" inputMode="decimal" step="0.01" {...field} value={field.value ?? ""} />
               </FormControl>
             </FormItem>
           )}
@@ -93,7 +93,7 @@ export function IncomeForm({
             <FormItem>
               <FormLabel>{t("withholdingRate")}</FormLabel>
               <FormControl>
-                <Input type="number" step="0.01" {...field} value={field.value ?? ""} />
+                <Input type="number" inputMode="decimal" step="0.01" {...field} value={field.value ?? ""} />
               </FormControl>
             </FormItem>
           )}

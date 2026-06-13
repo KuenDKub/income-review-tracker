@@ -3,23 +3,30 @@
 import { useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Film } from "lucide-react";
+import {
+  AtSign,
+  Clapperboard,
+  Copy,
+  Download,
+  Hash,
+  Plus,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
 import { AutoResizeTextarea } from "@/components/ui/auto-resize-textarea";
-import type { StorylineSceneRow, StorylineSections } from "@/lib/ai/storylineParser";
+import type {
+  StorylineSceneRow,
+  StorylineSections,
+} from "@/lib/ai/storylineParser";
 import { buildStorylinePlainText } from "@/lib/storylineExport";
 import { toast } from "@/lib/toast";
+import { cn } from "@/lib/utils";
 
 const TIKTOK_FIXED = "francfoil";
 
-/** Document order: Storyline title first, then table, then CTA, Caption. Extra sections in details. */
-const MAIN_SECTION_ORDER: (keyof StorylineSections)[] = [
-  "TITLE",
-  "CTA",
-  "CAPTION_IDEA",
-];
 const EXTRA_SECTION_ORDER: (keyof StorylineSections)[] = [
   "VIBE",
   "CTA",
@@ -37,9 +44,6 @@ const EMPTY_SECTIONS: StorylineSections = {
   DRESS_CODE: "",
 };
 
-const inputClass =
-  "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
-
 export type StorylineFormData = {
   sections: StorylineSections;
   scenesTable: StorylineSceneRow[];
@@ -49,6 +53,28 @@ type StorylineGeneratorProps = {
   initialData?: StorylineFormData | null;
   onDataChange?: (data: StorylineFormData) => void;
 };
+
+function SectionHeading({
+  icon: Icon,
+  label,
+  children,
+}: {
+  icon: React.ElementType;
+  label: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="flex items-center gap-2 text-sm font-semibold">
+        <span className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <Icon className="size-4" />
+        </span>
+        {label}
+      </span>
+      {children}
+    </div>
+  );
+}
 
 export default function StorylineGenerator({
   initialData,
@@ -99,8 +125,13 @@ export default function StorylineGenerator({
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      const titleForFile = (sections.TITLE ?? "").trim().replace(/[/\\:*?"<>|]/g, "").slice(0, 100);
-      a.download = titleForFile ? `storyline - ${titleForFile}.docx` : "storyline.docx";
+      const titleForFile = (sections.TITLE ?? "")
+        .trim()
+        .replace(/[/\\:*?"<>|]/g, "")
+        .slice(0, 100);
+      a.download = titleForFile
+        ? `storyline - ${titleForFile}.docx`
+        : "storyline.docx";
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -138,77 +169,81 @@ export default function StorylineGenerator({
                   : "sectionCaptionIdea";
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <CardHeader className="border-b bg-muted/20">
-          <CardTitle className="flex items-center gap-2">
-            <Film className="size-5" />
-            {t("title")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
-          {/* Document-style body: TikTok → Storyline → Table → CTA → Caption */}
-          <article className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-background">
-            {/* 1. TikTok (fixed) */}
-            <section className="border-b px-4 py-3 sm:px-6 sm:py-4">
-              <p className="text-sm font-medium text-muted-foreground">
-                TikTok : {TIKTOK_FIXED}
-              </p>
-            </section>
-
-            {/* 2. Storyline title */}
-            <section className="border-b px-4 py-3 sm:px-6 sm:py-4">
-              <Label htmlFor="storyline-TITLE" className="text-sm font-medium">
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-2">
+        {/* Title block */}
+        <Card>
+          <CardContent className="space-y-3 p-4 sm:p-5">
+            <p className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+              <AtSign className="size-3.5" />
+              TikTok · {TIKTOK_FIXED}
+            </p>
+            <div>
+              <Label
+                htmlFor="storyline-TITLE"
+                className="text-xs text-muted-foreground"
+              >
                 {t("storylineLabel")}
               </Label>
-              <Input
+              <AutoResizeTextarea
                 id="storyline-TITLE"
                 value={sections.TITLE}
                 onChange={(e) => updateSection("TITLE", e.target.value)}
                 placeholder={t("sectionTitle")}
-                className={`mt-1.5 ${inputClass}`}
+                className="mt-1 w-full resize-none border-none bg-transparent p-0 text-xl font-bold leading-snug outline-none placeholder:text-muted-foreground/40 focus-visible:ring-0 sm:text-2xl"
               />
-            </section>
+            </div>
+          </CardContent>
+        </Card>
 
-            {/* 3. Scenes table (Scene | Text | Soundtrack) */}
-            <section className="border-b px-4 py-3 sm:px-6 sm:py-4">
-              <ScenesTable
-                scenesTable={scenesTable}
-                onScenesTableChange={updateScenesTable}
-                t={t}
-              />
-            </section>
+        {/* Scenes */}
+        <Card>
+          <CardContent className="space-y-3 p-4 sm:p-5">
+            <SectionHeading icon={Clapperboard} label={t("scenesTableTitle")} />
+            <SceneCards
+              scenesTable={scenesTable}
+              onScenesTableChange={updateScenesTable}
+              t={t}
+            />
+          </CardContent>
+        </Card>
 
-            {/* 4. Caption Idea */}
-            <section className="px-4 py-3 sm:px-6 sm:py-4">
-              <Label
-                htmlFor="storyline-CAPTION_IDEA"
-                className="text-sm font-medium"
-              >
-                {t("sectionCaptionIdea")}
-              </Label>
-              <AutoResizeTextarea
-                id="storyline-CAPTION_IDEA"
-                value={sections.CAPTION_IDEA}
-                onChange={(e) =>
-                  updateSection("CAPTION_IDEA", e.target.value)
-                }
-                placeholder={t("sectionCaptionIdea")}
-                className={`mt-1.5 ${inputClass}`}
-              />
-            </section>
+        {/* Caption */}
+        <Card>
+          <CardContent className="space-y-3 p-4 sm:p-5">
+            <SectionHeading icon={Hash} label={t("sectionCaptionIdea")} />
+            <AutoResizeTextarea
+              id="storyline-CAPTION_IDEA"
+              value={sections.CAPTION_IDEA}
+              onChange={(e) => updateSection("CAPTION_IDEA", e.target.value)}
+              placeholder={t("sectionCaptionIdea")}
+              className="w-full rounded-lg border bg-background px-3 py-2.5 text-sm leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </CardContent>
+        </Card>
 
-            {/* Extra sections (Subtitle, Genre, Hook, Vibe) in collapsible */}
-            <details className="border-t px-4 py-3 sm:px-6">
-              <summary className="cursor-pointer text-sm font-medium text-muted-foreground">
-                {t("extraSections")}
+        {/* Extras */}
+        <Card>
+          <CardContent className="p-4 sm:p-5">
+            <details className="group">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 touch-manipulation [&::-webkit-details-marker]:hidden">
+                <SectionHeading icon={Sparkles} label={t("extraSections")} />
+                <Plus
+                  className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-45"
+                  aria-hidden
+                />
               </summary>
               <div className="mt-4 space-y-4">
                 {EXTRA_SECTION_ORDER.map((key) => {
                   const isShort = key === "DRESS_CODE";
+                  const fieldClass =
+                    "w-full rounded-lg border bg-background px-3 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
                   return (
                     <div key={key} className="space-y-1.5">
-                      <Label htmlFor={`storyline-extra-${key}`}>
+                      <Label
+                        htmlFor={`storyline-extra-${key}`}
+                        className="text-xs text-muted-foreground"
+                      >
                         {t(sectionLabelKey(key))}
                       </Label>
                       {isShort ? (
@@ -217,17 +252,14 @@ export default function StorylineGenerator({
                           value={sections[key]}
                           onChange={(e) => updateSection(key, e.target.value)}
                           placeholder={t(sectionLabelKey(key))}
-                          className={inputClass}
                         />
                       ) : (
                         <AutoResizeTextarea
                           id={`storyline-extra-${key}`}
                           value={sections[key]}
-                          onChange={(e) =>
-                            updateSection(key, e.target.value)
-                          }
+                          onChange={(e) => updateSection(key, e.target.value)}
                           placeholder={t(sectionLabelKey(key))}
-                          className={inputClass}
+                          className={fieldClass}
                         />
                       )}
                     </div>
@@ -235,46 +267,45 @@ export default function StorylineGenerator({
                 })}
               </div>
             </details>
-          </article>
+          </CardContent>
+        </Card>
 
-          {error && (
-            <p className="shrink-0 mx-4 mb-4 text-sm text-destructive sm:mx-6" role="alert">
-              {error}
-            </p>
-          )}
+        {error && (
+          <p className="text-sm text-destructive" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
 
-          <div className="flex shrink-0 flex-wrap gap-2 border-t bg-muted/10 px-4 py-4 sm:px-6">
-            <Button
-              onClick={handleDownloadDocx}
-              className="min-h-[44px] touch-manipulation"
-            >
-              {t("downloadDocx")}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handleCopyText}
-              className="min-h-[44px] touch-manipulation"
-            >
-              {t("copyAsText")}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Action bar */}
+      <div className="flex shrink-0 flex-wrap gap-2 rounded-xl border bg-card p-3">
+        <Button
+          onClick={handleDownloadDocx}
+          className="min-h-[44px] flex-1 touch-manipulation sm:flex-none"
+        >
+          <Download className="size-4" />
+          {t("downloadDocx")}
+        </Button>
+        <Button
+          variant="outline"
+          onClick={handleCopyText}
+          className="min-h-[44px] flex-1 touch-manipulation sm:flex-none"
+        >
+          <Copy className="size-4" />
+          {t("copyAsText")}
+        </Button>
+      </div>
     </div>
   );
 }
 
-type ScenesTableProps = {
+type SceneCardsProps = {
   scenesTable: StorylineSceneRow[];
   onScenesTableChange: (next: StorylineSceneRow[]) => void;
   t: (key: string) => string;
 };
 
-function ScenesTable({
-  scenesTable,
-  onScenesTableChange,
-  t,
-}: ScenesTableProps) {
+function SceneCards({ scenesTable, onScenesTableChange, t }: SceneCardsProps) {
   const addRow = useCallback(() => {
     const nextIndex =
       scenesTable.length > 0
@@ -289,7 +320,9 @@ function ScenesTable({
   const removeRow = useCallback(
     (index: number) => {
       onScenesTableChange(
-        scenesTable.filter((r) => r.index !== index).map((r, i) => ({ ...r, index: i + 1 }))
+        scenesTable
+          .filter((r) => r.index !== index)
+          .map((r, i) => ({ ...r, index: i + 1 }))
       );
     },
     [scenesTable, onScenesTableChange]
@@ -306,103 +339,95 @@ function ScenesTable({
     [scenesTable, onScenesTableChange]
   );
 
-  const inputClass =
-    "w-full min-w-0 rounded border border-input bg-background px-2 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  const fieldClass =
+    "w-full min-w-0 rounded-lg border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <Label>{t("scenesTableTitle")}</Label>
-        <Button type="button" variant="outline" size="sm" onClick={addRow}>
-          {t("addScene")}
-        </Button>
-      </div>
-      <div className="overflow-x-auto rounded-md border border-slate-300/80 dark:border-slate-700/80 bg-white dark:bg-[#111111]">
-        <table className="w-full text-sm table-fixed">
-          <thead className="bg-slate-100 dark:bg-slate-800/60">
-            <tr>
-              <th className="text-left font-semibold p-2 w-2/5 text-slate-700 dark:text-slate-200">
-                {t("tableHeaderScene")}
-              </th>
-              <th className="text-left font-semibold p-2 w-1/5 text-slate-700 dark:text-slate-200">
-                {t("tableHeaderText")}
-              </th>
-              <th className="text-left font-semibold p-2 w-2/5 text-slate-700 dark:text-slate-200">
-                {t("tableHeaderSoundtrack")}
-              </th>
-              <th className="w-16" />
-            </tr>
-          </thead>
-          <tbody>
-            {scenesTable.length === 0 ? (
-              <tr className="border-t border-slate-200 dark:border-slate-800">
-                <td
-                  className="p-3 text-muted-foreground text-center"
-                  colSpan={4}
+    <div className="space-y-3">
+      {scenesTable.length === 0 ? (
+        <p className="rounded-lg border border-dashed py-6 text-center text-sm text-muted-foreground">
+          {t("tableEmpty")}
+        </p>
+      ) : (
+        [...scenesTable]
+          .sort((a, b) => a.index - b.index)
+          .map((row) => (
+            <div
+              key={row.index}
+              className="rounded-xl border bg-muted/30 p-3 sm:p-4"
+            >
+              <div className="mb-2.5 flex items-center justify-between gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
+                  <Clapperboard className="size-3" />
+                  Scene {row.index}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-9 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => removeRow(row.index)}
+                  aria-label={t("removeScene")}
                 >
-                  {t("tableEmpty")}
-                </td>
-              </tr>
-            ) : (
-              [...scenesTable]
-                .sort((a, b) => a.index - b.index)
-                .map((row) => (
-                  <tr
-                    key={row.index}
-                    className="border-t border-slate-200 dark:border-slate-800 align-top"
-                  >
-                    <td className="p-2">
-                      <div className="flex items-start gap-1">
-                        <span className="shrink-0 text-muted-foreground">
-                          (Scene {row.index}) :
-                        </span>
-                        <AutoResizeTextarea
-                          value={row.action}
-                          onChange={(e) =>
-                            updateRow(row.index, "action", e.target.value)
-                          }
-                          placeholder={t("tableHeaderScene")}
-                          className={`min-w-0 flex-1 ${inputClass}`}
-                        />
-                      </div>
-                    </td>
-                    <td className="p-2">
-                      <AutoResizeTextarea
-                        value={row.text}
-                        onChange={(e) =>
-                          updateRow(row.index, "text", e.target.value)
-                        }
-                        placeholder={t("tableHeaderText")}
-                        className={inputClass}
-                      />
-                    </td>
-                    <td className="p-2">
-                      <AutoResizeTextarea
-                        value={row.soundtrack}
-                        onChange={(e) =>
-                          updateRow(row.index, "soundtrack", e.target.value)
-                        }
-                        placeholder={t("tableHeaderSoundtrack")}
-                        className={inputClass}
-                      />
-                    </td>
-                    <td className="p-2 align-middle">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeRow(row.index)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        {t("removeScene")}
-                      </Button>
-                    </td>
-                  </tr>
-                ))
-            )}
-          </tbody>
-        </table>
-      </div>
+                  <Trash2 className="size-4" />
+                </Button>
+              </div>
+              <div className="grid gap-2.5 sm:grid-cols-2">
+                <div className="space-y-1 sm:col-span-2">
+                  <Label className="text-xs text-muted-foreground">
+                    {t("tableHeaderScene")}
+                  </Label>
+                  <AutoResizeTextarea
+                    value={row.action}
+                    onChange={(e) =>
+                      updateRow(row.index, "action", e.target.value)
+                    }
+                    placeholder={t("tableHeaderScene")}
+                    className={fieldClass}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">
+                    {t("tableHeaderText")}
+                  </Label>
+                  <AutoResizeTextarea
+                    value={row.text}
+                    onChange={(e) =>
+                      updateRow(row.index, "text", e.target.value)
+                    }
+                    placeholder={t("tableHeaderText")}
+                    className={fieldClass}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">
+                    {t("tableHeaderSoundtrack")}
+                  </Label>
+                  <AutoResizeTextarea
+                    value={row.soundtrack}
+                    onChange={(e) =>
+                      updateRow(row.index, "soundtrack", e.target.value)
+                    }
+                    placeholder={t("tableHeaderSoundtrack")}
+                    className={fieldClass}
+                  />
+                </div>
+              </div>
+            </div>
+          ))
+      )}
+
+      <button
+        type="button"
+        onClick={addRow}
+        className={cn(
+          "flex min-h-[48px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed text-sm font-medium text-muted-foreground transition-colors touch-manipulation",
+          "hover:border-primary/50 hover:bg-primary/5 hover:text-primary active:scale-[0.99]"
+        )}
+      >
+        <Plus className="size-4" />
+        {t("addScene")}
+      </button>
     </div>
   );
 }

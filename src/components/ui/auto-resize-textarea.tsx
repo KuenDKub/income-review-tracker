@@ -1,8 +1,8 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-export interface AutoResizeTextareaProps
-  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
+export type AutoResizeTextareaProps =
+  React.TextareaHTMLAttributes<HTMLTextAreaElement>;
 
 const AutoResizeTextarea = React.forwardRef<
   HTMLTextAreaElement,

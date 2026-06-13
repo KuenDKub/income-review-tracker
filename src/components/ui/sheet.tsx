@@ -50,7 +50,7 @@ function SheetOverlay({
 type SheetContentProps = React.ComponentProps<
   typeof DialogPrimitive.Content
 > & {
-  side?: "left" | "right";
+  side?: "left" | "right" | "bottom";
   showCloseButton?: boolean;
 };
 
@@ -68,16 +68,24 @@ function SheetContent({
       <DialogPrimitive.Content
         data-slot="sheet-content"
         className={cn(
-          "bg-background fixed z-50 flex h-full flex-col gap-4 shadow-lg transition-transform duration-200 ease-out outline-none",
+          "bg-background fixed z-50 flex flex-col gap-4 shadow-lg transition-transform duration-200 ease-out outline-none",
           "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-          side === "left"
-            ? "left-0 top-0 w-[280px] max-w-[85vw] data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left"
-            : "right-0 top-0 w-[280px] max-w-[85vw] data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right",
-          "border-r border-border",
+          side === "left" &&
+            "left-0 top-0 h-full w-[280px] max-w-[85vw] border-r border-border data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left",
+          side === "right" &&
+            "right-0 top-0 h-full w-[280px] max-w-[85vw] border-l border-border data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right",
+          side === "bottom" &&
+            "inset-x-0 bottom-0 max-h-[85dvh] w-full rounded-t-2xl border-t border-border pb-[env(safe-area-inset-bottom)] data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
           className
         )}
         {...props}
       >
+        {side === "bottom" && (
+          <div
+            aria-hidden
+            className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-muted-foreground/30"
+          />
+        )}
         {children}
         {showCloseButton && (
           <DialogPrimitive.Close

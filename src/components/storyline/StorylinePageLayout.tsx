@@ -9,7 +9,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Plus, MessageSquare, Trash2, PanelLeft } from "lucide-react";
+import {
+  Plus,
+  MessageSquare,
+  Trash2,
+  ChevronsUpDown,
+  Film,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import StorylineGenerator, {
   type StorylineFormData,
@@ -153,8 +159,8 @@ export default function StorylinePageLayout() {
             <div
               key={item.id}
               className={cn(
-                "flex items-center gap-1 rounded-md group",
-                activeId === item.id && "bg-primary text-primary-foreground"
+                "flex items-center gap-1 rounded-lg group",
+                activeId === item.id && "bg-primary/10"
               )}
             >
               <button
@@ -164,10 +170,10 @@ export default function StorylinePageLayout() {
                   setSheetOpen(false);
                 }}
                 className={cn(
-                  "flex min-w-0 flex-1 items-center gap-2 rounded-md px-3 py-2.5 text-left text-sm transition-colors min-h-[44px] touch-manipulation",
+                  "flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors min-h-[44px] touch-manipulation",
                   activeId === item.id
-                    ? "bg-primary text-primary-foreground"
-                    : "hover:bg-muted"
+                    ? "text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
                 <MessageSquare className="size-4 shrink-0" />
@@ -178,9 +184,9 @@ export default function StorylinePageLayout() {
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  "h-10 w-10 shrink-0 rounded-md opacity-70 hover:opacity-100 touch-manipulation",
+                  "h-10 w-10 shrink-0 rounded-lg opacity-70 hover:opacity-100 touch-manipulation",
                   activeId === item.id
-                    ? "text-primary-foreground hover:bg-primary-foreground/20"
+                    ? "text-primary hover:bg-primary/15"
                     : "text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                 )}
                 onClick={(e) => handleDeleteForm(e, item.id)}
@@ -202,13 +208,18 @@ export default function StorylinePageLayout() {
       <div className="shrink-0 lg:hidden">
         <Button
           variant="outline"
-          className="w-full justify-start gap-2 min-h-[44px] touch-manipulation rounded border-b-0"
+          className="w-full justify-between gap-2 min-h-[48px] touch-manipulation rounded-xl"
           onClick={() => setSheetOpen(true)}
           aria-expanded={sheetOpen}
           aria-label={t("openFormList")}
         >
-          <PanelLeft className="size-5 shrink-0" />
-          <span className="min-w-0 truncate">{openFormListLabel}</span>
+          <span className="flex min-w-0 items-center gap-2.5">
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Film className="size-4" />
+            </span>
+            <span className="min-w-0 truncate">{openFormListLabel}</span>
+          </span>
+          <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
         </Button>
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           <SheetContent
@@ -228,7 +239,7 @@ export default function StorylinePageLayout() {
       </div>
 
       {/* Sidebar: desktop only (lg+) */}
-      <aside className="hidden w-56 shrink-0 flex-col border-r bg-muted/20 p-3 lg:flex lg:w-64">
+      <aside className="hidden w-56 shrink-0 flex-col self-start rounded-xl border bg-card p-3 lg:flex lg:w-64">
         {formListContent}
       </aside>
 
@@ -243,10 +254,15 @@ export default function StorylinePageLayout() {
             />
           </div>
         ) : (
-          <div className="flex min-h-[300px] flex-col items-center justify-center gap-4 rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-            <p>{t("selectOrCreate")}</p>
-            <Button onClick={handleNewForm} variant="outline">
-              <Plus className="mr-2 size-4" />
+          <div className="flex min-h-[300px] flex-col items-center justify-center gap-4 rounded-xl border border-dashed bg-card/50 p-8 text-center text-muted-foreground">
+            <span className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Film className="size-7" />
+            </span>
+            <p className="max-w-xs text-sm leading-relaxed">
+              {t("selectOrCreate")}
+            </p>
+            <Button onClick={handleNewForm}>
+              <Plus className="mr-1 size-4" />
               {t("newChat")}
             </Button>
           </div>

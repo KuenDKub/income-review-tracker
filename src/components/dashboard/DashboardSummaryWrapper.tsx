@@ -9,50 +9,21 @@ import { DashboardSummary } from "./DashboardSummary";
 
 function DashboardSkeleton() {
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card className="min-h-[180px] border-l-4 border-l-primary/30">
-          <CardHeader className="pb-2">
-            <Skeleton className="h-5 w-32" />
-          </CardHeader>
-          <CardContent className="space-y-3 pt-0">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center justify-between gap-2">
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-4 w-20" />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-        <Card className="min-h-[180px] border-l-4 border-l-primary/30">
-          <CardHeader className="pb-2">
-            <Skeleton className="h-5 w-32" />
-          </CardHeader>
-          <CardContent className="space-y-3 pt-0">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center justify-between gap-2">
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-4 w-20" />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+    <div className="space-y-5 sm:space-y-6">
+      <Skeleton className="h-[212px] rounded-xl" />
+      <div className="flex gap-2">
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-11 flex-1 rounded-xl" />
+        ))}
       </div>
-      <Card>
-        <CardHeader className="pb-2">
-          <Skeleton className="h-5 w-24" />
-        </CardHeader>
-        <CardContent className="space-y-3 pt-0">
-          <div className="flex flex-wrap gap-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center gap-2">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-4 w-28" />
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-3">
+        <Skeleton className="h-5 w-28" />
+        <div className="grid gap-3 sm:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-[72px] rounded-xl" />
+          ))}
+        </div>
+      </div>
       <Card>
         <CardHeader>
           <Skeleton className="h-5 w-28" />
@@ -79,15 +50,6 @@ type SummaryData = {
   topPlatform: { name: string; count: number } | null;
   topPayer: { name: string; count: number } | null;
   topMonth: { year: number; month: number; count: number } | null;
-};
-
-const emptyData: SummaryData = {
-  monthly: { gross: 0, withholding: 0, net: 0 },
-  yearly: { gross: 0, withholding: 0, net: 0 },
-  recentJobs: [],
-  topPlatform: null,
-  topPayer: null,
-  topMonth: null,
 };
 
 export function DashboardSummaryWrapper() {

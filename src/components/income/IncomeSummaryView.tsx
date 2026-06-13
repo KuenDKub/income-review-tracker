@@ -5,10 +5,17 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatTHB } from "@/lib/currency";
-import { MonthlySummaryCard } from "@/components/dashboard/MonthlySummaryCard";
-import { YearlySummaryCard } from "@/components/dashboard/YearlySummaryCard";
-import { AlertCircle } from "lucide-react";
-import { CalendarDays } from "lucide-react";
+import { SummaryHeroCard } from "@/components/dashboard/SummaryHeroCard";
+import { AlertCircle, CalendarDays } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 function IncomeSummarySkeleton() {
   return (
@@ -21,32 +28,8 @@ function IncomeSummarySkeleton() {
         </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
-        <Card className="min-h-[180px] border-l-4 border-l-primary/30">
-          <CardHeader className="pb-2">
-            <Skeleton className="h-5 w-32" />
-          </CardHeader>
-          <CardContent className="space-y-3 pt-0">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center justify-between gap-2">
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-4 w-20" />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-        <Card className="min-h-[180px] border-l-4 border-l-primary/30">
-          <CardHeader className="pb-2">
-            <Skeleton className="h-5 w-32" />
-          </CardHeader>
-          <CardContent className="space-y-3 pt-0">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center justify-between gap-2">
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-4 w-20" />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+        <Skeleton className="h-[212px] rounded-2xl" />
+        <Skeleton className="h-[212px] rounded-2xl" />
       </div>
       <Card>
         <CardHeader className="pb-2">
@@ -90,7 +73,6 @@ const currentMonth = new Date().getMonth() + 1;
 export function IncomeSummaryView() {
   const t = useTranslations("income");
   const tDashboard = useTranslations("dashboard");
-  const tCommon = useTranslations("common");
   const [year, setYear] = useState(currentYear);
   const [month, setMonth] = useState(currentMonth);
   const [data, setData] = useState<SummaryData | null>(null);
@@ -139,49 +121,70 @@ export function IncomeSummaryView() {
   const years = [currentYear, currentYear - 1, currentYear - 2];
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
+  const maxAmount = Math.max(
+    1,
+    ...summary.byMonth.map((row) => Math.max(row.gross, row.net))
+  );
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">{tDashboard("yearlySummary")}</span>
-            <select
-              value={year}
-              onChange={(e) => setYear(parseInt(e.target.value, 10))}
-              className="rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+    <div className="space-y-4 sm:space-y-6">
+      <PageHeader
+        title={t("title")}
+        actions={
+          <>
+            <Select
+              value={String(year)}
+              onValueChange={(v) => setYear(parseInt(v, 10))}
             >
-              {years.map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">{tDashboard("monthlySummary")}</span>
-            <select
-              value={month}
-              onChange={(e) => setMonth(parseInt(e.target.value, 10))}
-              className="rounded-md border border-input bg-transparent px-3 py-2 text-sm"
+              <SelectTrigger
+                size="sm"
+                className="min-h-[40px]"
+                aria-label={tDashboard("yearlySummary")}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((y) => (
+                  <SelectItem key={y} value={String(y)}>
+                    {y}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={String(month)}
+              onValueChange={(v) => setMonth(parseInt(v, 10))}
             >
-              {months.map((m) => (
-                <option key={m} value={m}>
-                  {MONTH_NAMES_TH[m - 1]}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
+              <SelectTrigger
+                size="sm"
+                className="min-h-[40px]"
+                aria-label={tDashboard("monthlySummary")}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {months.map((m) => (
+                  <SelectItem key={m} value={String(m)}>
+                    {MONTH_NAMES_TH[m - 1]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </>
+        }
+      />
 
       <div className="grid gap-4 md:grid-cols-2">
-        <MonthlySummaryCard
+        <SummaryHeroCard
+          label={tDashboard("monthlySummary")}
+          periodLabel={`${MONTH_NAMES_TH[month - 1]} ${year}`}
           gross={summary.monthly.gross}
           withholding={summary.monthly.withholding}
           net={summary.monthly.net}
         />
-        <YearlySummaryCard
+        <SummaryHeroCard
+          label={tDashboard("yearlySummary")}
+          periodLabel={String(year)}
           gross={summary.yearly.gross}
           withholding={summary.yearly.withholding}
           net={summary.yearly.net}
@@ -189,31 +192,78 @@ export function IncomeSummaryView() {
       </div>
 
       {summary.byMonth.length > 0 && (
-        <Card>
+        <Card className="rounded-2xl">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary/15 to-violet-500/15 text-primary">
                 <CalendarDays className="h-4 w-4" />
               </span>
               {t("byMonthTitle")}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <ul className="space-y-2">
-              {summary.byMonth.map((row) => (
-                <li
-                  key={row.month}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-md border py-2 px-3 text-sm"
-                >
-                  <span className="font-medium">
-                    {MONTH_NAMES_TH[row.month - 1]} {row.year}
-                  </span>
-                  <span className="tabular-nums text-muted-foreground">
-                    {tDashboard("gross")}: {formatTHB(row.gross)} · {tDashboard("net")}: {formatTHB(row.net)} THB
-                  </span>
-                </li>
-              ))}
+            <ul className="space-y-1">
+              {summary.byMonth.map((row) => {
+                const isSelected = row.month === month && row.year === year;
+                const grossPct = Math.round((row.gross / maxAmount) * 100);
+                const netPct = Math.round((row.net / maxAmount) * 100);
+                return (
+                  <li key={`${row.year}-${row.month}`}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setYear(row.year);
+                        setMonth(row.month);
+                      }}
+                      className={cn(
+                        "grid w-full cursor-pointer touch-manipulation grid-cols-[3.5rem_1fr_auto] items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-muted/60 active:bg-muted",
+                        isSelected && "bg-primary/5"
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "text-sm font-medium",
+                          isSelected ? "text-primary" : "text-muted-foreground"
+                        )}
+                      >
+                        {MONTH_NAMES_TH[row.month - 1]}
+                      </span>
+                      <span className="relative block h-2.5 min-w-0 overflow-hidden rounded-full bg-muted">
+                        <span
+                          aria-hidden
+                          className="absolute inset-y-0 left-0 rounded-full bg-violet-400/45"
+                          style={{ width: `${grossPct}%` }}
+                        />
+                        <span
+                          aria-hidden
+                          className="absolute inset-y-0 left-0 rounded-full bg-primary"
+                          style={{ width: `${netPct}%` }}
+                        />
+                      </span>
+                      <span className="text-sm font-semibold tabular-nums">
+                        {formatTHB(row.net)}
+                        <span className="ml-1 text-xs font-normal text-muted-foreground">
+                          THB
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
+            <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 border-t pt-3 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <span aria-hidden className="h-2 w-4 rounded-full bg-primary" />
+                {tDashboard("net")}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span
+                  aria-hidden
+                  className="h-2 w-4 rounded-full bg-violet-400/45"
+                />
+                {tDashboard("gross")}
+              </span>
+            </p>
           </CardContent>
         </Card>
       )}

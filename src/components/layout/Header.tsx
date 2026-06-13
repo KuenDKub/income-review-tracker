@@ -1,111 +1,26 @@
-"use client";
-
-import { useState } from "react";
-import { Link, usePathname } from "@/i18n/navigation";
-import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import { navItems } from "@/components/layout/Sidebar";
-import { Menu } from "lucide-react";
-import { cn } from "@/lib/utils";
-
-type NavLabels = {
-  dashboard: string;
-  jobs: string;
-  jobsDnd: string;
-  income: string;
-  tax: string;
-  storyline: string;
-  calendar: string;
-};
+import { Link } from "@/i18n/navigation";
+import { Sparkles } from "lucide-react";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 
 type HeaderProps = {
   title?: string;
-  navLabels?: NavLabels;
 };
 
-const defaultNavLabels: NavLabels = {
-  dashboard: "Dashboard",
-  jobs: "Jobs",
-  jobsDnd: "Jobs Board",
-  income: "Income",
-  tax: "Tax",
-  storyline: "AI Storyline",
-  calendar: "Calendar",
-};
-
-export function Header({
-  title = "Review Income & Tax Tracker",
-  navLabels = defaultNavLabels,
-}: HeaderProps) {
-  const labels = { ...defaultNavLabels, ...navLabels };
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const pathname = usePathname();
-
+/** Mobile top bar — on desktop the sidebar carries the brand and controls. */
+export function Header({ title = "Review Income & Tax Tracker" }: HeaderProps) {
   return (
-    <header className="border-b bg-card px-4 py-4 sm:px-6">
-      <div className="flex min-h-[44px] items-center justify-between gap-4">
-        <Link href="/" className="min-w-0 shrink-0">
-          <span className="text-lg font-semibold truncate">{title}</span>
+    <header className="sticky top-0 z-40 border-b bg-card/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-card/80 lg:hidden">
+      <div className="flex min-h-14 items-center justify-between gap-3">
+        <Link
+          href="/"
+          className="flex min-w-0 items-center gap-2.5 touch-manipulation"
+        >
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <Sparkles className="size-4" />
+          </span>
+          <span className="truncate text-base font-bold">{title}</span>
         </Link>
-
-        {/* Desktop nav: visible from lg up */}
-        <nav className="hidden shrink-0 gap-2 lg:flex">
-          {navItems.map(({ href, labelKey }) => (
-            <Button key={href} variant="ghost" size="sm" asChild>
-              <Link href={href === "/" ? "/" : href}>
-                {labels[labelKey] ?? labelKey}
-              </Link>
-            </Button>
-          ))}
-        </nav>
-
-        {/* Mobile/tablet: hamburger opens sheet */}
-        <div className="shrink-0 lg:hidden">
-          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-11 min-w-11 touch-manipulation"
-              aria-label="Open menu"
-              aria-expanded={sheetOpen}
-              onClick={() => setSheetOpen(true)}
-            >
-              <Menu className="size-6" />
-            </Button>
-            <SheetContent side="left" className="p-0">
-              <SheetHeader className="border-b px-6 py-4">
-                <SheetTitle className="text-base font-semibold">
-                  {title}
-                </SheetTitle>
-              </SheetHeader>
-              <nav className="flex flex-col gap-1 p-4">
-                {navItems.map(({ href, labelKey, icon: Icon }) => (
-                  <Link
-                    key={href}
-                    href={href === "/" ? "/" : href}
-                    onClick={() => setSheetOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 rounded-md px-3 py-3 text-sm font-medium transition-colors touch-manipulation",
-                      pathname === href ||
-                        (href !== "/" && pathname.startsWith(href + "/"))
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-muted",
-                    )}
-                  >
-                    <Icon className="size-5 shrink-0" />
-                    {labels[labelKey] ?? labelKey}
-                  </Link>
-                ))}
-              </nav>
-            </SheetContent>
-          </Sheet>
-        </div>
+        <ThemeToggle />
       </div>
     </header>
   );

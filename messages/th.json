@@ -3,6 +3,12 @@
     "title": "Review Income & Tax Tracker",
     "description": "Review Income & Tax Tracker (Thailand-focused)"
   },
+  "nav": {
+    "workspace": "พื้นที่ทำงาน",
+    "tools": "เครื่องมือ",
+    "collapse": "ย่อเมนู",
+    "expand": "ขยายเมนู"
+  },
   "common": {
     "add": "เพิ่ม",
     "edit": "แก้ไข",
@@ -22,7 +28,14 @@
     "view": "ดู",
     "action": "การดำเนินการ",
     "selectPlaceholder": "เลือก...",
-    "selectedCount": "เลือกแล้ว {count} รายการ"
+    "selectedCount": "เลือกแล้ว {count} รายการ",
+    "more": "เพิ่มเติม",
+    "filters": "ตัวกรอง",
+    "done": "เสร็จสิ้น",
+    "language": "ภาษา",
+    "theme": "ธีม",
+    "themeLight": "สว่าง",
+    "themeDark": "มืด"
   },
   "dashboard": {
     "title": "แดชบอร์ด",
@@ -42,7 +55,15 @@
     "topMonth": "เดือนที่มีงานมากสุด",
     "jobsCount": "{count} งาน",
     "noData": "ไม่มีข้อมูล",
-    "dataSourceNote": "สถิติจากงานรีวิว: แพลตฟอร์ม ชื่อผู้จ่าย และวันรับงาน"
+    "dataSourceNote": "สถิติจากงานรีวิว: แพลตฟอร์ม ชื่อผู้จ่าย และวันรับงาน",
+    "quickActions": "ทางลัด",
+    "addJob": "เพิ่มงาน",
+    "openBoard": "เปิดบอร์ดงาน",
+    "subtitle": "ภาพรวมรายได้ฟรีแลนซ์ของคุณ",
+    "periodMonth": "เดือน",
+    "periodYear": "ปี",
+    "period": "ช่วงเวลา",
+    "takeHome": "รับจริง"
   },
   "calendar": {
     "title": "ปฏิทิน",
@@ -66,11 +87,17 @@
     "filterPublish": "วันลงงาน",
     "filterPayment": "วันที่ได้รับเงิน",
     "monthLabel": "เดือน",
-    "today": "วันนี้"
+    "today": "วันนี้",
+    "viewMonth": "เดือน",
+    "viewAgenda": "กำหนดการ",
+    "previousMonth": "เดือนก่อนหน้า",
+    "nextMonth": "เดือนถัดไป",
+    "noEventsThisMonth": "เดือนนี้ยังไม่มีรายการ"
   },
   "jobs": {
     "title": "งานรีวิว",
     "boardTitle": "งาน",
+    "board": "บอร์ดงาน",
     "emptyColumn": "วางที่นี่",
     "backToJobs": "กลับไปรายการงาน",
     "listPlaceholder": "รายการงาน",
@@ -144,7 +171,22 @@
     "isBrotherJob": "งาน Barter (รับแต่ของรีวิว ไม่มีรายได้)",
     "brotherBadge": "งาน Barter",
     "allStatuses": "ทุกสถานะ",
-    "searchPlaceholder": "ค้นหางาน..."
+    "searchPlaceholder": "ค้นหางาน...",
+    "budget": "งบ",
+    "monthsRange": "ช่วงเดือน",
+    "monthsOption": "{count} เดือน",
+    "dueOverdue": "เลยกำหนด {days} วัน",
+    "dueToday": "ครบกำหนดวันนี้",
+    "dueInDays": "อีก {days} วัน",
+    "moveToStatus": "ย้ายไปสถานะ",
+    "viewDetails": "ดูรายละเอียด",
+    "collapseColumn": "ย่อคอลัมน์",
+    "expandColumn": "ขยายคอลัมน์",
+    "dragPickedUp": "หยิบ {title}",
+    "dragOverColumn": "อยู่เหนือ {column}",
+    "dragDropped": "ย้าย {title} ไป {column} แล้ว",
+    "dragCanceled": "ยกเลิกการย้าย",
+    "dragInstructions": "กด space หรือ enter เพื่อหยิบการ์ด ใช้ปุ่มลูกศรเพื่อย้ายระหว่างคอลัมน์ แล้วกด space หรือ enter อีกครั้งเพื่อวาง"
   },
   "payers": {
     "title": "Payers",
