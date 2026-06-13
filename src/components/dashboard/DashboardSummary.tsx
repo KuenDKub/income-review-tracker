@@ -1,11 +1,98 @@
 "use client";
 
+import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, Globe, Building2, CalendarDays, Info, Inbox } from "lucide-react";
-import { MonthlySummaryCard } from "./MonthlySummaryCard";
-import { YearlySummaryCard } from "./YearlySummaryCard";
+import { Link } from "@/i18n/navigation";
+import {
+  BarChart3,
+  Globe,
+  Building2,
+  CalendarDays,
+  Info,
+  Plus,
+  Wallet,
+  Columns,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { StatTile } from "@/components/ui/stat-tile";
+import { SummaryHeroCard } from "./SummaryHeroCard";
 import { RecentJobsList } from "./RecentJobsList";
+
+type Period = "month" | "year";
+
+function PeriodToggle({
+  value,
+  onChange,
+}: {
+  value: Period;
+  onChange: (p: Period) => void;
+}) {
+  const t = useTranslations("dashboard");
+  const options: Array<{ key: Period; label: string }> = [
+    { key: "month", label: t("periodMonth") },
+    { key: "year", label: t("periodYear") },
+  ];
+
+  return (
+    <div
+      role="tablist"
+      aria-label={t("period")}
+      className="inline-flex rounded-full border bg-muted/50 p-0.5 text-xs font-medium"
+    >
+      {options.map(({ key, label }) => (
+        <button
+          key={key}
+          type="button"
+          role="tab"
+          aria-selected={value === key}
+          onClick={() => onChange(key)}
+          className={cn(
+            "rounded-full px-3 py-1 transition-colors touch-manipulation",
+            value === key
+              ? "bg-card text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function QuickActions() {
+  const t = useTranslations("dashboard");
+  const tIncome = useTranslations("income");
+
+  return (
+    <section
+      aria-label={t("quickActions")}
+      className="flex flex-wrap items-center gap-2"
+    >
+      <Link
+        href="/jobs?new=1"
+        className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-primary to-violet-500 px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm shadow-primary/20 transition-all touch-manipulation hover:opacity-90 active:scale-[0.98]"
+      >
+        <Plus className="size-4" />
+        {t("addJob")}
+      </Link>
+      <Link
+        href="/jobs-dnd"
+        className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-full border bg-card px-4 py-2.5 text-sm font-medium transition-all touch-manipulation hover:bg-primary/5 active:scale-[0.98]"
+      >
+        <Columns className="size-4 text-primary" />
+        {t("openBoard")}
+      </Link>
+      <Link
+        href="/income"
+        className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-full border bg-card px-4 py-2.5 text-sm font-medium transition-all touch-manipulation hover:bg-primary/5 active:scale-[0.98]"
+      >
+        <Wallet className="size-4 text-primary" />
+        {tIncome("title")}
+      </Link>
+    </section>
+  );
+}
 
 type DashboardSummaryProps = {
   monthlyGross?: number;
@@ -42,87 +129,86 @@ export function DashboardSummary({
 }: DashboardSummaryProps) {
   const t = useTranslations("dashboard");
   const locale = useLocale();
+  const [period, setPeriod] = useState<Period>("month");
+
+  const now = new Date();
+  const monthLabel = new Intl.DateTimeFormat(locale, {
+    month: "long",
+    year: "numeric",
+  }).format(now);
+  const yearLabel = String(now.getFullYear());
+
+  const isMonth = period === "month";
+  const gross = isMonth ? monthlyGross : yearlyGross;
+  const withholding = isMonth ? monthlyWithholding : yearlyWithholding;
+  const net = isMonth ? monthlyNet : yearlyNet;
+  const periodLabel = isMonth ? monthLabel : yearLabel;
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2">
-        <MonthlySummaryCard
-          gross={monthlyGross}
-          withholding={monthlyWithholding}
-          net={monthlyNet}
-        />
-        <YearlySummaryCard
-          gross={yearlyGross}
-          withholding={yearlyWithholding}
-          net={yearlyNet}
-        />
-      </div>
+    <div className="space-y-5 sm:space-y-6">
+      {/* Hero — net income with take-home rate */}
+      <SummaryHeroCard
+        label={t("net")}
+        periodLabel={periodLabel}
+        gross={gross}
+        withholding={withholding}
+        net={net}
+        headerRight={<PeriodToggle value={period} onChange={setPeriod} />}
+      />
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <BarChart3 className="h-4 w-4" />
-            </span>
-            {t("jobStats")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 pt-0">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-            <span className="flex items-center gap-2 text-muted-foreground">
-              <Globe className="h-4 w-4 shrink-0" />
-              {t("topPlatform")}:
-            </span>
-            {topPlatform ? (
-              <span className="font-medium">
-                {topPlatform.name} — {t("jobsCount", { count: topPlatform.count })}
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                <Inbox className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                {t("noData")}
-              </span>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-            <span className="flex items-center gap-2 text-muted-foreground">
-              <Building2 className="h-4 w-4 shrink-0" />
-              {t("topPayer")}:
-            </span>
-            {topPayer ? (
-              <span className="font-medium">
-                {topPayer.name} — {t("jobsCount", { count: topPayer.count })}
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                <Inbox className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                {t("noData")}
-              </span>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-            <span className="flex items-center gap-2 text-muted-foreground">
-              <CalendarDays className="h-4 w-4 shrink-0" />
-              {t("topMonth")}:
-            </span>
-            {topMonth ? (
-              <span className="font-medium">
-                {formatMonthYear(topMonth.year, topMonth.month, locale)} —{" "}
-                {t("jobsCount", { count: topMonth.count })}
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                <Inbox className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                {t("noData")}
-              </span>
-            )}
-          </div>
-          <p className="flex items-start gap-2 pt-2 text-xs text-muted-foreground">
-            <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-            {t("dataSourceNote")}
-          </p>
-        </CardContent>
-      </Card>
+      <QuickActions />
+
+      {/* Job stats */}
+      <section aria-label={t("jobStats")} className="space-y-3">
+        <h2 className="flex items-center gap-2 text-sm font-semibold">
+          <span className="flex size-7 items-center justify-center rounded-full bg-gradient-to-br from-primary/15 to-violet-500/15 text-primary">
+            <BarChart3 className="size-4" />
+          </span>
+          {t("jobStats")}
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <StatTile
+            icon={Globe}
+            tone="primary"
+            label={t("topPlatform")}
+            value={topPlatform ? topPlatform.name : t("noData")}
+            sublabel={
+              topPlatform
+                ? t("jobsCount", { count: topPlatform.count })
+                : undefined
+            }
+            className="rounded-2xl"
+          />
+          <StatTile
+            icon={Building2}
+            tone="primary"
+            label={t("topPayer")}
+            value={topPayer ? topPayer.name : t("noData")}
+            sublabel={
+              topPayer ? t("jobsCount", { count: topPayer.count }) : undefined
+            }
+            className="rounded-2xl"
+          />
+          <StatTile
+            icon={CalendarDays}
+            tone="primary"
+            label={t("topMonth")}
+            value={
+              topMonth
+                ? formatMonthYear(topMonth.year, topMonth.month, locale)
+                : t("noData")
+            }
+            sublabel={
+              topMonth ? t("jobsCount", { count: topMonth.count }) : undefined
+            }
+            className="rounded-2xl"
+          />
+        </div>
+        <p className="flex items-start gap-2 text-xs text-muted-foreground">
+          <Info className="mt-0.5 size-3.5 shrink-0" />
+          {t("dataSourceNote")}
+        </p>
+      </section>
 
       <RecentJobsList jobs={recentJobs} />
     </div>

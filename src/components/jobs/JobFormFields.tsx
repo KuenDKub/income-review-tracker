@@ -389,7 +389,7 @@ export function JobFormFields({
                     <FormLabel>{t("amount")}</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
+                        type="number" inputMode="decimal"
                         step="0.01"
                         min={0}
                         placeholder="0"
@@ -422,7 +422,7 @@ export function JobFormFields({
                         <FormLabel>{t("grossAmount")}</FormLabel>
                         <FormControl>
                           <Input
-                            type="number"
+                            type="number" inputMode="decimal"
                             step="0.01"
                             min={0}
                             placeholder="0"
@@ -452,7 +452,7 @@ export function JobFormFields({
                         <FormLabel>{t("withholdingRate")}</FormLabel>
                         <FormControl>
                           <Input
-                            type="number"
+                            type="number" inputMode="decimal"
                             step="0.01"
                             min={0}
                             max={100}

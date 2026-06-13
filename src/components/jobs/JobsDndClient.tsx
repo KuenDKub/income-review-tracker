@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import {
   DndContext,
+  DragOverlay,
+  type DragStartEvent,
   type DragEndEvent,
   PointerSensor,
   TouchSensor,
@@ -13,33 +14,13 @@ import {
   useSensors,
   pointerWithin,
 } from "@dnd-kit/core";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { PlatformBadges } from "./PlatformBadges";
 import { toast } from "@/lib/toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, GripVertical } from "lucide-react";
-import { formatDateThai } from "@/lib/formatDate";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { FileUpload } from "@/components/ui/file-upload";
 import {
   REVIEW_JOB_STATUSES,
   type ReviewJobStatus,
 } from "@/lib/schemas/reviewJob";
-import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
-import {
-  DEFAULT_STATUS_BADGE_CLASS,
-} from "./statusBadge";
-import { formatTHB } from "@/lib/currency";
 import {
   Select,
   SelectContent,
@@ -48,195 +29,47 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { parseAsInteger, useQueryState } from "nuqs";
+import { PageHeader } from "@/components/ui/page-header";
+import { BoardColumn } from "@/components/board/BoardColumn";
+import { BoardCardContent } from "@/components/board/BoardCard";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { StatusChipBar } from "@/components/board/StatusChipBar";
+import { JobSheet } from "@/components/board/JobSheet";
+import { PaidConfirmSheet } from "@/components/board/PaidConfirmSheet";
+import { STATUS_KEYS } from "@/components/board/statusTheme";
+import type { JobItem, JobsByStatus } from "@/components/board/types";
 
-/** Softer column colors for DnD board (lighter than badge) */
-const STATUS_COLUMN_CLASS: Record<string, string> = {
-  received:
-    "bg-zinc-50 text-zinc-700 dark:bg-zinc-800/40 dark:text-zinc-300 border-zinc-200 dark:border-zinc-600",
-  script_sent:
-    "bg-orange-50 text-orange-800 dark:bg-orange-950/40 dark:text-orange-200 border-orange-200 dark:border-orange-800",
-  in_progress:
-    "bg-sky-50 text-sky-800 dark:bg-sky-950/40 dark:text-sky-200 border-sky-200 dark:border-sky-700",
-  waiting_edit:
-    "bg-rose-50 text-rose-800 dark:bg-rose-950/40 dark:text-rose-200 border-rose-200 dark:border-rose-700",
-  waiting_review:
-    "bg-violet-50 text-violet-800 dark:bg-violet-950/40 dark:text-violet-200 border-violet-200 dark:border-violet-700",
-  approved_waiting_to_publish:
-    "bg-teal-50 text-teal-800 dark:bg-teal-950/40 dark:text-teal-200 border-teal-200 dark:border-teal-700",
-  approved_pending:
-    "bg-teal-100 text-teal-900 dark:bg-teal-900/45 dark:text-teal-100 border-teal-300 dark:border-teal-700",
-  paid: "bg-green-50 text-green-800 dark:bg-green-950/40 dark:text-green-200 border-green-200 dark:border-green-700",
-};
+const COLLAPSED_STORAGE_KEY = "board-collapsed-columns";
 
-const STATUS_KEYS: Record<string, string> = {
-  received: "statusReceived",
-  script_sent: "statusScriptSent",
-  in_progress: "statusInProgress",
-  waiting_edit: "statusWaitingEdit",
-  waiting_review: "statusWaitingReview",
-  approved_waiting_to_publish: "statusApprovedWaitingToPublish",
-  approved_pending: "statusApprovedPending",
-  paid: "statusPaid",
-};
+const BOARD_HEIGHT_CLASS =
+  "h-[calc(100dvh-285px)] min-h-[300px] lg:h-[calc(100dvh-185px)]";
 
-type JobItem = {
-  id: string;
-  title: string;
-  platforms: string[];
-  contentType: string;
-  payerName?: string | null;
-  status: string;
-  receivedDate?: string | null;
-  reviewDeadline?: string | null;
-  publishDate?: string | null;
-  paymentDate?: string | null;
-  grossAmount?: number | null;
-  netAmount?: number | null;
-};
-
-type JobsByStatus = Record<string, JobItem[]>;
-
-function JobCard({
-  job,
-  isDragging,
-}: {
-  job: JobItem;
-  isDragging?: boolean;
-}) {
-  const t = useTranslations("jobs");
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    isDragging: dndIsDragging,
-  } = useDraggable({
-    id: job.id,
-    data: { job, status: job.status },
-  });
-
-  const dragging = isDragging ?? dndIsDragging;
-
-  const style = transform
-    ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-      }
-    : undefined;
-
-  return (
-    <Card
-      ref={setNodeRef}
-      style={style}
-      className={cn(
-        "mb-2 cursor-grab py-2 px-2 active:cursor-grabbing transition-shadow",
-        dragging && "opacity-50 shadow-lg"
-      )}
-    >
-      <CardContent className="p-3">
-        <div className="flex items-start gap-2">
-          <div
-            className="flex min-h-[44px] min-w-[44px] shrink-0 cursor-grab touch-none items-center justify-center active:cursor-grabbing"
-            {...attributes}
-            {...listeners}
-          >
-            <GripVertical className="h-5 w-5 text-muted-foreground" />
-          </div>
-          <div className="min-w-0 flex-1 space-y-2">
-            <Link
-              href={`/jobs/${job.id}`}
-              className="font-medium text-primary hover:underline line-clamp-1"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {job.title}
-            </Link>
-            {job.payerName && (
-              <p className="text-xs text-muted-foreground">{job.payerName}</p>
-            )}
-            {job.netAmount != null && (
-              <p className="text-xs font-medium text-foreground">
-                Budget: {formatTHB(job.netAmount)} THB
-              </p>
-            )}
-            <PlatformBadges platforms={job.platforms ?? []} className="gap-1" />
-            {/* <p className="text-xs">{job.contentType || "—"}</p> */}
-            <div className="flex flex-wrap gap-x-3 gap-y-0 text-xs text-muted-foreground">
-              {job.reviewDeadline && (
-                <span>
-                  {t("reviewDeadline")}: {formatDateThai(job.reviewDeadline)}
-                </span>
-              )}
-              {job.publishDate && (
-                <span>
-                  {t("publishDate")}: {formatDateThai(job.publishDate)}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function Column({
-  status,
-  jobs,
-  label,
-}: {
-  status: string;
-  jobs: JobItem[];
-  label: string;
-}) {
-  const t = useTranslations("jobs");
-  const { setNodeRef, isOver } = useDroppable({ id: status });
-  const statusClass =
-    STATUS_COLUMN_CLASS[status] ?? DEFAULT_STATUS_BADGE_CLASS;
-
-  return (
-    <div
-      ref={setNodeRef}
-      className={cn(
-        "flex flex-col rounded-lg border p-3 transition-colors",
-        statusClass,
-        "w-full min-w-0 lg:h-full lg:w-auto lg:min-w-[240px] lg:max-w-[280px] lg:shrink-0",
-        isOver && "ring-2 ring-primary ring-offset-2"
-      )}
-    >
-      <div className="mb-3 flex shrink-0 items-center justify-between">
-        <h3 className="font-medium">{label}</h3>
-        <span className="text-sm opacity-90">{jobs.length}</span>
-      </div>
-      <div className="min-h-0 flex-1 space-y-0 overflow-y-auto">
-        {jobs.length === 0 ? (
-          <p className="py-4 text-center text-sm text-muted-foreground">
-            {t("emptyColumn")}
-          </p>
-        ) : (
-          jobs.map((job) => <JobCard key={job.id} job={job} />)
-        )}
-      </div>
-    </div>
-  );
+function vibrate(ms: number) {
+  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+    try {
+      navigator.vibrate(ms);
+    } catch {
+      // not supported
+    }
+  }
 }
 
 function BoardSkeleton() {
   return (
-    <div className="w-full min-w-0 overflow-x-auto">
-      <div className="flex flex-col gap-4 pb-4 lg:flex-row lg:inline-flex">
-        {Array.from({ length: 7 }).map((_, i) => (
-          <div
-            key={i}
-            className="flex w-full min-w-0 flex-col rounded-lg border bg-muted/30 p-3 lg:w-auto lg:min-w-[240px] lg:max-w-[280px] lg:shrink-0"
-          >
-            <Skeleton className="mb-3 h-5 w-24" />
-            <div className="space-y-2">
-              {Array.from({ length: 3 }).map((_, j) => (
-                <Skeleton key={j} className="h-24 w-full" />
-              ))}
-            </div>
+    <div className={cn("flex gap-3 overflow-hidden", BOARD_HEIGHT_CLASS)}>
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div
+          key={i}
+          className="flex h-full w-[86vw] max-w-[340px] shrink-0 flex-col rounded-lg border bg-muted/30 p-3 md:w-[300px] lg:w-[280px]"
+        >
+          <Skeleton className="mb-3 h-5 w-24" />
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, j) => (
+              <Skeleton key={j} className="h-24 w-full" />
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -247,10 +80,9 @@ function groupJobsByStatus(jobs: JobItem[]): JobsByStatus {
     grouped[status] = [];
   }
   for (const job of jobs) {
-    const status =
-      REVIEW_JOB_STATUSES.includes(job.status as ReviewJobStatus)
-        ? job.status
-        : "received";
+    const status = REVIEW_JOB_STATUSES.includes(job.status as ReviewJobStatus)
+      ? job.status
+      : "received";
     grouped[status].push(job);
   }
   return grouped;
@@ -258,21 +90,63 @@ function groupJobsByStatus(jobs: JobItem[]): JobsByStatus {
 
 export function JobsDndClient() {
   const t = useTranslations("jobs");
-  const tCommon = useTranslations("common");
+  const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const [jobs, setJobs] = useState<JobItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [monthsQuery, setMonthsQuery] = useQueryState(
     "months",
     parseAsInteger.withDefault(3)
   );
+
+  // Drag state
+  const [activeJob, setActiveJob] = useState<JobItem | null>(null);
+  const lastDragEndAt = useRef(0);
+
+  // Card detail sheet
+  const [selectedJob, setSelectedJob] = useState<JobItem | null>(null);
+  const [jobSheetOpen, setJobSheetOpen] = useState(false);
+  const [moving, setMoving] = useState(false);
+
+  // Paid confirmation
   const [paidDialogOpen, setPaidDialogOpen] = useState(false);
   const [paidDialogSaving, setPaidDialogSaving] = useState(false);
   const [pendingPaidJob, setPendingPaidJob] = useState<JobItem | null>(null);
   const [paidPaymentDate, setPaidPaymentDate] = useState<string>("");
   const [paidEvidenceFiles, setPaidEvidenceFiles] = useState<File[]>([]);
-
   const pendingPrevStatusRef = useRef<string | null>(null);
   const pendingPrevPaymentDateRef = useRef<string | null>(null);
+
+  // Mobile column pager
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const colRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const scrollRafRef = useRef<number | null>(null);
+  const [activeColIndex, setActiveColIndex] = useState(0);
+
+  // Collapsible columns (desktop/iPad)
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(COLLAPSED_STORAGE_KEY);
+      if (raw) setCollapsed(new Set(JSON.parse(raw) as string[]));
+    } catch {
+      // ignore corrupt storage
+    }
+  }, []);
+
+  const toggleCollapse = useCallback((status: string) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(status)) next.delete(status);
+      else next.add(status);
+      try {
+        localStorage.setItem(COLLAPSED_STORAGE_KEY, JSON.stringify([...next]));
+      } catch {
+        // ignore quota errors
+      }
+      return next;
+    });
+  }, []);
 
   const pendingMinPaymentDate = useMemo(() => {
     const job = pendingPaidJob;
@@ -342,39 +216,36 @@ export function JobsDndClient() {
     pendingPrevPaymentDateRef.current = null;
   }, []);
 
-  const handleDragEnd = useCallback(
-    async (event: DragEndEvent) => {
-      const { active, over } = event;
-      if (!over || active.id === over.id) return;
+  const startPaidFlow = useCallback((job: JobItem, fromStatus: string) => {
+    pendingPrevStatusRef.current = fromStatus;
+    pendingPrevPaymentDateRef.current = job.paymentDate ?? null;
+    setPendingPaidJob(job);
+    const min = (job.publishDate ?? job.reviewDeadline ?? job.receivedDate ?? "")
+      .toString()
+      .trim();
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const defaultDate =
+      job.paymentDate?.trim() ||
+      (min && todayIso < min ? min : todayIso) ||
+      todayIso;
+    setPaidPaymentDate(defaultDate);
+    setPaidEvidenceFiles([]);
+    setPaidDialogOpen(true);
+  }, []);
 
-      const job = active.data?.current?.job as JobItem | undefined;
-      const currentStatus = active.data?.current?.status as string | undefined;
-      const newStatus = String(over.id);
-
-      if (!job || !REVIEW_JOB_STATUSES.includes(newStatus as ReviewJobStatus)) {
-        return;
-      }
-      if (currentStatus === newStatus) return;
+  /** Shared by drag-and-drop and the tap-to-move status picker. */
+  const moveJob = useCallback(
+    async (job: JobItem, newStatus: string) => {
+      if (!REVIEW_JOB_STATUSES.includes(newStatus as ReviewJobStatus)) return;
+      if (job.status === newStatus) return;
 
       if (newStatus === "paid") {
-        pendingPrevStatusRef.current = currentStatus ?? job.status ?? null;
-        pendingPrevPaymentDateRef.current = job.paymentDate ?? null;
-        setPendingPaidJob(job);
-        const min = (job.publishDate ?? job.reviewDeadline ?? job.receivedDate ?? "")
-          .toString()
-          .trim();
-        const todayIso = new Date().toISOString().slice(0, 10);
-        const defaultDate =
-          job.paymentDate?.trim() ||
-          (min && todayIso < min ? min : todayIso) ||
-          todayIso;
-        setPaidPaymentDate(defaultDate);
-        setPaidEvidenceFiles([]);
-        setPaidDialogOpen(true);
+        startPaidFlow(job, job.status);
         return;
       }
 
       const prevJobs = [...jobs];
+      setMoving(true);
       setJobs((prev) =>
         prev.map((j) => (j.id === job.id ? { ...j, status: newStatus } : j))
       );
@@ -391,9 +262,52 @@ export function JobsDndClient() {
       } catch (e) {
         toast.error(t("updateError"), String(e));
         setJobs(prevJobs);
+      } finally {
+        setMoving(false);
       }
     },
-    [jobs, t]
+    [jobs, startPaidFlow, t]
+  );
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    const job = event.active.data?.current?.job as JobItem | undefined;
+    setActiveJob(job ?? null);
+    vibrate(10);
+  }, []);
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      lastDragEndAt.current = Date.now();
+      setActiveJob(null);
+      const { active, over } = event;
+      if (!over) return;
+      vibrate(8);
+
+      const job = active.data?.current?.job as JobItem | undefined;
+      if (!job) return;
+      void moveJob(job, String(over.id));
+    },
+    [moveJob]
+  );
+
+  const handleDragCancel = useCallback(() => {
+    lastDragEndAt.current = Date.now();
+    setActiveJob(null);
+  }, []);
+
+  const openJob = useCallback((job: JobItem) => {
+    // Ignore the synthetic click that follows a completed drag.
+    if (Date.now() - lastDragEndAt.current < 300) return;
+    setSelectedJob(job);
+    setJobSheetOpen(true);
+  }, []);
+
+  const handleSheetMove = useCallback(
+    (job: JobItem, status: string) => {
+      setJobSheetOpen(false);
+      void moveJob(job, status);
+    },
+    [moveJob]
   );
 
   const handlePaidDialogCancel = useCallback(() => {
@@ -414,7 +328,8 @@ export function JobsDndClient() {
     setPaidDialogSaving(true);
 
     const prevStatus = pendingPrevStatusRef.current ?? job.status ?? "received";
-    const prevPaymentDate = pendingPrevPaymentDateRef.current ?? job.paymentDate ?? null;
+    const prevPaymentDate =
+      pendingPrevPaymentDateRef.current ?? job.paymentDate ?? null;
 
     try {
       const patchRes = await fetch(`/api/jobs/${job.id}`, {
@@ -485,133 +400,197 @@ export function JobsDndClient() {
 
   const grouped = groupJobsByStatus(jobs);
 
-  return (
-    <div className="min-w-0 space-y-6">
-      <Button
-        variant="ghost"
-        size="sm"
-        className="-ml-2 text-muted-foreground hover:text-foreground"
-        asChild
-      >
-        <Link href="/jobs">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          {t("backToJobs")}
-        </Link>
-      </Button>
+  const statusLabel = useCallback(
+    (status: string) => t(STATUS_KEYS[status] ?? "statusReceived"),
+    [t]
+  );
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-xl font-semibold sm:text-2xl">{t("boardTitle")}</h1>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/jobs">{t("title")}</Link>
-          </Button>
-          <div className="flex items-center gap-2">
-            <span className="hidden text-xs text-muted-foreground sm:inline">
-              ช่วงเดือน
-            </span>
-              <Select
-              value={String(monthsQuery ?? 3)}
-              onValueChange={(value) => {
-                const next = Number(value);
-                if (!Number.isFinite(next) || next <= 0) {
-                  void setMonthsQuery(3);
-                } else {
-                  void setMonthsQuery(next);
-                }
-              }}
-              >
-              <SelectTrigger size="sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">1 เดือน</SelectItem>
-                <SelectItem value="3">3 เดือน</SelectItem>
-                <SelectItem value="6">6 เดือน</SelectItem>
-                <SelectItem value="12">12 เดือน</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
+  const chipItems = useMemo(
+    () =>
+      REVIEW_JOB_STATUSES.map((status) => ({
+        status,
+        label: statusLabel(status),
+        count: grouped[status]?.length ?? 0,
+      })),
+    [grouped, statusLabel]
+  );
+
+  const scrollToColumn = useCallback((index: number) => {
+    const container = scrollRef.current;
+    const el = colRefs.current[index];
+    if (!container || !el) return;
+    container.scrollTo({ left: el.offsetLeft - 8, behavior: "smooth" });
+    setActiveColIndex(index);
+  }, []);
+
+  const handleBoardScroll = useCallback(() => {
+    if (scrollRafRef.current != null) return;
+    scrollRafRef.current = requestAnimationFrame(() => {
+      scrollRafRef.current = null;
+      const container = scrollRef.current;
+      if (!container) return;
+      const x = container.scrollLeft;
+      let best = 0;
+      let bestDist = Number.POSITIVE_INFINITY;
+      colRefs.current.forEach((el, i) => {
+        if (!el) return;
+        const d = Math.abs(el.offsetLeft - 8 - x);
+        if (d < bestDist) {
+          bestDist = d;
+          best = i;
+        }
+      });
+      setActiveColIndex(best);
+    });
+  }, []);
+
+  const announcements = useMemo(
+    () => ({
+      onDragStart({ active }: { active: { data: { current?: unknown } } }) {
+        const job = (active.data.current as { job?: JobItem } | undefined)?.job;
+        return t("dragPickedUp", { title: job?.title ?? "" });
+      },
+      onDragOver({ over }: { over: { id: string | number } | null }) {
+        if (!over) return;
+        return t("dragOverColumn", { column: statusLabel(String(over.id)) });
+      },
+      onDragEnd({
+        active,
+        over,
+      }: {
+        active: { data: { current?: unknown } };
+        over: { id: string | number } | null;
+      }) {
+        const job = (active.data.current as { job?: JobItem } | undefined)?.job;
+        if (!over) return t("dragCanceled");
+        return t("dragDropped", {
+          title: job?.title ?? "",
+          column: statusLabel(String(over.id)),
+        });
+      },
+      onDragCancel() {
+        return t("dragCanceled");
+      },
+    }),
+    [statusLabel, t]
+  );
+
+  return (
+    <div className="flex min-w-0 flex-col gap-3">
+      <PageHeader
+        className="shrink-0"
+        title={t("boardTitle")}
+        actions={
+          <>
+          <span className="hidden text-xs text-muted-foreground sm:inline">
+            {t("monthsRange")}
+          </span>
+          <Select
+            value={String(monthsQuery ?? 3)}
+            onValueChange={(value) => {
+              const next = Number(value);
+              if (!Number.isFinite(next) || next <= 0) {
+                void setMonthsQuery(3);
+              } else {
+                void setMonthsQuery(next);
+              }
+            }}
+          >
+            <SelectTrigger size="sm" className="min-h-[40px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[1, 3, 6, 12].map((m) => (
+                <SelectItem key={m} value={String(m)}>
+                  {t("monthsOption", { count: m })}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          </>
+        }
+      />
 
       {loading ? (
         <BoardSkeleton />
       ) : (
         <DndContext
           sensors={sensors}
+          onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
+          onDragCancel={handleDragCancel}
           collisionDetection={pointerWithin}
+          accessibility={{
+            announcements,
+            screenReaderInstructions: { draggable: t("dragInstructions") },
+          }}
         >
-          <div className="w-full min-w-0 overflow-x-auto pb-4 lg:h-[calc(100vh-11rem)] lg:overflow-y-hidden">
-            <div className="flex flex-col gap-4 lg:flex-row lg:inline-flex lg:h-full lg:pb-4">
-              {REVIEW_JOB_STATUSES.map((status) => (
-                <Column
-                  key={status}
+          <StatusChipBar
+            className="shrink-0 lg:hidden"
+            items={chipItems}
+            activeIndex={activeColIndex}
+            onSelect={scrollToColumn}
+          />
+
+          <div
+            ref={scrollRef}
+            onScroll={handleBoardScroll}
+            className={cn(
+              "relative flex w-full min-w-0 gap-3 overflow-x-auto overscroll-x-contain pb-2",
+              BOARD_HEIGHT_CLASS,
+              activeJob ? "snap-none" : "snap-x snap-mandatory lg:snap-none"
+            )}
+          >
+            {REVIEW_JOB_STATUSES.map((status, index) => (
+              <div
+                key={status}
+                ref={(el) => {
+                  colRefs.current[index] = el;
+                }}
+                className={cn(
+                  "h-full min-h-0 shrink-0 snap-center",
+                  collapsed.has(status)
+                    ? "w-auto"
+                    : "w-[86vw] max-w-[340px] md:w-[300px] lg:w-[280px]"
+                )}
+              >
+                <BoardColumn
                   status={status}
+                  label={statusLabel(status)}
                   jobs={grouped[status] ?? []}
-                  label={t(STATUS_KEYS[status] ?? "statusReceived")}
+                  collapsed={collapsed.has(status)}
+                  onToggleCollapse={toggleCollapse}
+                  onOpenJob={openJob}
                 />
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
+
+          <DragOverlay dropAnimation={reducedMotion ? null : undefined}>
+            {activeJob ? <BoardCardContent job={activeJob} isOverlay /> : null}
+          </DragOverlay>
         </DndContext>
       )}
 
-      <Dialog
+      <JobSheet
+        job={selectedJob}
+        open={jobSheetOpen}
+        onOpenChange={setJobSheetOpen}
+        onMove={handleSheetMove}
+        busy={moving}
+      />
+
+      <PaidConfirmSheet
         open={paidDialogOpen}
-        onOpenChange={(open) => {
-          if (open) setPaidDialogOpen(true);
-          else handlePaidDialogCancel();
-        }}
-      >
-        <DialogContent showCloseButton={!paidDialogSaving}>
-          <DialogHeader>
-            <DialogTitle>{t("paidDialogTitle")}</DialogTitle>
-            <DialogDescription>{t("paidDialogDescription")}</DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t("paymentDate")}</label>
-              <Input
-                type="date"
-                value={paidPaymentDate}
-                min={pendingMinPaymentDate}
-                onChange={(e) => setPaidPaymentDate(e.target.value)}
-                disabled={paidDialogSaving}
-              />
-            </div>
-            <div className="space-y-2">
-              <div className="text-sm font-medium">{t("evidenceOptional")}</div>
-              <FileUpload
-                value={paidEvidenceFiles}
-                onChange={setPaidEvidenceFiles}
-                accept="image/*"
-                multiple
-                className={paidDialogSaving ? "opacity-70 pointer-events-none" : undefined}
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handlePaidDialogCancel}
-              disabled={paidDialogSaving}
-            >
-              {tCommon("cancel")}
-            </Button>
-            <Button
-              type="button"
-              onClick={handlePaidDialogSave}
-              disabled={paidDialogSaving}
-            >
-              {tCommon("save")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        saving={paidDialogSaving}
+        paymentDate={paidPaymentDate}
+        minPaymentDate={pendingMinPaymentDate}
+        files={paidEvidenceFiles}
+        onPaymentDateChange={setPaidPaymentDate}
+        onFilesChange={setPaidEvidenceFiles}
+        onCancel={handlePaidDialogCancel}
+        onSave={handlePaidDialogSave}
+      />
     </div>
   );
 }

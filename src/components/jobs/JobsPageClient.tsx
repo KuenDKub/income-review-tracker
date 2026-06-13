@@ -11,13 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { JobList, type JobItem } from "./JobList";
 import { JobForm } from "./JobForm";
 import {
@@ -29,16 +23,19 @@ import { ConfirmDeleteDialog } from "@/components/ui/ConfirmDeleteDialog";
 import { toast } from "@/lib/toast";
 import { DataTablePagination } from "@/components/ui/DataTablePagination";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { statusTheme } from "@/components/board/statusTheme";
+import { cn } from "@/lib/utils";
 import type { z } from "zod";
-import { Download } from "lucide-react";
+import { Search, SlidersHorizontal } from "lucide-react";
+import { useQueryState } from "nuqs";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Fab } from "@/components/ui/fab";
+import { PageHeader } from "@/components/ui/page-header";
 
 function DialogFormSkeleton() {
   return (
@@ -79,121 +76,42 @@ function DialogFormSkeleton() {
 }
 
 function JobsListSkeleton() {
-  const rows = 8;
   return (
-    <div className="space-y-3">
-      <div className="lg:hidden space-y-3">
+    <div>
+      <div className="space-y-3 lg:hidden">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i} className="py-4">
-            <CardContent className="px-4 sm:px-6 space-y-3">
-              <Skeleton className="h-5 w-3/4" />
+          <Card key={i} className="py-0">
+            <CardContent className="space-y-3 p-4">
               <div className="flex gap-2">
-                <Skeleton className="h-5 w-16" />
                 <Skeleton className="h-5 w-20" />
+                <Skeleton className="h-5 w-16" />
               </div>
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                {Array.from({ length: 6 }).map((_, j) => (
-                  <Skeleton key={j} className="h-4 w-full" />
-                ))}
+              <Skeleton className="h-5 w-3/4" />
+              <Skeleton className="h-16 w-full rounded-lg" />
+              <div className="flex justify-between">
+                <Skeleton className="h-6 w-24" />
+                <Skeleton className="h-9 w-32" />
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
-      <div className="hidden lg:block">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[40px]">
-                <Skeleton className="h-4 w-4" />
-              </TableHead>
-              <TableHead>
-                <Skeleton className="h-4 w-24" />
-              </TableHead>
-              <TableHead>
-                <Skeleton className="h-4 w-16" />
-              </TableHead>
-              <TableHead>
-                <Skeleton className="h-4 w-20" />
-              </TableHead>
-              <TableHead>
-                <Skeleton className="h-4 w-14" />
-              </TableHead>
-              <TableHead>
-                <Skeleton className="h-4 w-20" />
-              </TableHead>
-              <TableHead>
-                <Skeleton className="h-4 w-24" />
-              </TableHead>
-              <TableHead>
-                <Skeleton className="h-4 w-24" />
-              </TableHead>
-              <TableHead>
-                <Skeleton className="h-4 w-20" />
-              </TableHead>
-              <TableHead>
-                <Skeleton className="h-4 w-24" />
-              </TableHead>
-              <TableHead className="text-right">
-                <Skeleton className="h-4 w-16 ml-auto" />
-              </TableHead>
-              <TableHead className="text-right">
-                <Skeleton className="h-4 w-16 ml-auto" />
-              </TableHead>
-              <TableHead className="text-right w-[140px]">
-                <Skeleton className="h-4 w-14 ml-auto" />
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {Array.from({ length: rows }).map((_, i) => (
-              <TableRow key={i}>
-                <TableCell>
-                  <Skeleton className="h-4 w-4" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-4 w-full max-w-[200px]" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-5 w-16" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-4 w-20" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-4 w-24" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-5 w-16" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-4 w-20" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-4 w-20" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-4 w-20" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-4 w-20" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-4 w-20" />
-                </TableCell>
-                <TableCell className="text-right">
-                  <Skeleton className="h-4 w-16 ml-auto" />
-                </TableCell>
-                <TableCell className="text-right">
-                  <Skeleton className="h-4 w-16 ml-auto" />
-                </TableCell>
-                <TableCell className="text-right">
-                  <Skeleton className="h-8 w-20 ml-auto" />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      <div className="hidden overflow-hidden rounded-xl border bg-card lg:block">
+        <Skeleton className="h-9 w-full rounded-none" />
+        <div className="divide-y">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 px-4 py-3">
+              <div className="flex-[2.4] space-y-1.5">
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-3 w-1/3" />
+              </div>
+              <Skeleton className="h-5 w-28 flex-none" />
+              <Skeleton className="h-4 w-24 flex-none" />
+              <Skeleton className="h-4 w-20 flex-none" />
+              <Skeleton className="h-8 w-32 flex-none" />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -242,6 +160,7 @@ type Paginated<T> = {
 export function JobsPageClient() {
   const t = useTranslations("jobs");
   const tCommon = useTranslations("common");
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
   const [jobs, setJobs] = useState<JobItem[]>([]);
   const [payerNames, setPayerNames] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -254,10 +173,10 @@ export function JobsPageClient() {
   const [platform, setPlatform] = useState("");
   const [contentType, setContentType] = useState("");
   const [statusFilter, setStatusFilter] = useState(STATUS_FILTER_ALL);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
   const [existingEvidenceImages, setExistingEvidenceImages] = useState<
     Array<{ id: string; url: string }>
@@ -330,7 +249,6 @@ export function JobsPageClient() {
       })),
     );
     setTotal(jobsData.total ?? 0);
-    setSelectedIds(new Set());
     setPayerNames(namesData);
     setLoading(false);
   }, [fetchJobs, fetchPayerNames]);
@@ -338,6 +256,18 @@ export function JobsPageClient() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Deep link from dashboard quick action: /jobs?new=1 opens the create form.
+  const [newParam, setNewParam] = useQueryState("new");
+  useEffect(() => {
+    if (newParam === "1") {
+      setEditingId(null);
+      setEvidenceFiles([]);
+      setExistingEvidenceImages([]);
+      setDialogOpen(true);
+      void setNewParam(null);
+    }
+  }, [newParam, setNewParam]);
 
   const handleOpenCreate = () => {
     setEditingId(null);
@@ -521,141 +451,156 @@ export function JobsPageClient() {
   const showForm =
     dialogOpen && (editingId === null || editDefaultValues !== undefined);
 
+  const activeFilterCount = [payerNameFilter, platform, contentType].filter(
+    (v) => v.trim()
+  ).length;
+
+  const resetFilters = () => {
+    setSearch("");
+    setPayerNameFilter("");
+    setStatusFilter(STATUS_FILTER_ALL);
+    setPlatform("");
+    setContentType("");
+    setPage(1);
+  };
+
+  const filterFields = (
+    <>
+      <Input
+        placeholder={t("payerName")}
+        className="min-h-[44px]"
+        value={payerNameFilter}
+        onChange={(e) => {
+          setPayerNameFilter(e.target.value);
+          setPage(1);
+        }}
+      />
+      <Input
+        placeholder={t("platform")}
+        className="min-h-[44px]"
+        value={platform}
+        onChange={(e) => {
+          setPlatform(e.target.value);
+          setPage(1);
+        }}
+      />
+      <Input
+        placeholder={t("contentType")}
+        className="min-h-[44px]"
+        value={contentType}
+        onChange={(e) => {
+          setContentType(e.target.value);
+          setPage(1);
+        }}
+      />
+    </>
+  );
+
+  const statusChips: Array<{ value: string; label: string; dot?: string }> = [
+    { value: STATUS_FILTER_ALL, label: t("allStatuses") },
+    ...REVIEW_JOB_STATUSES.map((s) => ({
+      value: s as string,
+      label: t(STATUS_KEYS[s] ?? "statusReceived"),
+      dot: statusTheme(s).dot,
+    })),
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-xl font-semibold sm:text-2xl">{t("title")}</h1>
-        <Button onClick={handleOpenCreate} className="w-full sm:w-auto">
-          {t("createJob")}
-        </Button>
-      </div>
-      <Card>
-        <CardContent className="space-y-4 px-4 pt-4 sm:px-6 sm:pt-6">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-            <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              <Input
-                placeholder={`${tCommon("search")}...`}
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(1);
-                }}
-              />
-              <Input
-                placeholder={t("payerName")}
-                value={payerNameFilter}
-                onChange={(e) => {
-                  setPayerNameFilter(e.target.value);
-                  setPage(1);
-                }}
-              />
-              <Select
-                value={statusFilter}
-                onValueChange={(v) => {
-                  setStatusFilter(v);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={t("allStatuses")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={STATUS_FILTER_ALL}>
-                    {t("allStatuses")}
-                  </SelectItem>
-                  {REVIEW_JOB_STATUSES.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {t(STATUS_KEYS[s] ?? "statusReceived")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Input
-                placeholder={t("platform")}
-                value={platform}
-                onChange={(e) => {
-                  setPlatform(e.target.value);
-                  setPage(1);
-                }}
-              />
-              <Input
-                placeholder={t("contentType")}
-                value={contentType}
-                onChange={(e) => {
-                  setContentType(e.target.value);
-                  setPage(1);
-                }}
-              />
-            </div>
-            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                disabled
-                className="w-full sm:w-auto"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                {tCommon("export")}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full sm:w-auto"
-                onClick={() => {
-                  setSearch("");
-                  setPayerNameFilter("");
-                  setStatusFilter(STATUS_FILTER_ALL);
-                  setPlatform("");
-                  setContentType("");
-                  setPage(1);
-                }}
-              >
-                {tCommon("reset")}
-              </Button>
-            </div>
-          </div>
-
-          {loading ? (
-            <JobsListSkeleton />
-          ) : (
-            <JobList
-              jobs={jobs}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              selectedIds={selectedIds}
-              onToggleSelected={(id) => {
-                setSelectedIds((prev) => {
-                  const next = new Set(prev);
-                  if (next.has(id)) next.delete(id);
-                  else next.add(id);
-                  return next;
-                });
-              }}
-              onToggleAllSelected={() => {
-                setSelectedIds((prev) => {
-                  const allSelected =
-                    jobs.length > 0 && jobs.every((j) => prev.has(j.id));
-                  if (allSelected) return new Set();
-                  return new Set(jobs.map((j) => j.id));
-                });
-              }}
-            />
-          )}
-
-          <DataTablePagination
-            page={page}
-            pageSize={pageSize}
-            total={total}
-            rowsLabel={tCommon("rows")}
-            ofLabel={tCommon("of")}
-            onPageChange={(p) => setPage(p)}
-            onPageSizeChange={(ps) => {
-              setPageSize(ps);
+    <div className="space-y-4 sm:space-y-6">
+      <PageHeader
+        title={t("title")}
+        actions={
+          <Button onClick={handleOpenCreate} className="hidden lg:inline-flex">
+            {t("createJob")}
+          </Button>
+        }
+      />
+      {/* Toolbar: search + filters */}
+      <div className="flex gap-2">
+        <div className="relative min-w-0 flex-1 lg:max-w-sm">
+          <Search
+            aria-hidden
+            className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+          />
+          <Input
+            type="search"
+            placeholder={`${tCommon("search")}...`}
+            className="min-h-[44px] pl-9"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
               setPage(1);
             }}
           />
-        </CardContent>
-      </Card>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          className="relative min-h-[44px]"
+          aria-label={tCommon("filters")}
+          onClick={() => setFilterSheetOpen(true)}
+        >
+          <SlidersHorizontal className="size-4" />
+          <span className="hidden sm:inline">{tCommon("filters")}</span>
+          {activeFilterCount > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">
+              {activeFilterCount}
+            </span>
+          )}
+        </Button>
+      </div>
+
+      {/* Status chips */}
+      <div
+        role="tablist"
+        className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {statusChips.map(({ value, label, dot }) => {
+          const active = statusFilter === value;
+          return (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              className={cn(
+                "inline-flex min-h-[40px] shrink-0 cursor-pointer touch-manipulation items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-colors active:scale-[0.97]",
+                active
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-card text-muted-foreground hover:bg-muted"
+              )}
+              onClick={() => {
+                setStatusFilter(value);
+                setPage(1);
+              }}
+            >
+              {dot && (
+                <span aria-hidden className={cn("size-2 rounded-full", dot)} />
+              )}
+              <span className="max-w-[16ch] truncate">{label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {loading ? (
+        <JobsListSkeleton />
+      ) : (
+        <JobList jobs={jobs} onEdit={handleEdit} onDelete={handleDelete} />
+      )}
+
+      <DataTablePagination
+        page={page}
+        pageSize={pageSize}
+        total={total}
+        rowsLabel={tCommon("rows")}
+        ofLabel={tCommon("of")}
+        onPageChange={(p) => setPage(p)}
+        onPageSizeChange={(ps) => {
+          setPageSize(ps);
+          setPage(1);
+        }}
+      />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
@@ -700,6 +645,36 @@ export function JobsPageClient() {
         onOpenChange={(open) => !open && setDeleteId(null)}
         onConfirm={handleConfirmDelete}
       />
+
+      <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
+        <SheetContent
+          side={isDesktop ? "right" : "bottom"}
+          showCloseButton={isDesktop}
+          className={cn("gap-3", isDesktop && "w-[340px]")}
+        >
+          <SheetHeader className={cn("px-4 pb-0", isDesktop ? "pt-5" : "pt-1")}>
+            <SheetTitle className="text-base">{tCommon("filters")}</SheetTitle>
+          </SheetHeader>
+          <div className="grid min-h-0 gap-3 overflow-y-auto px-4">
+            {filterFields}
+          </div>
+          <div
+            className={cn(
+              "flex gap-2 border-t px-4 py-3 [&>button]:min-h-[44px] [&>button]:flex-1",
+              isDesktop && "mt-auto"
+            )}
+          >
+            <Button type="button" variant="outline" onClick={resetFilters}>
+              {tCommon("reset")}
+            </Button>
+            <Button type="button" onClick={() => setFilterSheetOpen(false)}>
+              {tCommon("done")}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Fab aria-label={t("createJob")} onClick={handleOpenCreate} />
     </div>
   );
 }

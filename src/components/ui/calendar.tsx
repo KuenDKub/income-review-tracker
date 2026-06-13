@@ -13,6 +13,7 @@ import {
 } from "date-fns";
 import { format } from "date-fns";
 import { th as thLocale } from "date-fns/locale";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -34,6 +35,7 @@ type CalendarProps = {
   onNavigate?(nextDate: Date): void;
   events: CalendarEvent[];
   onSelectDate?(date: Date): void;
+  selectedDate?: Date | null;
   dayNotes?: CalendarDayNote[];
   className?: string;
 };
@@ -79,6 +81,7 @@ export function Calendar({
   onNavigate,
   events,
   onSelectDate,
+  selectedDate,
   dayNotes = [],
   className,
 }: CalendarProps) {
@@ -138,7 +141,7 @@ export function Calendar({
   return (
     <div
       className={cn(
-        "rounded-lg border bg-card p-2 sm:p-3",
+        "rounded-xl border bg-card p-2 sm:p-3",
         className,
       )}
     >
@@ -148,40 +151,40 @@ export function Calendar({
         onTouchEnd={handleTouchEnd}
       >
         <div className="inline-flex items-center gap-2">
-          <span className="text-sm font-semibold text-foreground">
+          <span className="text-base font-semibold text-foreground">
             {monthYearLabel}
           </span>
         </div>
-        <div className="inline-flex rounded-md border bg-muted/60 p-0.5 sm:p-1 text-xs">
+        <div className="inline-flex rounded-lg border bg-muted/60 p-0.5 sm:p-1 text-xs">
           <button
             type="button"
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center text-lg sm:text-base hover:bg-background rounded touch-manipulation"
+            className="min-h-[44px] min-w-[44px] flex cursor-pointer items-center justify-center rounded-md hover:bg-background active:scale-95 transition-transform touch-manipulation"
             onClick={() =>
               onNavigate?.(addDays(startOfMonth(date), -1))
             }
             aria-label="Previous month"
           >
-            ‹
+            <ChevronLeft className="size-5" />
           </button>
           <button
             type="button"
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center text-lg sm:text-base hover:bg-background rounded touch-manipulation"
+            className="min-h-[44px] min-w-[44px] flex cursor-pointer items-center justify-center rounded-md hover:bg-background active:scale-95 transition-transform touch-manipulation"
             onClick={() =>
               onNavigate?.(addDays(endOfMonth(date), 1))
             }
             aria-label="Next month"
           >
-            ›
+            <ChevronRight className="size-5" />
           </button>
         </div>
       </div>
 
-      <div className="overflow-x-auto -mx-0.5 sm:mx-0">
-        <div className="grid grid-cols-7 gap-px rounded-md border bg-border text-xs min-w-[504px]">
+      <div className="overflow-x-auto -mx-0.5 sm:mx-0 ">
+        <div className="grid grid-cols-7 gap-1 text-xs m-1 min-w-[504px]">
           {weekdayLabelsLong.map((label, i) => (
             <div
               key={label}
-              className="bg-muted/60 px-0.5 sm:px-2 py-1 text-center font-medium text-muted-foreground min-w-0"
+              className="px-0.5 sm:px-2 py-1.5 text-center font-semibold text-muted-foreground min-w-0"
             >
               <span className="sm:hidden">{weekdayLabelsShort[i]}</span>
               <span className="hidden sm:inline">{label}</span>
@@ -217,6 +220,10 @@ export function Calendar({
                   ].join(" — ")
                 : "";
 
+            const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+            const isSelected =
+              selectedDate != null && isSameDay(day, selectedDate);
+
             return (
               <button
                 type="button"
@@ -227,14 +234,21 @@ export function Calendar({
                     ? `${format(day, "d MMMM yyyy")}, ${totalItems} items`
                     : format(day, "d MMMM yyyy")
                 }
+                aria-pressed={isSelected}
                 title={indicatorSummary || undefined}
                 className={cn(
-                  "flex min-h-[56px] md:min-h-[60px] lg:h-24 flex-col items-stretch justify-between bg-background px-1.5 py-1 sm:px-2 sm:py-1 text-left align-top text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring touch-manipulation overflow-hidden",
-                  !isCurrentMonth && "bg-muted/30 text-muted-foreground/70",
-                  isToday && "border border-primary",
+                  "flex min-h-[56px] md:min-h-[60px] lg:h-24 cursor-pointer flex-col items-stretch justify-between rounded-lg px-1.5 py-1 sm:px-2 sm:py-1 text-left align-top text-xs transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring touch-manipulation overflow-hidden",
+                  isWeekend && "bg-muted/30",
+                  !isCurrentMonth && "text-muted-foreground/50",
+                  isSelected && "bg-primary/5 ring-2 ring-primary",
                 )}
               >
-                <span className="self-end text-[11px] sm:text-xs font-medium min-w-5 text-right shrink-0">
+                <span
+                  className={cn(
+                    "flex size-6 shrink-0 items-center justify-center self-end rounded-full text-[11px] sm:text-xs font-medium",
+                    isToday && "bg-primary font-semibold text-primary-foreground"
+                  )}
+                >
                   {day.getDate()}
                 </span>
                 {totalItems > 0 && (
