@@ -12,6 +12,15 @@ const athiti = Athiti({
 export const metadata: Metadata = {
   title: "Review Income & Tax Tracker",
   description: "Review Income & Tax Tracker (Thailand-focused)",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Review Income & Tax Tracker",
+  },
+  icons: {
+    icon: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({
