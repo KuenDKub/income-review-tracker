@@ -35,6 +35,14 @@ export async function listCalendarNotesInRange(opts: {
   return rows.map(serialize);
 }
 
+/** All calendar notes, for the .ics subscription feed. Read-only. */
+export async function listAllCalendarNotes(): Promise<CalendarNote[]> {
+  const { rows } = await query<CalendarNoteRow>(
+    `SELECT * FROM calendar_notes ORDER BY note_date ASC, created_at ASC`,
+  );
+  return rows.map(serialize);
+}
+
 export async function createCalendarNote(input: {
   noteDate: string;
   text: string;

@@ -92,7 +92,15 @@
     "viewAgenda": "Agenda",
     "previousMonth": "Previous month",
     "nextMonth": "Next month",
-    "noEventsThisMonth": "No events this month"
+    "noEventsThisMonth": "No events this month",
+    "subscribe": "Subscribe",
+    "subscribeTitle": "Sync with your calendar",
+    "subscribeHint": "Add a live feed of your jobs to Apple or Google Calendar. It refreshes automatically — new and edited jobs appear without re-importing.",
+    "subscribeApple": "Subscribe in Apple Calendar",
+    "subscribeCopyUrl": "Copy feed URL",
+    "subscribeCopied": "Copied!",
+    "subscribeCopyError": "Could not copy the URL",
+    "subscribeGoogleHint": "Google Calendar: Other calendars → From URL, then paste the copied feed URL."
   },
   "jobs": {
     "title": "Review Jobs",
