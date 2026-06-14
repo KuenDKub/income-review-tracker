@@ -8,6 +8,7 @@ import { LocaleSwitcher } from "@/components/layout/LocaleSwitcher";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { navGroups, isNavItemActive } from "@/components/layout/nav-items";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 const COLLAPSE_KEY = "sidebar-collapsed";
 
@@ -43,7 +44,7 @@ export function Sidebar() {
   const collapsed = useSyncExternalStore(
     subscribeCollapsed,
     readCollapsed,
-    () => false
+    () => false,
   );
 
   const toggleCollapsed = () => writeCollapsed(!collapsed);
@@ -52,7 +53,7 @@ export function Sidebar() {
     <aside
       className={cn(
         "sticky top-0 hidden h-dvh shrink-0 flex-col border-r bg-card transition-[width] duration-200 lg:flex",
-        collapsed ? "w-[72px]" : "w-64"
+        collapsed ? "w-[72px]" : "w-64",
       )}
     >
       {/* Brand */}
@@ -61,12 +62,16 @@ export function Sidebar() {
         title={t("app.title")}
         className={cn(
           "flex h-16 shrink-0 items-center gap-2.5 border-b px-4",
-          collapsed && "justify-center px-0"
+          collapsed && "justify-center px-0",
         )}
       >
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-          <Sparkles className="size-5" />
-        </span>
+        <Image
+          src="/icon.png"
+          alt="App Icon"
+          width={32}
+          height={32}
+          className="rounded-lg"
+        />
         {!collapsed && (
           <span className="min-w-0 truncate text-sm font-bold leading-tight">
             {t("app.title")}
@@ -98,7 +103,7 @@ export function Sidebar() {
                       collapsed && "justify-center px-0",
                       active
                         ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
                     {active && (
@@ -137,7 +142,7 @@ export function Sidebar() {
           onClick={toggleCollapsed}
           aria-label={collapsed ? t("nav.expand") : t("nav.collapse")}
           className={cn(
-            "flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            "flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
           )}
         >
           {collapsed ? (
