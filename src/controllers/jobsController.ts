@@ -2,14 +2,28 @@
  * Review jobs API business logic. Route handlers parse request, validate with Zod, call here, serialize response.
  */
 
-import { query } from "@/lib/db/client";
+import { Prisma } from "@prisma/client";
+import { prisma } from "@/lib/db/prisma";
 import {
   serializeReviewJob,
   deserializeReviewJobBody,
-  type ReviewJobRow,
   type ReviewJobJson,
 } from "@/lib/serializers/reviewJobSerializer";
 import type { PaginatedResult } from "@/lib/pagination";
+
+// Row shape returned by the typed review_jobs queries below.
+type JobRow = Prisma.review_jobsGetPayload<object>;
+
+/** UTC day-number of COALESCE(received_date, created_at) — matches the SQL `::date` ordering on Vercel (UTC). */
+function coalescedDay(job: JobRow): number {
+  const d = job.received_date ?? job.created_at;
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+}
+
+/** Sort by COALESCE(received_date, created_at)::date DESC, then created_at DESC. */
+function byReceivedThenCreatedDesc(a: JobRow, b: JobRow): number {
+  return coalescedDay(b) - coalescedDay(a) || b.created_at.getTime() - a.created_at.getTime();
+}
 
 export async function listJobs(opts?: {
   page?: number;
@@ -28,9 +42,8 @@ export async function listJobs(opts?: {
   const page = Math.max(1, opts?.page ?? 1);
   const maxPageSize = opts?.maxPageSize ?? 100;
   const pageSize = Math.min(maxPageSize, Math.max(1, opts?.pageSize ?? 10));
-  const offset = (page - 1) * pageSize;
 
-  const search = (opts?.search ?? "").trim();
+  const search = (opts?.search ?? "").trim().toLowerCase();
   const payerName = (opts?.payerName ?? "").trim();
   const platform = (opts?.platform ?? "").trim();
   const contentType = (opts?.contentType ?? "").trim();
@@ -39,119 +52,77 @@ export async function listJobs(opts?: {
   const calendarFrom = opts?.calendarFrom?.trim();
   const calendarTo = opts?.calendarTo?.trim();
 
-  const where: string[] = [];
-  const values: unknown[] = [];
-
-  if (status) {
-    values.push(status);
-    where.push(`status = $${values.length}`);
+  // Filters Prisma can express go in the typed WHERE.
+  const where: Prisma.review_jobsWhereInput = {};
+  if (status) where.status = status;
+  if (payerName) where.payer_name = { contains: payerName, mode: "insensitive" };
+  if (platform) where.platforms = { has: platform };
+  if (contentType) where.content_type = contentType;
+  if (calendarFrom && calendarTo) {
+    const range = { gte: new Date(calendarFrom), lte: new Date(calendarTo) };
+    where.OR = [
+      { review_deadline: range },
+      { publish_date: range },
+      { payment_date: range },
+    ];
   }
+
+  let rows = await prisma.review_jobs.findMany({ where });
+
+  // Free-text search matches title / any platform / content_type, partial & case-insensitive.
   if (search) {
-    values.push(`%${search}%`);
-    values.push(`%${search}%`);
-    values.push(`%${search}%`);
-    where.push(
-      `(title ILIKE $${values.length - 2} OR EXISTS (SELECT 1 FROM unnest(platforms) p WHERE p ILIKE $${values.length - 1}) OR content_type ILIKE $${values.length})`,
+    rows = rows.filter(
+      (r) =>
+        r.title.toLowerCase().includes(search) ||
+        r.platforms.some((p) => p.toLowerCase().includes(search)) ||
+        r.content_type.toLowerCase().includes(search),
     );
   }
-  if (payerName) {
-    values.push(`%${payerName}%`);
-    where.push(`payer_name ILIKE $${values.length}`);
-  }
-  if (platform) {
-    values.push(platform);
-    where.push(`$${values.length} = ANY(platforms)`);
-  }
-  if (contentType) {
-    values.push(contentType);
-    where.push(`content_type = $${values.length}`);
-  }
+
+  // "last N months" by COALESCE(received_date, created_at)::date.
   if (typeof months === "number" && Number.isFinite(months) && months > 0) {
     const today = new Date();
-    const end = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-    );
+    const end = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const start = new Date(end);
     start.setMonth(start.getMonth() - months);
-    values.push(start.toISOString().slice(0, 10));
-    where.push(
-      `COALESCE(received_date, created_at)::date >= $${values.length}`,
+    const startDay = Date.UTC(
+      Number(start.toISOString().slice(0, 4)),
+      Number(start.toISOString().slice(5, 7)) - 1,
+      Number(start.toISOString().slice(8, 10)),
     );
-  }
-  if (calendarFrom && calendarTo) {
-    values.push(calendarFrom, calendarTo);
-    where.push(
-      `(review_deadline::date BETWEEN $${values.length - 1} AND $${values.length} OR publish_date::date BETWEEN $${values.length - 1} AND $${values.length} OR payment_date::date BETWEEN $${values.length - 1} AND $${values.length})`,
-    );
+    rows = rows.filter((r) => coalescedDay(r) >= startDay);
   }
 
-  const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
+  rows.sort(byReceivedThenCreatedDesc);
 
-  const countRes = await query<{ total: string }>(
-    `SELECT COUNT(*)::text AS total FROM review_jobs ${whereSql}`,
-    values,
-  );
-  const total = Number.parseInt(countRes.rows[0]?.total ?? "0", 10) || 0;
+  const total = rows.length;
+  const pageRows = rows.slice((page - 1) * pageSize, (page - 1) * pageSize + pageSize);
 
-  values.push(pageSize);
-  values.push(offset);
-  const { rows } = await query<ReviewJobRow>(
-    `SELECT * FROM review_jobs ${whereSql} ORDER BY COALESCE(received_date, created_at)::date DESC, created_at DESC LIMIT $${values.length - 1} OFFSET $${values.length}`,
-    values,
-  );
-
-  const jobIds = rows.map((r) => r.id);
+  const jobIds = pageRows.map((r) => r.id);
   const incomeByJob = new Map<
     string,
     { gross: number; withholding: number; net: number; rate: number | null }
   >();
   if (jobIds.length > 0) {
-    const incomeRows = await query<{
-      review_job_id: string;
-      total_gross: string;
-      total_withholding: string;
-      total_net: string;
-    }>(
-      `SELECT review_job_id,
-        COALESCE(SUM(gross_amount), 0)::numeric AS total_gross,
-        COALESCE(SUM(withholding_amount), 0)::numeric AS total_withholding,
-        COALESCE(SUM(net_amount), 0)::numeric AS total_net
-       FROM income WHERE review_job_id = ANY($1::uuid[]) GROUP BY review_job_id`,
-      [jobIds],
-    );
-    for (const r of incomeRows.rows) {
-      const gross = parseFloat(
-        typeof r.total_gross === "string"
-          ? r.total_gross
-          : String(r.total_gross),
-      );
-      const withholding = parseFloat(
-        typeof r.total_withholding === "string"
-          ? r.total_withholding
-          : String(r.total_withholding),
-      );
-      const net = parseFloat(
-        typeof r.total_net === "string" ? r.total_net : String(r.total_net),
-      );
+    const grouped = await prisma.income.groupBy({
+      by: ["review_job_id"],
+      where: { review_job_id: { in: jobIds } },
+      _sum: { gross_amount: true, withholding_amount: true, net_amount: true },
+    });
+    for (const g of grouped) {
+      const gross = Number(g._sum.gross_amount ?? 0);
+      const withholding = Number(g._sum.withholding_amount ?? 0);
+      const net = Number(g._sum.net_amount ?? 0);
       const rate =
-        !Number.isNaN(gross) && gross > 0 && !Number.isNaN(withholding)
-          ? Math.round((withholding / gross) * 100 * 100) / 100
-          : null;
-      if (!Number.isNaN(gross) && gross > 0) {
-        incomeByJob.set(r.review_job_id, {
-          gross,
-          withholding: Number.isNaN(withholding) ? 0 : withholding,
-          net: Number.isNaN(net) ? gross : net,
-          rate,
-        });
+        gross > 0 ? Math.round((withholding / gross) * 100 * 100) / 100 : null;
+      if (gross > 0) {
+        incomeByJob.set(g.review_job_id, { gross, withholding, net, rate });
       }
     }
   }
 
   return {
-    data: rows.map((row) => {
+    data: pageRows.map((row) => {
       const job = serializeReviewJob(row);
       const income = incomeByJob.get(row.id);
       return {
@@ -173,30 +144,35 @@ export async function listJobs(opts?: {
  * subscription feed. Read-only; returns the full set (data volume is small).
  */
 export async function listJobsForFeed(): Promise<ReviewJobJson[]> {
-  const { rows } = await query<ReviewJobRow>(
-    `SELECT * FROM review_jobs
-     WHERE review_deadline IS NOT NULL
-        OR publish_date IS NOT NULL
-        OR payment_date IS NOT NULL
-     ORDER BY COALESCE(review_deadline, publish_date, payment_date) ASC`,
-  );
+  const rows = await prisma.review_jobs.findMany({
+    where: {
+      OR: [
+        { review_deadline: { not: null } },
+        { publish_date: { not: null } },
+        { payment_date: { not: null } },
+      ],
+    },
+  });
+  // ORDER BY COALESCE(review_deadline, publish_date, payment_date) ASC
+  const key = (j: JobRow) =>
+    (j.review_deadline ?? j.publish_date ?? j.payment_date)?.getTime() ?? 0;
+  rows.sort((a, b) => key(a) - key(b));
   return rows.map(serializeReviewJob);
 }
 
 export async function listPayerNames(): Promise<string[]> {
-  const { rows } = await query<{ payer_name: string }>(
-    `SELECT DISTINCT payer_name FROM review_jobs WHERE payer_name IS NOT NULL AND payer_name != '' ORDER BY payer_name`,
-  );
-  return rows.map((r) => r.payer_name);
+  const rows = await prisma.review_jobs.findMany({
+    where: { AND: [{ payer_name: { not: null } }, { payer_name: { not: "" } }] },
+    distinct: ["payer_name"],
+    select: { payer_name: true },
+    orderBy: { payer_name: "asc" },
+  });
+  return rows.map((r) => r.payer_name).filter((n): n is string => n != null);
 }
 
 export async function getJobById(id: string): Promise<ReviewJobJson | null> {
-  const { rows } = await query<ReviewJobRow>(
-    "SELECT * FROM review_jobs WHERE id = $1",
-    [id],
-  );
-  if (rows.length === 0) return null;
-  return serializeReviewJob(rows[0]);
+  const row = await prisma.review_jobs.findUnique({ where: { id } });
+  return row ? serializeReviewJob(row) : null;
 }
 
 export async function createJob(body: {
@@ -214,25 +190,23 @@ export async function createJob(body: {
   isBrotherJob?: boolean;
 }): Promise<ReviewJobJson> {
   const data = deserializeReviewJobBody(body);
-  const { rows } = await query<ReviewJobRow>(
-    `INSERT INTO review_jobs (payer_name, status, platforms, content_type, title, received_date, review_deadline, publish_date, payment_date, tags, notes, is_brother_job)
-     VALUES ($1, $2, $3::text[], $4, $5, $6::date, $7::date, $8::date, $9::date, $10::text[], $11, $12) RETURNING *`,
-    [
-      data.payer_name,
-      data.status,
-      data.platforms,
-      data.content_type,
-      data.title,
-      data.received_date || null,
-      data.review_deadline || null,
-      data.publish_date || null,
-      data.payment_date || null,
-      data.tags,
-      data.notes,
-      data.is_brother_job,
-    ],
-  );
-  return serializeReviewJob(rows[0]);
+  const row = await prisma.review_jobs.create({
+    data: {
+      payer_name: data.payer_name,
+      status: data.status,
+      platforms: data.platforms,
+      content_type: data.content_type,
+      title: data.title,
+      received_date: data.received_date ? new Date(data.received_date) : null,
+      review_deadline: data.review_deadline ? new Date(data.review_deadline) : null,
+      publish_date: data.publish_date ? new Date(data.publish_date) : null,
+      payment_date: data.payment_date ? new Date(data.payment_date) : null,
+      tags: data.tags,
+      notes: data.notes,
+      is_brother_job: data.is_brother_job,
+    },
+  });
+  return serializeReviewJob(row);
 }
 
 export async function updateJob(
@@ -288,58 +262,56 @@ export async function updateJob(
       ? (body.isBrotherJob ?? false)
       : (existing.isBrotherJob ?? false),
   });
-  const { rows } = await query<ReviewJobRow>(
-    `UPDATE review_jobs SET payer_name = $1, status = $2, platforms = $3::text[], content_type = $4, title = $5, received_date = $6::date, review_deadline = $7::date, publish_date = $8::date, payment_date = $9::date, tags = $10::text[], notes = $11, is_brother_job = $12
-     WHERE id = $13 RETURNING *`,
-    [
-      data.payer_name,
-      data.status,
-      data.platforms,
-      data.content_type,
-      data.title,
-      data.received_date || null,
-      data.review_deadline || null,
-      data.publish_date || null,
-      data.payment_date || null,
-      data.tags,
-      data.notes,
-      data.is_brother_job,
-      id,
-    ],
-  );
-  if (rows.length === 0) return null;
-  return serializeReviewJob(rows[0]);
+  const row = await prisma.review_jobs.update({
+    where: { id },
+    data: {
+      payer_name: data.payer_name,
+      status: data.status,
+      platforms: data.platforms,
+      content_type: data.content_type,
+      title: data.title,
+      received_date: data.received_date ? new Date(data.received_date) : null,
+      review_deadline: data.review_deadline ? new Date(data.review_deadline) : null,
+      publish_date: data.publish_date ? new Date(data.publish_date) : null,
+      payment_date: data.payment_date ? new Date(data.payment_date) : null,
+      tags: data.tags,
+      notes: data.notes,
+      is_brother_job: data.is_brother_job,
+    },
+  });
+  return serializeReviewJob(row);
 }
 
 export async function deleteJob(id: string): Promise<boolean> {
-  const { rowCount } = await query("DELETE FROM review_jobs WHERE id = $1", [
-    id,
-  ]);
-  return (rowCount ?? 0) > 0;
+  const res = await prisma.review_jobs.deleteMany({ where: { id } });
+  return res.count > 0;
 }
 
 /** List recent jobs (e.g. last 10) for dashboard */
 export async function listRecentJobs(limit = 10): Promise<ReviewJobJson[]> {
-  const { rows } = await query<ReviewJobRow>(
-    "SELECT * FROM review_jobs ORDER BY COALESCE(received_date, created_at)::date DESC, created_at DESC LIMIT $1",
-    [limit],
-  );
-  return rows.map(serializeReviewJob);
+  const rows = await prisma.review_jobs.findMany();
+  rows.sort(byReceivedThenCreatedDesc);
+  return rows.slice(0, limit).map(serializeReviewJob);
 }
 
-/** Top platform by job count (unnest platforms so one job can count per platform). */
+/** Top platform by job count (one job can count once per platform it lists). */
 export async function getTopPlatformByJobCount(): Promise<{
   name: string;
   count: number;
 } | null> {
-  const { rows } = await query<{ platform: string; cnt: string }>(
-    `SELECT p AS platform, COUNT(*)::text AS cnt
-     FROM review_jobs, unnest(platforms) AS p
-     WHERE array_length(platforms, 1) > 0
-     GROUP BY p ORDER BY cnt DESC LIMIT 1`,
-  );
-  if (rows.length === 0) return null;
-  return { name: rows[0].platform, count: parseInt(rows[0].cnt, 10) || 0 };
+  const rows = await prisma.review_jobs.findMany({
+    where: { NOT: { platforms: { isEmpty: true } } },
+    select: { platforms: true },
+  });
+  const counts = new Map<string, number>();
+  for (const r of rows) {
+    for (const p of r.platforms) counts.set(p, (counts.get(p) ?? 0) + 1);
+  }
+  let top: { name: string; count: number } | null = null;
+  for (const [name, count] of counts) {
+    if (!top || count > top.count) top = { name, count };
+  }
+  return top;
 }
 
 /** Top payer by job count. */
@@ -347,14 +319,16 @@ export async function getTopPayerByJobCount(): Promise<{
   name: string;
   count: number;
 } | null> {
-  const { rows } = await query<{ name: string; cnt: string }>(
-    `SELECT payer_name AS name, COUNT(*)::text AS cnt
-     FROM review_jobs
-     WHERE payer_name IS NOT NULL AND payer_name != ''
-     GROUP BY payer_name ORDER BY cnt DESC LIMIT 1`,
-  );
-  if (rows.length === 0) return null;
-  return { name: rows[0].name, count: parseInt(rows[0].cnt, 10) || 0 };
+  const grouped = await prisma.review_jobs.groupBy({
+    by: ["payer_name"],
+    where: { AND: [{ payer_name: { not: null } }, { payer_name: { not: "" } }] },
+    _count: { payer_name: true },
+    orderBy: { _count: { payer_name: "desc" } },
+    take: 1,
+  });
+  const top = grouped[0];
+  if (!top || top.payer_name == null) return null;
+  return { name: top.payer_name, count: top._count.payer_name };
 }
 
 /** Top month by job count (by received_date). */
@@ -363,19 +337,23 @@ export async function getTopMonthByJobCount(): Promise<{
   month: number;
   count: number;
 } | null> {
-  const { rows } = await query<{ year: string; month: string; cnt: string }>(
-    `SELECT EXTRACT(YEAR FROM received_date)::text AS year,
-            EXTRACT(MONTH FROM received_date)::text AS month,
-            COUNT(*)::text AS cnt
-     FROM review_jobs
-     WHERE received_date IS NOT NULL
-     GROUP BY EXTRACT(YEAR FROM received_date), EXTRACT(MONTH FROM received_date)
-     ORDER BY cnt DESC LIMIT 1`,
-  );
-  if (rows.length === 0) return null;
-  return {
-    year: parseInt(rows[0].year, 10) || 0,
-    month: parseInt(rows[0].month, 10) || 0,
-    count: parseInt(rows[0].cnt, 10) || 0,
-  };
+  const rows = await prisma.review_jobs.findMany({
+    where: { received_date: { not: null } },
+    select: { received_date: true },
+  });
+  const counts = new Map<string, { year: number; month: number; count: number }>();
+  for (const r of rows) {
+    const d = r.received_date!;
+    const year = d.getUTCFullYear();
+    const month = d.getUTCMonth() + 1;
+    const key = `${year}-${month}`;
+    const entry = counts.get(key) ?? { year, month, count: 0 };
+    entry.count += 1;
+    counts.set(key, entry);
+  }
+  let top: { year: number; month: number; count: number } | null = null;
+  for (const entry of counts.values()) {
+    if (!top || entry.count > top.count) top = entry;
+  }
+  return top;
 }

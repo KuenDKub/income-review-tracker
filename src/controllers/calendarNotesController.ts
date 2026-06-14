@@ -1,23 +1,24 @@
-import { query } from "@/lib/db/client";
+import { prisma } from "@/lib/db/prisma";
 import type { CalendarNote } from "@/types/calendarNotes";
 
-export type CalendarNoteRow = {
+type CalendarNoteRow = {
   id: string;
-  note_date: string;
+  note_date: Date;
   review_job_id: string | null;
   text: string;
-  created_at: string;
-  updated_at: string;
+  created_at: Date;
+  updated_at: Date;
 };
 
 function serialize(row: CalendarNoteRow): CalendarNote {
   return {
     id: row.id,
-    noteDate: row.note_date,
+    // note_date is a DATE column; emit it as yyyy-MM-dd (UTC-stable, no TZ shift).
+    noteDate: row.note_date.toISOString().slice(0, 10),
     reviewJobId: row.review_job_id,
     text: row.text,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    createdAt: row.created_at.toISOString(),
+    updatedAt: row.updated_at.toISOString(),
   };
 }
 
@@ -26,20 +27,18 @@ export async function listCalendarNotesInRange(opts: {
   to: string;
 }): Promise<CalendarNote[]> {
   const { from, to } = opts;
-  const { rows } = await query<CalendarNoteRow>(
-    `SELECT * FROM calendar_notes
-     WHERE note_date BETWEEN $1::date AND $2::date
-     ORDER BY note_date ASC, created_at ASC`,
-    [from, to],
-  );
+  const rows = await prisma.calendar_notes.findMany({
+    where: { note_date: { gte: new Date(from), lte: new Date(to) } },
+    orderBy: [{ note_date: "asc" }, { created_at: "asc" }],
+  });
   return rows.map(serialize);
 }
 
 /** All calendar notes, for the .ics subscription feed. Read-only. */
 export async function listAllCalendarNotes(): Promise<CalendarNote[]> {
-  const { rows } = await query<CalendarNoteRow>(
-    `SELECT * FROM calendar_notes ORDER BY note_date ASC, created_at ASC`,
-  );
+  const rows = await prisma.calendar_notes.findMany({
+    orderBy: [{ note_date: "asc" }, { created_at: "asc" }],
+  });
   return rows.map(serialize);
 }
 
@@ -49,47 +48,37 @@ export async function createCalendarNote(input: {
   reviewJobId?: string | null;
 }): Promise<CalendarNote> {
   const { noteDate, text, reviewJobId = null } = input;
-  const { rows } = await query<CalendarNoteRow>(
-    `INSERT INTO calendar_notes (note_date, review_job_id, text)
-     VALUES ($1::date, $2::uuid, $3)
-     RETURNING *`,
-    [noteDate, reviewJobId, text],
-  );
-  return serialize(rows[0]);
+  const row = await prisma.calendar_notes.create({
+    data: {
+      note_date: new Date(noteDate),
+      review_job_id: reviewJobId,
+      text,
+    },
+  });
+  return serialize(row);
 }
 
 export async function updateCalendarNote(
   id: string,
   input: { text?: string; noteDate?: string; reviewJobId?: string | null },
 ): Promise<CalendarNote | null> {
-  const existingRes = await query<CalendarNoteRow>(
-    "SELECT * FROM calendar_notes WHERE id = $1",
-    [id],
-  );
-  if (existingRes.rows.length === 0) return null;
-  const existing = existingRes.rows[0];
+  const existing = await prisma.calendar_notes.findUnique({ where: { id } });
+  if (!existing) return null;
 
-  const nextText = input.text ?? existing.text;
-  const nextDate = input.noteDate ?? existing.note_date;
-  const nextReviewJobId =
-    input.reviewJobId === undefined ? existing.review_job_id : input.reviewJobId;
-
-  const { rows } = await query<CalendarNoteRow>(
-    `UPDATE calendar_notes
-     SET note_date = $1::date,
-         review_job_id = $2::uuid,
-         text = $3,
-         updated_at = now()
-     WHERE id = $4
-     RETURNING *`,
-    [nextDate, nextReviewJobId, nextText, id],
-  );
-  if (rows.length === 0) return null;
-  return serialize(rows[0]);
+  const row = await prisma.calendar_notes.update({
+    where: { id },
+    data: {
+      note_date: input.noteDate ? new Date(input.noteDate) : existing.note_date,
+      review_job_id:
+        input.reviewJobId === undefined ? existing.review_job_id : input.reviewJobId,
+      text: input.text ?? existing.text,
+      updated_at: new Date(),
+    },
+  });
+  return serialize(row);
 }
 
 export async function deleteCalendarNote(id: string): Promise<boolean> {
-  const res = await query("DELETE FROM calendar_notes WHERE id = $1", [id]);
-  return (res.rowCount ?? 0) > 0;
+  const res = await prisma.calendar_notes.deleteMany({ where: { id } });
+  return res.count > 0;
 }
-

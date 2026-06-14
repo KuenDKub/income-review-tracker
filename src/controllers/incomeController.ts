@@ -3,11 +3,11 @@
  * TODO: Thailand - ensure summaries and exports can be grouped by payer for PND and reconciliation.
  */
 
-import { query } from "@/lib/db/client";
+import { Prisma } from "@prisma/client";
+import { prisma } from "@/lib/db/prisma";
 import {
   serializeIncome,
   deserializeIncomeBody,
-  type IncomeRow,
   type IncomeJson,
 } from "@/lib/serializers/incomeSerializer";
 import type { PaginatedResult } from "@/lib/pagination";
@@ -23,7 +23,6 @@ export async function listIncome(opts?: {
 }): Promise<PaginatedResult<IncomeJson>> {
   const page = Math.max(1, opts?.page ?? 1);
   const pageSize = Math.min(100, Math.max(1, opts?.pageSize ?? 10));
-  const offset = (page - 1) * pageSize;
 
   const search = (opts?.search ?? "").trim();
   const reviewJobId = (opts?.reviewJobId ?? "").trim();
@@ -31,48 +30,27 @@ export async function listIncome(opts?: {
   const paymentDateTo = (opts?.paymentDateTo ?? "").trim();
   const currency = (opts?.currency ?? "").trim();
 
-  const where: string[] = [];
-  const values: unknown[] = [];
-
-  // Optional search by job title via join (best-effort). If empty, no join needed in query planner.
-  // We use EXISTS to avoid selecting from join in result shape.
+  const where: Prisma.incomeWhereInput = {};
   if (search) {
-    values.push(`%${search}%`);
-    where.push(
-      `EXISTS (SELECT 1 FROM review_jobs rj WHERE rj.id = income.review_job_id AND rj.title ILIKE $${values.length})`
-    );
+    where.review_jobs = { is: { title: { contains: search, mode: "insensitive" } } };
   }
-  if (reviewJobId) {
-    values.push(reviewJobId);
-    where.push(`review_job_id = $${values.length}`);
-  }
-  if (currency) {
-    values.push(currency);
-    where.push(`currency = $${values.length}`);
-  }
-  if (paymentDateFrom) {
-    values.push(paymentDateFrom);
-    where.push(`payment_date >= $${values.length}::date`);
-  }
-  if (paymentDateTo) {
-    values.push(paymentDateTo);
-    where.push(`payment_date <= $${values.length}::date`);
+  if (reviewJobId) where.review_job_id = reviewJobId;
+  if (currency) where.currency = currency;
+  if (paymentDateFrom || paymentDateTo) {
+    where.payment_date = {};
+    if (paymentDateFrom) where.payment_date.gte = new Date(paymentDateFrom);
+    if (paymentDateTo) where.payment_date.lte = new Date(paymentDateTo);
   }
 
-  const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
-
-  const countRes = await query<{ total: string }>(
-    `SELECT COUNT(*)::text AS total FROM income ${whereSql}`,
-    values
-  );
-  const total = Number.parseInt(countRes.rows[0]?.total ?? "0", 10) || 0;
-
-  values.push(pageSize);
-  values.push(offset);
-  const { rows } = await query<IncomeRow>(
-    `SELECT * FROM income ${whereSql} ORDER BY payment_date DESC LIMIT $${values.length - 1} OFFSET $${values.length}`,
-    values
-  );
+  const [total, rows] = await Promise.all([
+    prisma.income.count({ where }),
+    prisma.income.findMany({
+      where,
+      orderBy: { payment_date: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+  ]);
 
   return {
     data: rows.map(serializeIncome),
@@ -83,11 +61,8 @@ export async function listIncome(opts?: {
 }
 
 export async function getIncomeById(id: string): Promise<IncomeJson | null> {
-  const { rows } = await query<IncomeRow>("SELECT * FROM income WHERE id = $1", [
-    id,
-  ]);
-  if (rows.length === 0) return null;
-  return serializeIncome(rows[0]);
+  const row = await prisma.income.findUnique({ where: { id } });
+  return row ? serializeIncome(row) : null;
 }
 
 export async function createIncome(body: {
@@ -100,20 +75,18 @@ export async function createIncome(body: {
   currency?: string;
 }): Promise<IncomeJson> {
   const data = deserializeIncomeBody(body);
-  const { rows } = await query<IncomeRow>(
-    `INSERT INTO income (review_job_id, gross_amount, withholding_rate, withholding_amount, net_amount, payment_date, currency)
-     VALUES ($1, $2, $3, $4, $5, $6::date, $7) RETURNING *`,
-    [
-      data.review_job_id,
-      data.gross_amount,
-      data.withholding_rate,
-      data.withholding_amount,
-      data.net_amount,
-      data.payment_date,
-      data.currency,
-    ]
-  );
-  return serializeIncome(rows[0]);
+  const row = await prisma.income.create({
+    data: {
+      review_job_id: data.review_job_id,
+      gross_amount: data.gross_amount,
+      withholding_rate: data.withholding_rate,
+      withholding_amount: data.withholding_amount,
+      net_amount: data.net_amount,
+      payment_date: new Date(data.payment_date),
+      currency: data.currency,
+    },
+  });
+  return serializeIncome(row);
 }
 
 export async function updateIncome(
@@ -139,27 +112,33 @@ export async function updateIncome(
     paymentDate: body.paymentDate ?? existing.paymentDate,
     currency: body.currency ?? existing.currency,
   });
-  const { rows } = await query<IncomeRow>(
-    `UPDATE income SET review_job_id = $1, gross_amount = $2, withholding_rate = $3, withholding_amount = $4, net_amount = $5, payment_date = $6::date, currency = $7
-     WHERE id = $8 RETURNING *`,
-    [
-      data.review_job_id,
-      data.gross_amount,
-      data.withholding_rate,
-      data.withholding_amount,
-      data.net_amount,
-      data.payment_date,
-      data.currency,
-      id,
-    ]
-  );
-  if (rows.length === 0) return null;
-  return serializeIncome(rows[0]);
+  const row = await prisma.income.update({
+    where: { id },
+    data: {
+      review_job_id: data.review_job_id,
+      gross_amount: data.gross_amount,
+      withholding_rate: data.withholding_rate,
+      withholding_amount: data.withholding_amount,
+      net_amount: data.net_amount,
+      payment_date: new Date(data.payment_date),
+      currency: data.currency,
+    },
+  });
+  return serializeIncome(row);
 }
 
 export async function deleteIncome(id: string): Promise<boolean> {
-  const { rowCount } = await query("DELETE FROM income WHERE id = $1", [id]);
-  return (rowCount ?? 0) > 0;
+  const res = await prisma.income.deleteMany({ where: { id } });
+  return res.count > 0;
+}
+
+// EXTRACT(YEAR/MONTH FROM payment_date) = N is equivalent to a [start, nextStart)
+// range on the DATE column, which the typed API expresses with gte/lt.
+function yearRange(year: number) {
+  return { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) };
+}
+function monthRange(year: number, month: number) {
+  return { gte: new Date(Date.UTC(year, month - 1, 1)), lt: new Date(Date.UTC(year, month, 1)) };
 }
 
 /** Monthly summary: sum gross, withholding, net for a given month/year. TODO: Thailand - use calendar year for PND. */
@@ -167,22 +146,14 @@ export async function getMonthlySummary(
   year: number,
   month: number
 ): Promise<{ gross: number; withholding: number; net: number }> {
-  const { rows } = await query<{ sum_gross: string; sum_withholding: string; sum_net: string }>(
-    `SELECT
-       COALESCE(SUM(gross_amount), 0)::numeric AS sum_gross,
-       COALESCE(SUM(withholding_amount), 0)::numeric AS sum_withholding,
-       COALESCE(SUM(net_amount), 0)::numeric AS sum_net
-     FROM income
-     WHERE EXTRACT(YEAR FROM payment_date) = $1 AND EXTRACT(MONTH FROM payment_date) = $2`,
-    [year, month]
-  );
-  const r = rows[0];
-  if (!r)
-    return { gross: 0, withholding: 0, net: 0 };
+  const agg = await prisma.income.aggregate({
+    where: { payment_date: monthRange(year, month) },
+    _sum: { gross_amount: true, withholding_amount: true, net_amount: true },
+  });
   return {
-    gross: parseFloat(r.sum_gross),
-    withholding: parseFloat(r.sum_withholding),
-    net: parseFloat(r.sum_net),
+    gross: Number(agg._sum.gross_amount ?? 0),
+    withholding: Number(agg._sum.withholding_amount ?? 0),
+    net: Number(agg._sum.net_amount ?? 0),
   };
 }
 
@@ -190,22 +161,14 @@ export async function getMonthlySummary(
 export async function getYearlySummary(
   year: number
 ): Promise<{ gross: number; withholding: number; net: number }> {
-  const { rows } = await query<{ sum_gross: string; sum_withholding: string; sum_net: string }>(
-    `SELECT
-       COALESCE(SUM(gross_amount), 0)::numeric AS sum_gross,
-       COALESCE(SUM(withholding_amount), 0)::numeric AS sum_withholding,
-       COALESCE(SUM(net_amount), 0)::numeric AS sum_net
-     FROM income
-     WHERE EXTRACT(YEAR FROM payment_date) = $1`,
-    [year]
-  );
-  const r = rows[0];
-  if (!r)
-    return { gross: 0, withholding: 0, net: 0 };
+  const agg = await prisma.income.aggregate({
+    where: { payment_date: yearRange(year) },
+    _sum: { gross_amount: true, withholding_amount: true, net_amount: true },
+  });
   return {
-    gross: parseFloat(r.sum_gross),
-    withholding: parseFloat(r.sum_withholding),
-    net: parseFloat(r.sum_net),
+    gross: Number(agg._sum.gross_amount ?? 0),
+    withholding: Number(agg._sum.withholding_amount ?? 0),
+    net: Number(agg._sum.net_amount ?? 0),
   };
 }
 
@@ -217,32 +180,23 @@ export type MonthlyBreakdownItem = {
   net: number;
 };
 
-/** Monthly breakdown for a year: one row per month with sums. */
+/** Monthly breakdown for a year: one row per month that has income, summed. */
 export async function getMonthlyBreakdownByYear(
   year: number
 ): Promise<MonthlyBreakdownItem[]> {
-  const { rows } = await query<{
-    month: string;
-    sum_gross: string;
-    sum_withholding: string;
-    sum_net: string;
-  }>(
-    `SELECT
-       EXTRACT(MONTH FROM payment_date)::int AS month,
-       COALESCE(SUM(gross_amount), 0)::numeric AS sum_gross,
-       COALESCE(SUM(withholding_amount), 0)::numeric AS sum_withholding,
-       COALESCE(SUM(net_amount), 0)::numeric AS sum_net
-     FROM income
-     WHERE EXTRACT(YEAR FROM payment_date) = $1
-     GROUP BY EXTRACT(MONTH FROM payment_date)
-     ORDER BY month`,
-    [year]
-  );
-  return rows.map((r) => ({
-    month: parseInt(r.month, 10),
-    year,
-    gross: parseFloat(r.sum_gross),
-    withholding: parseFloat(r.sum_withholding),
-    net: parseFloat(r.sum_net),
-  }));
+  const rows = await prisma.income.findMany({
+    where: { payment_date: yearRange(year) },
+    select: { payment_date: true, gross_amount: true, withholding_amount: true, net_amount: true },
+  });
+  const byMonth = new Map<number, MonthlyBreakdownItem>();
+  for (const r of rows) {
+    const month = r.payment_date.getUTCMonth() + 1;
+    const item =
+      byMonth.get(month) ?? { month, year, gross: 0, withholding: 0, net: 0 };
+    item.gross += Number(r.gross_amount);
+    item.withholding += Number(r.withholding_amount);
+    item.net += Number(r.net_amount);
+    byMonth.set(month, item);
+  }
+  return [...byMonth.values()].sort((a, b) => a.month - b.month);
 }

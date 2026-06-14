@@ -14,8 +14,9 @@ export async function checkHealth(): Promise<HealthResult> {
     const dbUrl = process.env.DATABASE_URL;
     if (dbUrl) {
       try {
-        const { query } = await import("@/lib/db/client");
-        await query("SELECT 1");
+        const { prisma } = await import("@/lib/db/prisma");
+        // Lightweight typed query to verify DB connectivity.
+        await prisma.review_jobs.count();
       } catch (dbErr) {
         return { status: "error", db: "error", message: String(dbErr) };
       }

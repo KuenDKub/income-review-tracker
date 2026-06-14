@@ -2,7 +2,7 @@
  * Documents API business logic.
  */
 
-import { query } from "@/lib/db/client";
+import { prisma } from "@/lib/db/prisma";
 
 export type DocumentRow = {
   id: string;
@@ -43,33 +43,36 @@ export async function createDocument(body: {
   filePath: string;
   notes?: string | null;
 }): Promise<DocumentJson> {
-  const { rows } = await query<DocumentRow>(
-    `INSERT INTO documents (review_job_id, income_id, kind, file_path, notes)
-     VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-    [body.reviewJobId || null, body.incomeId || null, body.kind, body.filePath, body.notes || null]
-  );
-  return serializeDocument(rows[0]);
+  const row = await prisma.documents.create({
+    data: {
+      review_job_id: body.reviewJobId || null,
+      income_id: body.incomeId || null,
+      kind: body.kind,
+      file_path: body.filePath,
+      notes: body.notes || null,
+    },
+  });
+  return serializeDocument(row);
 }
 
 export async function listDocumentsByJobId(jobId: string): Promise<DocumentJson[]> {
-  const { rows } = await query<DocumentRow>(
-    "SELECT * FROM documents WHERE review_job_id = $1 ORDER BY created_at DESC",
-    [jobId]
-  );
+  const rows = await prisma.documents.findMany({
+    where: { review_job_id: jobId },
+    orderBy: { created_at: "desc" },
+  });
   return rows.map(serializeDocument);
 }
 
 export async function getDocumentById(id: string): Promise<DocumentJson | null> {
-  const { rows } = await query<DocumentRow>("SELECT * FROM documents WHERE id = $1", [id]);
-  if (rows.length === 0) return null;
-  return serializeDocument(rows[0]);
+  const row = await prisma.documents.findUnique({ where: { id } });
+  return row ? serializeDocument(row) : null;
 }
 
 export async function deleteDocument(id: string): Promise<boolean> {
   const doc = await getDocumentById(id);
   if (!doc || !doc.filePath) {
-    const { rowCount } = await query("DELETE FROM documents WHERE id = $1", [id]);
-    return (rowCount ?? 0) > 0;
+    const res = await prisma.documents.deleteMany({ where: { id } });
+    return res.count > 0;
   }
 
   const { getStorage } = await import("@/lib/storage");
@@ -91,6 +94,6 @@ export async function deleteDocument(id: string): Promise<boolean> {
     }
   }
 
-  const { rowCount } = await query("DELETE FROM documents WHERE id = $1", [id]);
-  return (rowCount ?? 0) > 0;
+  const res = await prisma.documents.deleteMany({ where: { id } });
+  return res.count > 0;
 }
