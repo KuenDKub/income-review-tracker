@@ -34,7 +34,7 @@ export default async function LocaleLayout({ children, params }: Props) {
           <Sidebar />
           <div className="flex min-w-0 flex-1 flex-col bg-muted/30 dark:bg-background">
             <Header title={t("title")} />
-            <main className="flex min-w-0 flex-1 flex-col p-4 pb-24 sm:p-6 lg:pb-8">
+            <main className="flex min-w-0 flex-1 flex-col p-4 pb-[calc(9rem+env(safe-area-inset-bottom))] sm:p-6 sm:pb-[calc(9rem+env(safe-area-inset-bottom))] lg:pb-8">
               <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col">
                 {children}
               </div>

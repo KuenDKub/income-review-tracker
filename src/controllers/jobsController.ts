@@ -168,6 +168,21 @@ export async function listJobs(opts?: {
   };
 }
 
+/**
+ * All jobs that have at least one calendar-relevant date, for the .ics
+ * subscription feed. Read-only; returns the full set (data volume is small).
+ */
+export async function listJobsForFeed(): Promise<ReviewJobJson[]> {
+  const { rows } = await query<ReviewJobRow>(
+    `SELECT * FROM review_jobs
+     WHERE review_deadline IS NOT NULL
+        OR publish_date IS NOT NULL
+        OR payment_date IS NOT NULL
+     ORDER BY COALESCE(review_deadline, publish_date, payment_date) ASC`,
+  );
+  return rows.map(serializeReviewJob);
+}
+
 export async function listPayerNames(): Promise<string[]> {
   const { rows } = await query<{ payer_name: string }>(
     `SELECT DISTINCT payer_name FROM review_jobs WHERE payer_name IS NOT NULL AND payer_name != '' ORDER BY payer_name`,

@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, type CalendarEvent } from "@/components/ui/calendar";
+import { CalendarSubscribe } from "@/components/calendar/CalendarSubscribe";
 import {
   Sheet,
   SheetContent,
@@ -251,7 +252,7 @@ const KIND_DOT_CLASS: Record<ReviewJobEventKind, string> = {
   payment: "bg-green-500 dark:bg-green-400",
 };
 
-export function CalendarClient() {
+export function CalendarClient({ feedToken = "" }: { feedToken?: string }) {
   const t = useTranslations("calendar");
   const locale = useLocale();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
@@ -597,6 +598,7 @@ export function CalendarClient() {
             >
               {t("today")}
             </Button>
+            <CalendarSubscribe feedToken={feedToken} />
           </>
         }
       />

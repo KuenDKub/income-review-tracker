@@ -92,7 +92,15 @@
     "viewAgenda": "กำหนดการ",
     "previousMonth": "เดือนก่อนหน้า",
     "nextMonth": "เดือนถัดไป",
-    "noEventsThisMonth": "เดือนนี้ยังไม่มีรายการ"
+    "noEventsThisMonth": "เดือนนี้ยังไม่มีรายการ",
+    "subscribe": "ซิงค์ปฏิทิน",
+    "subscribeTitle": "ซิงค์กับปฏิทินของคุณ",
+    "subscribeHint": "เพิ่มฟีดงานของคุณเข้า Apple หรือ Google Calendar ระบบจะรีเฟรชอัตโนมัติ งานใหม่หรือที่แก้ไขจะอัปเดตเองโดยไม่ต้องนำเข้าใหม่",
+    "subscribeApple": "เพิ่มใน Apple Calendar",
+    "subscribeCopyUrl": "คัดลอกลิงก์ฟีด",
+    "subscribeCopied": "คัดลอกแล้ว!",
+    "subscribeCopyError": "คัดลอกลิงก์ไม่สำเร็จ",
+    "subscribeGoogleHint": "Google Calendar: ปฏิทินอื่นๆ → จาก URL แล้ววางลิงก์ฟีดที่คัดลอกไว้"
   },
   "jobs": {
     "title": "งานรีวิว",
