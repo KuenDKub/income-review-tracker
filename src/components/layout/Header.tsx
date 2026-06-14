@@ -1,6 +1,7 @@
 import { Link } from "@/i18n/navigation";
 import { Sparkles } from "lucide-react";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import Image from "next/image";
 
 type HeaderProps = {
   title?: string;
@@ -15,9 +16,13 @@ export function Header({ title = "Review Income & Tax Tracker" }: HeaderProps) {
           href="/"
           className="flex min-w-0 items-center gap-2.5 touch-manipulation"
         >
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Sparkles className="size-4" />
-          </span>
+          <Image
+            src="/icon.png"
+            alt="App Icon"
+            width={32}
+            height={32}
+            className="rounded-lg"
+          />
           <span className="truncate text-base font-bold">{title}</span>
         </Link>
         <ThemeToggle />

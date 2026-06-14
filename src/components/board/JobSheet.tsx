@@ -10,7 +10,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { PlatformBadges } from "@/components/jobs/PlatformBadges";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { formatDateThai } from "@/lib/formatDate";
@@ -46,16 +51,31 @@ function JobSheetBody({
 
   return (
     <div className="min-h-0 space-y-4 overflow-y-auto px-4 pb-4 sm:px-6 sm:pb-6">
-      <div className="space-y-1">
-        {job.payerName && (
-          <p className="text-sm text-muted-foreground">{job.payerName}</p>
-        )}
-        {job.netAmount != null && (
-          <p className="text-sm font-medium tabular-nums">
-            {t("budget")}: {formatTHB(job.netAmount)} ฿
-          </p>
-        )}
-        <PlatformBadges platforms={job.platforms ?? []} className="gap-1 pt-1" />
+      <div className="flex flex-row justify-between items-start gap-2">
+        <div className="min-w-0 space-y-1">
+          {job.payerName && (
+            <p className="text-sm text-muted-foreground">{job.payerName}</p>
+          )}
+          {job.netAmount != null && (
+            <p className="text-sm font-medium tabular-nums">
+              {t("budget")}: {formatTHB(job.netAmount)} ฿
+            </p>
+          )}
+          <PlatformBadges
+            platforms={job.platforms ?? []}
+            className="gap-1 pt-1"
+          />
+        </div>
+        <Button
+          variant="outline"
+          className="min-h-11 w-fit flex lg:hidden"
+          asChild
+        >
+          <Link href={`/jobs/${job.id}`}>
+            <ExternalLink className="size-4" />
+            {t("viewDetails")}
+          </Link>
+        </Button>
       </div>
 
       <dl className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg bg-muted/50 p-3 text-sm">
@@ -78,7 +98,11 @@ function JobSheetBody({
         />
       </div>
 
-      <Button variant="outline" className="min-h-[44px] w-full" asChild>
+      <Button
+        variant="outline"
+        className="min-h-11 w-full hidden lg:flex"
+        asChild
+      >
         <Link href={`/jobs/${job.id}`}>
           <ExternalLink className="size-4" />
           {t("viewDetails")}
@@ -88,7 +112,13 @@ function JobSheetBody({
   );
 }
 
-export function JobSheet({ job, open, onOpenChange, onMove, busy }: JobSheetProps) {
+export function JobSheet({
+  job,
+  open,
+  onOpenChange,
+  onMove,
+  busy,
+}: JobSheetProps) {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   if (!job) return null;
@@ -112,7 +142,9 @@ export function JobSheet({ job, open, onOpenChange, onMove, busy }: JobSheetProp
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" showCloseButton={false} className="gap-3">
         <SheetHeader className="px-4 pt-1 pb-0">
-          <SheetTitle className="text-base leading-snug">{job.title}</SheetTitle>
+          <SheetTitle className="text-base leading-snug">
+            {job.title}
+          </SheetTitle>
         </SheetHeader>
         <JobSheetBody job={job} onMove={onMove} busy={busy} />
       </SheetContent>
