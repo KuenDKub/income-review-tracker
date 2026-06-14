@@ -3,13 +3,17 @@
  * TODO: Thailand - ensure dates and amounts align with PND 50/53 period grouping.
  */
 
+// Numeric DB columns arrive as a string from raw pg, or a Prisma.Decimal object
+// from the Prisma client. Both serialize to a JS number via Number().
+type Numeric = string | number | { toString(): string };
+
 export type IncomeRow = {
   id: string;
   review_job_id: string;
-  gross_amount: string | number;
-  withholding_rate: string | number;
-  withholding_amount: string | number;
-  net_amount: string | number;
+  gross_amount: Numeric;
+  withholding_rate: Numeric;
+  withholding_amount: Numeric;
+  net_amount: Numeric;
   payment_date: Date;
   currency: string;
   created_at: Date;
@@ -27,8 +31,8 @@ export type IncomeJson = {
   createdAt: string;
 };
 
-function toNumber(v: string | number): number {
-  return typeof v === "string" ? parseFloat(v) : v;
+function toNumber(v: Numeric): number {
+  return typeof v === "number" ? v : Number(v);
 }
 
 export function serializeIncome(row: IncomeRow): IncomeJson {

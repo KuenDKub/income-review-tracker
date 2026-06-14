@@ -90,6 +90,7 @@ export function JobDetailClient({ id }: { id: string }) {
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
   const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
   const [existingEvidenceImages, setExistingEvidenceImages] = useState<
     Array<{ id: string; url: string }>
@@ -259,6 +260,8 @@ export function JobDetailClient({ id }: { id: string }) {
     return <p className="text-sm text-muted-foreground">{t("jobNotFound")}</p>;
 
   const handleDeleteDocument = async (docId: string) => {
+    if (deletingDocId) return;
+    setDeletingDocId(docId);
     try {
       const res = await fetch(`/api/documents/${docId}`, { method: "DELETE" });
       if (!res.ok) throw new Error(t("deleteDocError"));
@@ -266,6 +269,8 @@ export function JobDetailClient({ id }: { id: string }) {
       await load();
     } catch (e) {
       toast.error(t("deleteDocError"), String(e));
+    } finally {
+      setDeletingDocId(null);
     }
   };
 
@@ -555,10 +560,13 @@ export function JobDetailClient({ id }: { id: string }) {
                     type="button"
                     variant="destructive"
                     size="icon"
-                    className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7"
+                    loading={deletingDocId === doc.id}
+                    className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 data-[loading]:opacity-100"
                     onClick={() => handleDeleteDocument(doc.id)}
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    {deletingDocId === doc.id ? null : (
+                      <Trash2 className="h-3.5 w-3.5" />
+                    )}
                   </Button>
                 </div>
               ))}

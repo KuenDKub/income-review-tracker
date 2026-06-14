@@ -39,6 +39,7 @@ export function JobForm({
     resolver: zodResolver(schema) as never,
     defaultValues: defaultValues as JobFormValues,
   });
+  const { isSubmitting } = form.formState;
 
   return (
     <Form {...form}>
@@ -52,7 +53,11 @@ export function JobForm({
           onRemoveExistingEvidence={onRemoveExistingEvidence}
           showEvidence={showEvidence}
         />
-        <Button type="submit" className="w-full sm:w-auto">
+        <Button
+          type="submit"
+          loading={isSubmitting}
+          className="w-full sm:w-auto"
+        >
           {submitLabel}
         </Button>
       </form>

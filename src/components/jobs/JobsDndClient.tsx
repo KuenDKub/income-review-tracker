@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { ArrowUp, GripVertical } from "lucide-react";
 import {
   DndContext,
   DragOverlay,
@@ -40,6 +41,7 @@ import { STATUS_KEYS } from "@/components/board/statusTheme";
 import type { JobItem, JobsByStatus } from "@/components/board/types";
 
 const COLLAPSED_STORAGE_KEY = "board-collapsed-columns";
+const DND_HINT_STORAGE_KEY = "board-dnd-hint-dismissed";
 
 const BOARD_HEIGHT_CLASS =
   "h-[calc(100dvh-285px)] min-h-[300px] lg:h-[calc(100dvh-185px)]";
@@ -60,7 +62,7 @@ function BoardSkeleton() {
       {Array.from({ length: 4 }).map((_, i) => (
         <div
           key={i}
-          className="flex h-full w-[86vw] max-w-[340px] shrink-0 flex-col rounded-lg border bg-muted/30 p-3 md:w-[300px] lg:w-[280px]"
+          className="flex h-full w-[80vw] max-w-[320px] shrink-0 flex-col rounded-lg border bg-muted/30 p-3 md:w-[300px] lg:w-[280px]"
         >
           <Skeleton className="mb-3 h-5 w-24" />
           <div className="space-y-2">
@@ -125,6 +127,26 @@ export function JobsDndClient() {
   // Collapsible columns (desktop/iPad)
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
+  // One-time onboarding hint for the drag-to-status gesture (mobile).
+  const [showHint, setShowHint] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem(DND_HINT_STORAGE_KEY)) setShowHint(true);
+    } catch {
+      // ignore unavailable storage
+    }
+  }, []);
+
+  const dismissHint = useCallback(() => {
+    setShowHint(false);
+    try {
+      localStorage.setItem(DND_HINT_STORAGE_KEY, "1");
+    } catch {
+      // ignore quota errors
+    }
+  }, []);
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem(COLLAPSED_STORAGE_KEY);
@@ -162,7 +184,9 @@ export function JobsDndClient() {
       activationConstraint: { distance: 8 },
     }),
     useSensor(TouchSensor, {
-      activationConstraint: { delay: 200, tolerance: 5 },
+      // Short delay: the card's drag handle is `touch-none`, so there's no
+      // scroll/drag ambiguity to wait out — keep it responsive on mobile.
+      activationConstraint: { delay: 120, tolerance: 8 },
     }),
     useSensor(KeyboardSensor)
   );
@@ -285,7 +309,11 @@ export function JobsDndClient() {
 
       const job = active.data?.current?.job as JobItem | undefined;
       if (!job) return;
-      void moveJob(job, String(over.id));
+      // Drop target can be a column or a top status chip — both carry the
+      // target status in `data.status` (chips use a `chip-` prefixed id).
+      const targetStatus =
+        (over.data?.current?.status as string | undefined) ?? String(over.id);
+      void moveJob(job, targetStatus);
     },
     [moveJob]
   );
@@ -419,7 +447,9 @@ export function JobsDndClient() {
     const container = scrollRef.current;
     const el = colRefs.current[index];
     if (!container || !el) return;
-    container.scrollTo({ left: el.offsetLeft - 8, behavior: "smooth" });
+    // Center the column so the previous/next status columns peek on each side.
+    const left = el.offsetLeft - (container.clientWidth - el.offsetWidth) / 2;
+    container.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
     setActiveColIndex(index);
   }, []);
 
@@ -429,12 +459,14 @@ export function JobsDndClient() {
       scrollRafRef.current = null;
       const container = scrollRef.current;
       if (!container) return;
-      const x = container.scrollLeft;
+      // The column whose center is nearest the viewport center is "active".
+      const viewportCenter = container.scrollLeft + container.clientWidth / 2;
       let best = 0;
       let bestDist = Number.POSITIVE_INFINITY;
       colRefs.current.forEach((el, i) => {
         if (!el) return;
-        const d = Math.abs(el.offsetLeft - 8 - x);
+        const colCenter = el.offsetLeft + el.offsetWidth / 2;
+        const d = Math.abs(colCenter - viewportCenter);
         if (d < bestDist) {
           bestDist = d;
           best = i;
@@ -530,7 +562,23 @@ export function JobsDndClient() {
             items={chipItems}
             activeIndex={activeColIndex}
             onSelect={scrollToColumn}
+            dragging={activeJob != null}
           />
+
+          {showHint && !activeJob && (
+            <div className="flex shrink-0 items-center gap-2 rounded-lg border border-dashed border-primary/50 bg-primary/5 px-3 py-2 text-xs text-muted-foreground lg:hidden">
+              <ArrowUp className="size-4 shrink-0 animate-bounce text-primary" />
+              <GripVertical className="size-4 shrink-0 text-primary" />
+              <span className="min-w-0 flex-1 leading-snug">{t("dndHint")}</span>
+              <button
+                type="button"
+                onClick={dismissHint}
+                className="shrink-0 rounded-md px-2 py-1 font-medium text-primary hover:bg-primary/10"
+              >
+                {t("dndHintDismiss")}
+              </button>
+            </div>
+          )}
 
           <div
             ref={scrollRef}
@@ -551,7 +599,7 @@ export function JobsDndClient() {
                   "h-full min-h-0 shrink-0 snap-center",
                   collapsed.has(status)
                     ? "w-auto"
-                    : "w-[86vw] max-w-[340px] md:w-[300px] lg:w-[280px]"
+                    : "w-[80vw] max-w-[320px] md:w-[300px] lg:w-[280px]"
                 )}
               >
                 <BoardColumn

@@ -77,7 +77,7 @@ export function LoginForm() {
               {error}
             </p>
           ) : null}
-          <Button type="submit" disabled={loading} className="mt-2">
+          <Button type="submit" loading={loading} className="mt-2">
             {loading ? "Signing in…" : "Sign in"}
           </Button>
         </form>

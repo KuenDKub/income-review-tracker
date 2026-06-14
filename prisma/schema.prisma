@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model calendar_notes {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  note_date     DateTime     @db.Date
+  review_job_id String?      @db.Uuid
+  text          String
+  created_at    DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime     @default(now()) @db.Timestamptz(6)
+  review_jobs   review_jobs? @relation(fields: [review_job_id], references: [id], onUpdate: NoAction)
+
+  @@index([note_date], map: "idx_calendar_notes_date")
+  @@index([review_job_id], map: "idx_calendar_notes_review_job_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model documents {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  review_job_id String?      @db.Uuid
+  income_id     String?      @db.Uuid
+  kind          String
+  file_path     String?
+  notes         String?
+  created_at    DateTime     @default(now()) @db.Timestamptz(6)
+  income        income?      @relation(fields: [income_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  review_jobs   review_jobs? @relation(fields: [review_job_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([income_id], map: "idx_documents_income_id")
+  @@index([review_job_id], map: "idx_documents_review_job_id")
+}
+
+model income {
+  id                 String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  review_job_id      String      @db.Uuid
+  gross_amount       Decimal     @db.Decimal(15, 2)
+  withholding_rate   Decimal     @default(3) @db.Decimal(5, 2)
+  withholding_amount Decimal     @db.Decimal(15, 2)
+  net_amount         Decimal     @db.Decimal(15, 2)
+  payment_date       DateTime    @db.Date
+  currency           String      @default("THB")
+  created_at         DateTime    @default(now()) @db.Timestamptz(6)
+  documents          documents[]
+  review_jobs        review_jobs @relation(fields: [review_job_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([payment_date], map: "idx_income_payment_date")
+  @@index([review_job_id], map: "idx_income_review_job_id")
+}
+
+model review_jobs {
+  id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  payer_name      String?
+  status          String           @default("received")
+  platforms       String[]         @default([])
+  content_type    String
+  title           String
+  received_date   DateTime?        @db.Date
+  review_deadline DateTime?        @db.Date
+  publish_date    DateTime?        @db.Date
+  payment_date    DateTime?        @db.Date
+  tags            String[]         @default([])
+  notes           String?
+  created_at      DateTime         @default(now()) @db.Timestamptz(6)
+  is_brother_job  Boolean          @default(false)
+  calendar_notes  calendar_notes[]
+  documents       documents[]
+  income          income[]
+
+  @@index([payer_name], map: "idx_review_jobs_payer_name")
+  @@index([publish_date], map: "idx_review_jobs_publish_date")
+  @@index([received_date], map: "idx_review_jobs_received_date")
+  @@index([review_deadline], map: "idx_review_jobs_review_deadline")
+  @@index([status], map: "idx_review_jobs_status")
+}

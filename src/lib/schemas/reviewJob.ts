@@ -92,7 +92,18 @@ export const reviewJobSchema = reviewJobBaseSchema.superRefine((data, ctx) => {
 export type ReviewJobInput = z.infer<typeof reviewJobSchema>;
 
 export const reviewJobCreateSchema = reviewJobSchema;
+// IMPORTANT: `.partial()` does NOT strip `.default(...)`. Any defaulted field
+// left out of a PATCH body would otherwise be re-injected with its default and
+// overwrite the stored value (e.g. a board status-only move would reset
+// platforms/tags to [] and clear isBrotherJob/withholding). Re-declare every
+// defaulted field as plain `.optional()` so absent keys stay absent and the
+// controller can fall back to the existing row.
 export const reviewJobUpdateSchema = reviewJobBaseSchema.partial().extend({
   payerName: z.string().optional(),
   status: z.enum(REVIEW_JOB_STATUSES).optional(),
+  platforms: z.array(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
+  hasWithholdingTax: z.boolean().optional(),
+  isBrotherJob: z.boolean().optional(),
+  withholdingRate: z.coerce.number().min(0).max(100).optional(),
 });

@@ -99,9 +99,9 @@ export function PaidConfirmSheet(props: PaidConfirmSheetProps) {
         type="button"
         className="min-h-[44px]"
         onClick={onSave}
-        disabled={saving}
+        loading={saving}
       >
-        {saving ? tCommon("loading") : tCommon("save")}
+        {tCommon("save")}
       </Button>
     </>
   );

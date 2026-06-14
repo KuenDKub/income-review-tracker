@@ -194,7 +194,11 @@
     "dragOverColumn": "Over {column}",
     "dragDropped": "Moved {title} to {column}",
     "dragCanceled": "Move cancelled",
-    "dragInstructions": "Press space or enter to pick up a card, use arrow keys to move it between columns, press space or enter again to drop."
+    "dragInstructions": "Press space or enter to pick up a card, use arrow keys to move it between columns, press space or enter again to drop.",
+    "dragHandle": "Drag to move",
+    "dndHint": "Tip: hold the grip and drag a card onto a status above to change its status.",
+    "dndHintDismiss": "Got it",
+    "dropOnStatusHint": "Drop on a status to move"
   },
   "payers": {
     "title": "Payers",
