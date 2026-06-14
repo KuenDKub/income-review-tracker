@@ -26,7 +26,7 @@ export function BoardColumn({
   onOpenJob,
 }: BoardColumnProps) {
   const t = useTranslations("jobs");
-  const { setNodeRef, isOver } = useDroppable({ id: status });
+  const { setNodeRef, isOver } = useDroppable({ id: status, data: { status } });
   const theme = statusTheme(status);
 
   if (collapsed) {
@@ -92,7 +92,7 @@ export function BoardColumn({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain rounded-md pb-1">
+      <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain rounded-md pb-1">
         {jobs.length === 0 ? (
           <div className="flex h-24 items-center justify-center rounded-md border border-dashed border-current/25 text-sm opacity-70">
             {t("emptyColumn")}

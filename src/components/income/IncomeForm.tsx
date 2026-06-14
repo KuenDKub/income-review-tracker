@@ -47,6 +47,7 @@ export function IncomeForm({
     resolver: zodResolver(schema) as never,
     defaultValues: defaultValues as IncomeFormValues,
   });
+  const { isSubmitting } = form.formState;
 
   return (
     <Form {...form}>
@@ -110,7 +111,9 @@ export function IncomeForm({
             </FormItem>
           )}
         />
-        <Button type="submit">{submitLabel ?? tCommon("save")}</Button>
+        <Button type="submit" loading={isSubmitting}>
+          {submitLabel ?? tCommon("save")}
+        </Button>
       </form>
     </Form>
   );

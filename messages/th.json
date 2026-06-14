@@ -194,7 +194,11 @@
     "dragOverColumn": "อยู่เหนือ {column}",
     "dragDropped": "ย้าย {title} ไป {column} แล้ว",
     "dragCanceled": "ยกเลิกการย้าย",
-    "dragInstructions": "กด space หรือ enter เพื่อหยิบการ์ด ใช้ปุ่มลูกศรเพื่อย้ายระหว่างคอลัมน์ แล้วกด space หรือ enter อีกครั้งเพื่อวาง"
+    "dragInstructions": "กด space หรือ enter เพื่อหยิบการ์ด ใช้ปุ่มลูกศรเพื่อย้ายระหว่างคอลัมน์ แล้วกด space หรือ enter อีกครั้งเพื่อวาง",
+    "dragHandle": "ลากเพื่อย้าย",
+    "dndHint": "เคล็ดลับ: กดค้างที่จุดจับแล้วลากการ์ดไปวางบนแถบสถานะด้านบนเพื่อเปลี่ยนสถานะ",
+    "dndHintDismiss": "เข้าใจแล้ว",
+    "dropOnStatusHint": "วางบนสถานะเพื่อย้าย"
   },
   "payers": {
     "title": "Payers",
