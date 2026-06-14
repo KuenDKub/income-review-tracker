@@ -160,6 +160,68 @@ export async function listJobsForFeed(): Promise<ReviewJobJson[]> {
   return rows.map(serializeReviewJob);
 }
 
+export type UpcomingPostItem = {
+  id: string;
+  title: string;
+  payerName: string | null;
+  status: string;
+  platforms: string[];
+  publishDate: string;
+  /** Whole days from today; negative = overdue, 0 = today. */
+  daysUntil: number;
+};
+
+/**
+ * Jobs with a publish date in [today - overdueDays, today + windowDays] that
+ * aren't paid yet — i.e. content that should be posted soon (or is overdue).
+ * Powers the dashboard "upcoming posts" reminder strip.
+ */
+export async function listUpcomingPosts(opts?: {
+  windowDays?: number;
+  overdueDays?: number;
+}): Promise<UpcomingPostItem[]> {
+  const windowDays = opts?.windowDays ?? 14;
+  const overdueDays = opts?.overdueDays ?? 7;
+  const now = new Date();
+  const todayMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const from = new Date(todayMs - overdueDays * 86_400_000);
+  const to = new Date(todayMs + windowDays * 86_400_000);
+
+  const rows = await prisma.review_jobs.findMany({
+    where: {
+      status: { not: "paid" },
+      publish_date: { not: null, gte: from, lte: to },
+    },
+    select: {
+      id: true,
+      title: true,
+      payer_name: true,
+      status: true,
+      platforms: true,
+      publish_date: true,
+    },
+  });
+
+  const items = rows
+    .filter((r) => r.publish_date != null)
+    .map((r) => {
+      const d = r.publish_date!;
+      const day = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+      return {
+        id: r.id,
+        title: r.title,
+        payerName: r.payer_name ?? null,
+        status: r.status,
+        platforms: Array.isArray(r.platforms) ? r.platforms : [],
+        publishDate: d.toISOString().slice(0, 10),
+        daysUntil: Math.round((day - todayMs) / 86_400_000),
+      };
+    });
+
+  items.sort((a, b) => a.daysUntil - b.daysUntil);
+  return items;
+}
+
 export async function listPayerNames(): Promise<string[]> {
   const rows = await prisma.review_jobs.findMany({
     where: { AND: [{ payer_name: { not: null } }, { payer_name: { not: "" } }] },

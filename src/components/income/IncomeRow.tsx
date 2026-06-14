@@ -12,6 +12,7 @@ type IncomeRowProps = {
   item: IncomeItem;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onToggleCert?: (id: string, value: boolean) => void;
   selected?: boolean;
   onToggleSelected?: () => void;
 };
@@ -20,11 +21,14 @@ export function IncomeRow({
   item,
   onEdit,
   onDelete,
+  onToggleCert,
   selected,
   onToggleSelected,
 }: IncomeRowProps) {
   const tCommon = useTranslations("common");
+  const tIncome = useTranslations("income");
   const currency = item.currency ?? "THB";
+  const hasWithholding = (item.withholdingAmount ?? 0) > 0;
   const canSelect = typeof selected === "boolean" && Boolean(onToggleSelected);
   return (
     <TableRow>
@@ -47,6 +51,19 @@ export function IncomeRow({
       <TableCell className="text-right">
         {item.netAmount.toLocaleString("th-TH")} {currency}
       </TableCell>
+      {onToggleCert && (
+        <TableCell className="text-center">
+          {hasWithholding ? (
+            <Checkbox
+              checked={Boolean(item.withholdingCertReceived)}
+              onCheckedChange={(v) => onToggleCert(item.id, v === true)}
+              aria-label={tIncome("certReceived")}
+            />
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          )}
+        </TableCell>
+      )}
       {(onEdit || onDelete) && (
         <TableCell className="text-right">
           <div className="flex justify-end gap-1">

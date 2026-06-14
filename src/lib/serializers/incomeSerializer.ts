@@ -16,6 +16,7 @@ export type IncomeRow = {
   net_amount: Numeric;
   payment_date: Date;
   currency: string;
+  withholding_cert_received?: boolean;
   created_at: Date;
 };
 
@@ -28,6 +29,7 @@ export type IncomeJson = {
   netAmount: number;
   paymentDate: string;
   currency: string;
+  withholdingCertReceived: boolean;
   createdAt: string;
 };
 
@@ -45,6 +47,7 @@ export function serializeIncome(row: IncomeRow): IncomeJson {
     netAmount: toNumber(row.net_amount),
     paymentDate: row.payment_date instanceof Date ? row.payment_date.toISOString().slice(0, 10) : String(row.payment_date),
     currency: row.currency ?? "THB",
+    withholdingCertReceived: Boolean(row.withholding_cert_received),
     createdAt: row.created_at.toISOString(),
   };
 }
@@ -57,6 +60,7 @@ export function deserializeIncomeBody(body: {
   netAmount?: number;
   paymentDate: string;
   currency?: string;
+  withholdingCertReceived?: boolean;
 }): {
   review_job_id: string;
   gross_amount: number;
@@ -65,6 +69,7 @@ export function deserializeIncomeBody(body: {
   net_amount: number;
   payment_date: string;
   currency: string;
+  withholding_cert_received: boolean;
 } {
   const rate = body.withholdingRate ?? 3;
   const gross = body.grossAmount;
@@ -78,5 +83,6 @@ export function deserializeIncomeBody(body: {
     net_amount: net,
     payment_date: body.paymentDate,
     currency: body.currency ?? "THB",
+    withholding_cert_received: body.withholdingCertReceived ?? false,
   };
 }

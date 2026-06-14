@@ -73,6 +73,7 @@ export async function createIncome(body: {
   netAmount?: number;
   paymentDate: string;
   currency?: string;
+  withholdingCertReceived?: boolean;
 }): Promise<IncomeJson> {
   const data = deserializeIncomeBody(body);
   const row = await prisma.income.create({
@@ -84,6 +85,7 @@ export async function createIncome(body: {
       net_amount: data.net_amount,
       payment_date: new Date(data.payment_date),
       currency: data.currency,
+      withholding_cert_received: data.withholding_cert_received,
     },
   });
   return serializeIncome(row);
@@ -99,6 +101,7 @@ export async function updateIncome(
     netAmount: number;
     paymentDate: string;
     currency: string;
+    withholdingCertReceived: boolean;
   }>
 ): Promise<IncomeJson | null> {
   const existing = await getIncomeById(id);
@@ -111,6 +114,8 @@ export async function updateIncome(
     netAmount: body.netAmount ?? existing.netAmount,
     paymentDate: body.paymentDate ?? existing.paymentDate,
     currency: body.currency ?? existing.currency,
+    withholdingCertReceived:
+      body.withholdingCertReceived ?? existing.withholdingCertReceived,
   });
   const row = await prisma.income.update({
     where: { id },
@@ -122,6 +127,7 @@ export async function updateIncome(
       net_amount: data.net_amount,
       payment_date: new Date(data.payment_date),
       currency: data.currency,
+      withholding_cert_received: data.withholding_cert_received,
     },
   });
   return serializeIncome(row);
