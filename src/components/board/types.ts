@@ -11,6 +11,7 @@ export type JobItem = {
   paymentDate?: string | null;
   grossAmount?: number | null;
   netAmount?: number | null;
+  hasBrief?: boolean;
 };
 
 export type JobsByStatus = Record<string, JobItem[]>;

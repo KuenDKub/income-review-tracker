@@ -29,6 +29,7 @@ export type JobItem = {
   netAmount?: number | null;
   withholdingRate?: number | null;
   isBrotherJob?: boolean;
+  hasBrief?: boolean;
 };
 
 type JobListProps = {
@@ -41,6 +42,19 @@ function netDisplayOf(job: JobItem): string | null {
   if (job.netAmount != null) return formatTHB(job.netAmount);
   if (job.grossAmount != null) return formatTHB(job.grossAmount);
   return null;
+}
+
+/** Small "has a brief" indicator shown in list rows and cards. */
+function BriefChip({ label }: { label: string }) {
+  return (
+    <span
+      title={label}
+      className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+    >
+      <ClipboardList className="h-3 w-3" />
+      {label}
+    </span>
+  );
 }
 
 export function JobList({ jobs, onEdit, onDelete }: JobListProps) {
@@ -67,6 +81,7 @@ export function JobList({ jobs, onEdit, onDelete }: JobListProps) {
                     reviewDeadline={job.reviewDeadline}
                     publishDate={job.publishDate}
                   />
+                  {job.hasBrief && <BriefChip label={t("brief")} />}
                 </div>
 
                 <Link
@@ -189,6 +204,7 @@ export function JobList({ jobs, onEdit, onDelete }: JobListProps) {
                     reviewDeadline={job.reviewDeadline}
                     publishDate={job.publishDate}
                   />
+                  {job.hasBrief && <BriefChip label={t("brief")} />}
                 </div>
 
                 <span className="text-sm text-muted-foreground tabular-nums">

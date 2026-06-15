@@ -10,6 +10,7 @@ import {
   FormControl,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,9 +26,9 @@ import type { z } from "zod";
 import type { reviewJobSchema } from "@/lib/schemas/reviewJob";
 import { REVIEW_JOB_STATUSES } from "@/lib/schemas/reviewJob";
 import { Badge } from "@/components/ui/badge";
-import { STATUS_BADGE_CLASS, DEFAULT_STATUS_BADGE_CLASS } from "./statusBadge";
+import { STATUS_BADGE_CLASS, DEFAULT_STATUS_BADGE_CLASS } from "./statusBadgeClasses";
 import { computeWithholdingAndNet } from "@/lib/tax";
-import { X } from "lucide-react";
+import { X, ClipboardList } from "lucide-react";
 
 const STATUS_KEYS: Record<string, string> = {
   received: "statusReceived",
@@ -329,6 +330,67 @@ export function JobFormFields({
                     </Button>
                   )}
                 </div>
+              </FormControl>
+            </FormItem>
+          )}
+        />
+      </div>
+
+      <div className="space-y-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
+        <div className="flex items-center gap-2">
+          <ClipboardList className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold">{t("brief")}</h3>
+        </div>
+        <p className="-mt-2 text-xs text-muted-foreground">
+          {t("briefFormHint")}
+        </p>
+        <FormField
+          control={form.control}
+          name="briefLink"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t("briefLink")}</FormLabel>
+              <FormControl>
+                <Input
+                  type="url"
+                  inputMode="url"
+                  placeholder={t("briefLinkPlaceholder")}
+                  {...field}
+                  value={field.value ?? ""}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="briefLinkNote"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t("briefLinkNote")}</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder={t("briefLinkNotePlaceholder")}
+                  {...field}
+                  value={field.value ?? ""}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="brief"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t("briefText")}</FormLabel>
+              <FormControl>
+                <Textarea
+                  rows={5}
+                  placeholder={t("briefPlaceholder")}
+                  {...field}
+                  value={field.value ?? ""}
+                />
               </FormControl>
             </FormItem>
           )}

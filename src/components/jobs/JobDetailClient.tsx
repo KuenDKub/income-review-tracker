@@ -18,7 +18,7 @@ import { PlatformBadges } from "./PlatformBadges";
 import {
   STATUS_BADGE_CLASS,
   DEFAULT_STATUS_BADGE_CLASS,
-} from "./statusBadge";
+} from "./statusBadgeClasses";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +26,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { JobForm } from "./JobForm";
+import { BriefAttachments } from "./BriefAttachments";
 import { AddToCalendarButton } from "./AddToCalendarButton";
 import {
   reviewJobCreateSchema,
@@ -34,7 +35,14 @@ import {
 import { ConfirmDeleteDialog } from "@/components/ui/ConfirmDeleteDialog";
 import { toast } from "@/lib/toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Calendar, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  Trash2,
+  ExternalLink,
+  Copy,
+  MapPin,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   formatDateThai,
@@ -56,6 +64,42 @@ const STATUS_KEYS: Record<string, string> = {
   paid: "statusPaid",
 };
 
+/**
+ * If `link` points at a provider we can embed, return an iframe-able URL so the
+ * brief renders inline. Handles public Canva design links (`.../view?embed`)
+ * and Google Docs/Slides/Sheets (`/edit` → `/preview`). Returns null otherwise
+ * (we just show an "open" button). Private docs show the provider's own
+ * permission wall inside the iframe.
+ */
+function briefLinkEmbed(link: string): string | null {
+  try {
+    const u = new URL(link);
+    const host = u.hostname.toLowerCase();
+    // Canva public design view link
+    if (
+      (host === "canva.com" || host.endsWith(".canva.com")) &&
+      u.pathname.includes("/design/")
+    ) {
+      return `${u.origin}${u.pathname}?embed`;
+    }
+    // Google Docs / Slides / Sheets — swap the trailing action for /preview
+    if (host === "docs.google.com") {
+      const m = u.pathname.match(
+        /^\/(document|presentation|spreadsheets)\/d\/([^/]+)/,
+      );
+      if (m) return `https://docs.google.com/${m[1]}/d/${m[2]}/preview`;
+    }
+    // Google Drive shared file (PDF, image, doc) — `/file/d/<id>/preview`
+    if (host === "drive.google.com") {
+      const m = u.pathname.match(/^\/file\/d\/([^/]+)/);
+      if (m) return `https://drive.google.com/file/d/${m[1]}/preview`;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 type ReviewJobJson = {
   id: string;
   payerName: string | null;
@@ -69,6 +113,9 @@ type ReviewJobJson = {
   paymentDate?: string | null;
   tags: string[];
   notes: string | null;
+  brief?: string | null;
+  briefLink?: string | null;
+  briefLinkNote?: string | null;
   isBrotherJob?: boolean;
 };
 
@@ -129,7 +176,7 @@ export function JobDetailClient({ id }: { id: string }) {
       );
       setExistingEvidenceImages(
         docs
-          .filter((doc) => doc.filePath)
+          .filter((doc) => doc.kind !== "brief" && doc.filePath)
           .map((doc) => ({ id: doc.id, url: doc.filePath! })),
       );
     } catch (e) {
@@ -311,9 +358,18 @@ export function JobDetailClient({ id }: { id: string }) {
     paymentDate: job.paymentDate ?? "",
     tags: job.tags,
     notes: job.notes,
+    brief: job.brief ?? "",
+    briefLink: job.briefLink ?? "",
+    briefLinkNote: job.briefLinkNote ?? "",
     ...incomeDefaults,
   };
 
+  const briefEmbedUrl = job.briefLink ? briefLinkEmbed(job.briefLink) : null;
+  const briefDocs = documents.filter((doc) => doc.kind === "brief");
+  const evidenceDocs = documents.filter((doc) => doc.kind !== "brief");
+  const hasBriefText = Boolean(job.brief && job.brief.trim());
+  const hasBriefLink = Boolean(job.briefLink && job.briefLink.trim());
+  const hasBriefContent = hasBriefText || hasBriefLink || briefDocs.length > 0;
   const showEvidence = job.status === "paid";
   const hasAnyDate =
     (job.receivedDate != null && job.receivedDate !== "") ||
@@ -357,6 +413,84 @@ export function JobDetailClient({ id }: { id: string }) {
           </Button>
         </div>
       </div>
+
+      <Card className="border-primary/30">
+        <CardHeader>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <CardTitle className="text-base">{t("brief")}</CardTitle>
+            {(hasBriefLink || hasBriefText) && (
+              <div className="flex flex-wrap gap-2">
+                {hasBriefLink && (
+                  <Button variant="outline" size="sm" asChild>
+                    <a
+                      href={job.briefLink!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      {t("openBrief")}
+                    </a>
+                  </Button>
+                )}
+                {hasBriefText && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(job.brief ?? "");
+                        toast.success(t("briefCopied"));
+                      } catch {
+                        toast.error(t("copyError"));
+                      }
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                    {t("copyBrief")}
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {briefEmbedUrl && (
+            <div className="relative w-full overflow-hidden rounded-lg border bg-muted/30 pt-[56.25%]">
+              <iframe
+                src={briefEmbedUrl}
+                title={t("brief")}
+                loading="lazy"
+                allowFullScreen
+                className="absolute inset-0 h-full w-full"
+              />
+            </div>
+          )}
+          {hasBriefLink && !briefEmbedUrl && (
+            <a
+              href={job.briefLink!}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 break-all rounded-lg border bg-muted/30 px-4 py-3 text-sm text-primary"
+            >
+              <ExternalLink className="h-4 w-4 shrink-0" />
+              {job.briefLink}
+            </a>
+          )}
+          {job.briefLinkNote && job.briefLinkNote.trim() && (
+            <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+              {job.briefLinkNote}
+            </p>
+          )}
+          {hasBriefText && (
+            <p className="whitespace-pre-wrap text-sm">{job.brief}</p>
+          )}
+          {!hasBriefContent && (
+            <p className="text-sm text-muted-foreground">{t("briefEmpty")}</p>
+          )}
+          <BriefAttachments jobId={id} files={briefDocs} onChanged={load} />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -539,14 +673,14 @@ export function JobDetailClient({ id }: { id: string }) {
         </Card>
       )}
 
-      {showEvidence && documents.length > 0 && (
+      {showEvidence && evidenceDocs.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">{t("evidenceImages")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-              {documents.map((doc) => (
+              {evidenceDocs.map((doc) => (
                 <div
                   key={doc.id}
                   className="relative group rounded-lg border bg-muted/30 overflow-hidden"
@@ -576,7 +710,7 @@ export function JobDetailClient({ id }: { id: string }) {
       )}
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent>
+        <DialogContent aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>{t("editJob")}</DialogTitle>
           </DialogHeader>

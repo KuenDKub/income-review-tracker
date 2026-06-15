@@ -22,6 +22,9 @@ export type ReviewJobRow = {
   payment_date?: Date | null;
   tags: string[];
   notes: string | null;
+  brief?: string | null;
+  brief_link?: string | null;
+  brief_link_note?: string | null;
   is_brother_job: boolean;
   created_at: Date;
 };
@@ -39,6 +42,9 @@ export type ReviewJobJson = {
   paymentDate: string | null;
   tags: string[];
   notes: string | null;
+  brief: string | null;
+  briefLink: string | null;
+  briefLinkNote: string | null;
   createdAt: string;
   isBrotherJob: boolean;
   grossAmount?: number | null;
@@ -58,6 +64,9 @@ export function serializeReviewJob(row: ReviewJobRow): ReviewJobJson {
     paymentDate: toDateStr(row.payment_date),
     tags: Array.isArray(row.tags) ? row.tags : [],
     notes: row.notes ?? null,
+    brief: row.brief ?? null,
+    briefLink: row.brief_link ?? null,
+    briefLinkNote: row.brief_link_note ?? null,
     createdAt: row.created_at.toISOString(),
     isBrotherJob: Boolean(row.is_brother_job),
   };
@@ -75,6 +84,9 @@ export function deserializeReviewJobBody(body: {
   paymentDate?: string | null;
   tags?: string[];
   notes?: string | null;
+  brief?: string | null;
+  briefLink?: string | null;
+  briefLinkNote?: string | null;
   isBrotherJob?: boolean;
 }): {
   payer_name: string | null;
@@ -88,6 +100,9 @@ export function deserializeReviewJobBody(body: {
   payment_date: string | null;
   tags: string[];
   notes: string | null;
+  brief: string | null;
+  brief_link: string | null;
+  brief_link_note: string | null;
   is_brother_job: boolean;
 } {
   return {
@@ -102,6 +117,9 @@ export function deserializeReviewJobBody(body: {
     payment_date: body.paymentDate?.trim() || null,
     tags: Array.isArray(body.tags) ? body.tags : [],
     notes: body.notes ?? null,
+    brief: body.brief?.trim() || null,
+    brief_link: body.briefLink?.trim() || null,
+    brief_link_note: body.briefLinkNote?.trim() || null,
     is_brother_job: Object.prototype.hasOwnProperty.call(body, "isBrotherJob")
       ? Boolean(body.isBrotherJob)
       : false,

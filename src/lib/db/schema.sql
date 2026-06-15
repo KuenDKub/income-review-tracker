@@ -113,3 +113,14 @@ ALTER TABLE creator_profile ADD COLUMN IF NOT EXISTS cover_url TEXT;
 -- Editable contact CTA (title + hint); empty falls back to localized defaults.
 ALTER TABLE creator_profile ADD COLUMN IF NOT EXISTS contact_title TEXT NOT NULL DEFAULT '';
 ALTER TABLE creator_profile ADD COLUMN IF NOT EXISTS contact_hint TEXT NOT NULL DEFAULT '';
+
+-- Customer brief: the job spec the payer sends. `brief` holds pasted/structured
+-- text; `brief_link` holds an external deck URL (e.g. a Canva design) that is
+-- pinned — and, for public Canva links, embedded — at the top of the job detail.
+-- Additive + idempotent for the prod DB.
+ALTER TABLE review_jobs ADD COLUMN IF NOT EXISTS brief TEXT;
+ALTER TABLE review_jobs ADD COLUMN IF NOT EXISTS brief_link TEXT;
+-- Optional note for the brief link, e.g. which Canva slides hold the brief
+-- ("slides 3–5"). The original brief files themselves are stored in the
+-- `documents` table with kind = 'brief'.
+ALTER TABLE review_jobs ADD COLUMN IF NOT EXISTS brief_link_note TEXT;

@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { useDraggable } from "@dnd-kit/core";
-import { GripVertical } from "lucide-react";
+import { GripVertical, ClipboardList } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { PlatformBadges } from "@/components/jobs/PlatformBadges";
 import { DueChip } from "@/components/jobs/DueChip";
@@ -54,6 +54,15 @@ export function BoardCardContent({
             reviewDeadline={job.reviewDeadline}
             publishDate={job.publishDate}
           />
+          {job.hasBrief && (
+            <span
+              title={t("brief")}
+              className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+            >
+              <ClipboardList className="h-3 w-3" />
+              {t("brief")}
+            </span>
+          )}
         </div>
 
         {job.publishDate && (
