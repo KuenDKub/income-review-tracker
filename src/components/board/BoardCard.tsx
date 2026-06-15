@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { useDraggable } from "@dnd-kit/core";
 import { GripVertical, ClipboardList } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -55,13 +56,16 @@ export function BoardCardContent({
             publishDate={job.publishDate}
           />
           {job.hasBrief && (
-            <span
+            <Link
+              href={`/jobs/${job.id}#brief`}
               title={t("brief")}
-              className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+              aria-label={t("brief")}
+              className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={(e) => e.stopPropagation()}
             >
               <ClipboardList className="h-3 w-3" />
               {t("brief")}
-            </span>
+            </Link>
           )}
         </div>
 
