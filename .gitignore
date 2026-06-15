@@ -48,3 +48,6 @@ public/uploads/*
 # generated storyline docx outputs
 public/outputs/*
 !public/outputs/.gitkeep
+
+#codex
+.codex/
