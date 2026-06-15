@@ -148,6 +148,8 @@ type ReviewJobJson = {
   netAmount?: number | null;
   withholdingRate?: number | null;
   isBrotherJob?: boolean;
+  brief?: string | null;
+  briefLink?: string | null;
 };
 
 type Paginated<T> = {
@@ -246,6 +248,7 @@ export function JobsPageClient() {
         netAmount: j.netAmount ?? undefined,
         withholdingRate: j.withholdingRate ?? undefined,
         isBrotherJob: j.isBrotherJob ?? false,
+        hasBrief: Boolean(j.brief?.trim() || j.briefLink?.trim()),
       })),
     );
     setTotal(jobsData.total ?? 0);

@@ -12,9 +12,16 @@ type DueChipProps = {
   className?: string;
 };
 
+const DEADLINE_CHIP_STATUSES = new Set([
+  "received",
+  "script_sent",
+  "in_progress",
+  "waiting_edit",
+]);
+
 /**
  * Deadline urgency chip: red when overdue, amber when due within 3 days,
- * muted otherwise. Hidden for paid jobs or jobs without dates.
+ * muted otherwise. Hidden once the job has moved past the edit handoff.
  */
 export function DueChip({
   status,
@@ -23,7 +30,7 @@ export function DueChip({
   className,
 }: DueChipProps) {
   const t = useTranslations("jobs");
-  if (status === "paid") return null;
+  if (status && !DEADLINE_CHIP_STATUSES.has(status)) return null;
   const due = reviewDeadline?.trim() || publishDate?.trim();
   if (!due) return null;
   const date = new Date(due);

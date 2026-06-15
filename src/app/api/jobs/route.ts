@@ -100,6 +100,9 @@ export async function POST(request: NextRequest) {
       paymentDate: payload.paymentDate ?? null,
       tags: payload.tags,
       notes: payload.notes,
+      brief: payload.brief,
+      briefLink: payload.briefLink,
+      briefLinkNote: payload.briefLinkNote,
       isBrotherJob: payload.isBrotherJob ?? false,
     });
     const incomePayload = buildIncomeFromJobPayload(data.id, payload);

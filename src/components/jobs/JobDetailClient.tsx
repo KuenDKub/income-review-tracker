@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useRouter, Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import { PlatformBadges } from "./PlatformBadges";
 import {
   STATUS_BADGE_CLASS,
   DEFAULT_STATUS_BADGE_CLASS,
-} from "./statusBadge";
+} from "./statusBadgeClasses";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +26,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { JobForm } from "./JobForm";
+import { BriefAttachments } from "./BriefAttachments";
 import { AddToCalendarButton } from "./AddToCalendarButton";
 import {
   reviewJobCreateSchema,
@@ -34,7 +35,16 @@ import {
 import { ConfirmDeleteDialog } from "@/components/ui/ConfirmDeleteDialog";
 import { toast } from "@/lib/toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Calendar, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  ClipboardList,
+  Trash2,
+  ExternalLink,
+  Copy,
+  Pencil,
+  MapPin,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   formatDateThai,
@@ -56,6 +66,64 @@ const STATUS_KEYS: Record<string, string> = {
   paid: "statusPaid",
 };
 
+function DetailItem({
+  label,
+  children,
+  icon,
+  className,
+}: {
+  label: ReactNode;
+  children: ReactNode;
+  icon?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn("rounded-lg border bg-muted/20 p-3", className)}>
+      <dt className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        {icon}
+        {label}
+      </dt>
+      <dd className="mt-1.5 min-h-5 text-sm font-medium">{children}</dd>
+    </div>
+  );
+}
+
+/**
+ * If `link` points at a provider we can embed, return an iframe-able URL so the
+ * brief renders inline. Handles public Canva design links (`.../view?embed`)
+ * and Google Docs/Slides/Sheets (`/edit` → `/preview`). Returns null otherwise
+ * (we just show an "open" button). Private docs show the provider's own
+ * permission wall inside the iframe.
+ */
+function briefLinkEmbed(link: string): string | null {
+  try {
+    const u = new URL(link);
+    const host = u.hostname.toLowerCase();
+    // Canva public design view link
+    if (
+      (host === "canva.com" || host.endsWith(".canva.com")) &&
+      u.pathname.includes("/design/")
+    ) {
+      return `${u.origin}${u.pathname}?embed`;
+    }
+    // Google Docs / Slides / Sheets — swap the trailing action for /preview
+    if (host === "docs.google.com") {
+      const m = u.pathname.match(
+        /^\/(document|presentation|spreadsheets)\/d\/([^/]+)/,
+      );
+      if (m) return `https://docs.google.com/${m[1]}/d/${m[2]}/preview`;
+    }
+    // Google Drive shared file (PDF, image, doc) — `/file/d/<id>/preview`
+    if (host === "drive.google.com") {
+      const m = u.pathname.match(/^\/file\/d\/([^/]+)/);
+      if (m) return `https://drive.google.com/file/d/${m[1]}/preview`;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 type ReviewJobJson = {
   id: string;
   payerName: string | null;
@@ -69,6 +137,9 @@ type ReviewJobJson = {
   paymentDate?: string | null;
   tags: string[];
   notes: string | null;
+  brief?: string | null;
+  briefLink?: string | null;
+  briefLinkNote?: string | null;
   isBrotherJob?: boolean;
 };
 
@@ -129,7 +200,7 @@ export function JobDetailClient({ id }: { id: string }) {
       );
       setExistingEvidenceImages(
         docs
-          .filter((doc) => doc.filePath)
+          .filter((doc) => doc.kind !== "brief" && doc.filePath)
           .map((doc) => ({ id: doc.id, url: doc.filePath! })),
       );
     } catch (e) {
@@ -311,9 +382,18 @@ export function JobDetailClient({ id }: { id: string }) {
     paymentDate: job.paymentDate ?? "",
     tags: job.tags,
     notes: job.notes,
+    brief: job.brief ?? "",
+    briefLink: job.briefLink ?? "",
+    briefLinkNote: job.briefLinkNote ?? "",
     ...incomeDefaults,
   };
 
+  const briefEmbedUrl = job.briefLink ? briefLinkEmbed(job.briefLink) : null;
+  const briefDocs = documents.filter((doc) => doc.kind === "brief");
+  const evidenceDocs = documents.filter((doc) => doc.kind !== "brief");
+  const hasBriefText = Boolean(job.brief && job.brief.trim());
+  const hasBriefLink = Boolean(job.briefLink && job.briefLink.trim());
+  const hasBriefContent = hasBriefText || hasBriefLink || briefDocs.length > 0;
   const showEvidence = job.status === "paid";
   const hasAnyDate =
     (job.receivedDate != null && job.receivedDate !== "") ||
@@ -322,101 +402,223 @@ export function JobDetailClient({ id }: { id: string }) {
     (job.paymentDate != null && job.paymentDate !== "");
 
   return (
-    <div className="space-y-8">
-      <Button
-        variant="ghost"
-        size="sm"
-        className="-ml-2 text-muted-foreground hover:text-foreground"
-        asChild
-      >
-        <Link href="/jobs">
-          <ArrowLeft className="h-4 w-4" />
-          {t("backToJobs")}
-        </Link>
-      </Button>
+    <div className="space-y-5 pb-24 md:space-y-6 md:pb-0">
+      <div className="space-y-4 rounded-xl border bg-card p-4 shadow-sm md:p-6">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="-ml-2 min-h-11 justify-start text-muted-foreground hover:text-foreground"
+          asChild
+        >
+          <Link href="/jobs">
+            <ArrowLeft className="h-4 w-4" />
+            {t("backToJobs")}
+          </Link>
+        </Button>
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">{job.title}</h1>
-        <div className="flex flex-wrap gap-2">
-          <AddToCalendarButton
-            job={{
-              title: job.title,
-              platforms: job.platforms,
-              contentType: job.contentType,
-              payerName: job.payerName,
-              notes: job.notes,
-              reviewDeadline: job.reviewDeadline ?? null,
-              publishDate: job.publishDate ?? null,
-            }}
-          />
-          <Button variant="outline" onClick={() => setEditOpen(true)}>
-            {tCommon("edit")}
-          </Button>
-          <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
-            {tCommon("delete")}
-          </Button>
-        </div>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t("overview")}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid gap-4 text-sm sm:grid-cols-2">
-            {job.payerName && (
-              <div>
-                <dt className="font-medium text-muted-foreground">
-                  {t("payer")}
-                </dt>
-                <dd className="mt-1">{job.payerName}</dd>
-              </div>
-            )}
-            <div>
-              <dt className="font-medium text-muted-foreground">
-                {t("status")}
-              </dt>
-              <dd className="mt-1">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="min-w-0 space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge
+                variant="outline"
+                className={cn(
+                  "border text-xs",
+                  job.status
+                    ? (STATUS_BADGE_CLASS[job.status] ??
+                        DEFAULT_STATUS_BADGE_CLASS)
+                    : DEFAULT_STATUS_BADGE_CLASS,
+                )}
+              >
+                {job.status
+                  ? t(STATUS_KEYS[job.status] ?? "statusReceived")
+                  : "—"}
+              </Badge>
+              {job.isBrotherJob && (
                 <Badge
                   variant="outline"
-                  className={cn(
-                    "text-xs border",
-                    job.status
-                      ? (STATUS_BADGE_CLASS[job.status] ??
-                          DEFAULT_STATUS_BADGE_CLASS)
-                      : DEFAULT_STATUS_BADGE_CLASS,
-                  )}
+                  className="border-purple-200 bg-purple-100 text-xs text-purple-800 dark:border-purple-800 dark:bg-purple-900/30 dark:text-purple-200"
                 >
-                  {job.status
-                    ? t(STATUS_KEYS[job.status] ?? "statusReceived")
-                    : "—"}
+                  {t("brotherBadge")}
                 </Badge>
-              </dd>
+              )}
             </div>
-            <div>
-              <dt className="font-medium text-muted-foreground">
-                {t("table.platform")}
-              </dt>
-              <dd className="mt-1">
-                <PlatformBadges platforms={job.platforms ?? []} />
-              </dd>
+            <h1 className="break-words text-2xl font-semibold leading-tight tracking-tight md:text-3xl">
+              {job.title}
+            </h1>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+              {job.payerName && <span>{job.payerName}</span>}
+              <PlatformBadges platforms={job.platforms ?? []} />
+              {job.contentType && <span>{job.contentType}</span>}
             </div>
-            <div>
-              <dt className="font-medium text-muted-foreground">
-                {t("table.contentType")}
-              </dt>
-              <dd className="mt-1">{job.contentType || "—"}</dd>
+          </div>
+
+          <div className="hidden shrink-0 flex-wrap gap-2 md:flex md:justify-end">
+            <AddToCalendarButton
+              job={{
+                title: job.title,
+                platforms: job.platforms,
+                contentType: job.contentType,
+                payerName: job.payerName,
+                notes: job.notes,
+                reviewDeadline: job.reviewDeadline ?? null,
+                publishDate: job.publishDate ?? null,
+              }}
+            />
+            <Button variant="outline" onClick={() => setEditOpen(true)}>
+              <Pencil className="h-4 w-4" />
+              {tCommon("edit")}
+            </Button>
+            <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
+              <Trash2 className="h-4 w-4" />
+              {tCommon("delete")}
+            </Button>
+          </div>
+        </div>
+
+        <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <DetailItem label={t("payer")}>{job.payerName || "—"}</DetailItem>
+          <DetailItem label={t("table.contentType")}>
+            {job.contentType || "—"}
+          </DetailItem>
+          <DetailItem
+            label={t("reviewDeadline")}
+            icon={<Calendar className="h-3.5 w-3.5" />}
+          >
+            {job.reviewDeadline ? (
+              <span
+                className={
+                  isNearReviewDeadline(job.reviewDeadline)
+                    ? "rounded bg-amber-50 px-1 font-semibold text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+                    : undefined
+                }
+              >
+                {formatDateThai(job.reviewDeadline)}
+              </span>
+            ) : (
+              "—"
+            )}
+          </DetailItem>
+          <DetailItem
+            label={t("publishDate")}
+            icon={<Calendar className="h-3.5 w-3.5" />}
+          >
+            {job.publishDate ? (
+              <span
+                className={
+                  isPublishDatePassed(job.publishDate)
+                    ? "rounded bg-green-50 px-1 font-semibold text-green-700 dark:bg-green-950/40 dark:text-green-300"
+                    : undefined
+                }
+              >
+                {formatDateThai(job.publishDate)}
+              </span>
+            ) : (
+              "—"
+            )}
+          </DetailItem>
+        </dl>
+      </div>
+
+      <Card
+        id="brief"
+        className="scroll-mt-24 gap-4 border-primary/25 py-4 shadow-sm md:py-5"
+      >
+        <CardHeader className="gap-3 px-4 md:px-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ClipboardList className="h-4 w-4 text-primary" />
+              {t("brief")}
+            </CardTitle>
+            {(hasBriefLink || hasBriefText) && (
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+                {hasBriefLink && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="min-h-11"
+                    asChild
+                  >
+                    <a
+                      href={job.briefLink!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      {t("openBrief")}
+                    </a>
+                  </Button>
+                )}
+                {hasBriefText && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="min-h-11"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(job.brief ?? "");
+                        toast.success(t("briefCopied"));
+                      } catch {
+                        toast.error(t("copyError"));
+                      }
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                    {t("copyBrief")}
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4 px-4 md:px-5">
+          {briefEmbedUrl && (
+            <div className="relative w-full overflow-hidden rounded-lg border bg-muted/30 pt-[62%] sm:pt-[56.25%]">
+              <iframe
+                src={briefEmbedUrl}
+                title={t("brief")}
+                loading="lazy"
+                allowFullScreen
+                className="absolute inset-0 h-full w-full"
+              />
             </div>
-          </dl>
+          )}
+          {hasBriefLink && !briefEmbedUrl && (
+            <a
+              href={job.briefLink!}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex min-h-11 items-center gap-2 break-all rounded-lg border bg-muted/30 px-4 py-3 text-sm font-medium text-primary"
+            >
+              <ExternalLink className="h-4 w-4 shrink-0" />
+              {job.briefLink}
+            </a>
+          )}
+          {job.briefLinkNote && job.briefLinkNote.trim() && (
+            <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+              {job.briefLinkNote}
+            </p>
+          )}
+          {hasBriefText && (
+            <div className="rounded-lg bg-muted/25 p-3 text-sm leading-6">
+              <p className="whitespace-pre-wrap">{job.brief}</p>
+            </div>
+          )}
+          {!hasBriefContent && (
+            <p className="rounded-lg bg-muted/25 p-3 text-sm text-muted-foreground">
+              {t("briefEmpty")}
+            </p>
+          )}
+          <BriefAttachments jobId={id} files={briefDocs} onChanged={load} />
         </CardContent>
       </Card>
 
       {(jobIncome || job.isBrotherJob) && (
-        <Card>
-          <CardHeader>
+        <Card className="gap-4 py-4 shadow-sm md:py-5">
+          <CardHeader className="px-4 md:px-5">
             <CardTitle className="text-base">{t("income")}</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-4 md:px-5">
             {job.isBrotherJob ? (
               <Badge
                 variant="outline"
@@ -425,103 +627,131 @@ export function JobDetailClient({ id }: { id: string }) {
                 {t("brotherBadge")}
               </Badge>
             ) : jobIncome ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-right">{t("grossAmount")}</TableHead>
-                    <TableHead className="text-right">{t("withholdingRate")}</TableHead>
-                    <TableHead className="text-right">{tDashboard("withholding")}</TableHead>
-                    <TableHead className="text-right">{tDashboard("net")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell className="text-right tabular-nums">
+              <>
+                <dl className="grid gap-3 sm:hidden">
+                  <DetailItem label={t("grossAmount")}>
+                    <span className="tabular-nums">
                       {formatTHB(jobIncome.grossAmount)} THB
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    </span>
+                  </DetailItem>
+                  <DetailItem label={t("withholdingRate")}>
+                    <span className="tabular-nums">
                       {jobIncome.withholdingAmount > 0 && jobIncome.grossAmount > 0
                         ? `${Math.round((jobIncome.withholdingAmount / jobIncome.grossAmount) * 100 * 100) / 100}%`
                         : "—"}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    </span>
+                  </DetailItem>
+                  <DetailItem label={tDashboard("withholding")}>
+                    <span className="tabular-nums">
                       {jobIncome.withholdingAmount > 0
                         ? `${formatTHB(jobIncome.withholdingAmount)} THB`
                         : "—"}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    </span>
+                  </DetailItem>
+                  <DetailItem label={tDashboard("net")}>
+                    <span className="tabular-nums">
                       {formatTHB(jobIncome.netAmount)} THB
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
+                    </span>
+                  </DetailItem>
+                </dl>
+                <div className="hidden overflow-hidden rounded-lg border sm:block">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-right">{t("grossAmount")}</TableHead>
+                        <TableHead className="text-right">
+                          {t("withholdingRate")}
+                        </TableHead>
+                        <TableHead className="text-right">
+                          {tDashboard("withholding")}
+                        </TableHead>
+                        <TableHead className="text-right">
+                          {tDashboard("net")}
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell className="text-right tabular-nums">
+                          {formatTHB(jobIncome.grossAmount)} THB
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {jobIncome.withholdingAmount > 0 && jobIncome.grossAmount > 0
+                            ? `${Math.round((jobIncome.withholdingAmount / jobIncome.grossAmount) * 100 * 100) / 100}%`
+                            : "—"}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {jobIncome.withholdingAmount > 0
+                            ? `${formatTHB(jobIncome.withholdingAmount)} THB`
+                            : "—"}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums font-semibold">
+                          {formatTHB(jobIncome.netAmount)} THB
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             ) : null}
           </CardContent>
         </Card>
       )}
 
       {hasAnyDate && (
-        <Card>
-          <CardHeader>
+        <Card className="gap-4 py-4 shadow-sm md:py-5">
+          <CardHeader className="px-4 md:px-5">
             <CardTitle className="text-base">{t("dates")}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <dl className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
+          <CardContent className="px-4 md:px-5">
+            <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {job.receivedDate != null && job.receivedDate !== "" && (
-                <div>
-                  <dt className="flex items-center gap-1.5 font-medium text-muted-foreground">
-                    <Calendar className="h-3.5 w-3.5" />
-                    {t("receivedDate")}
-                  </dt>
-                  <dd className="mt-1">{formatDateThai(job.receivedDate)}</dd>
-                </div>
+                <DetailItem
+                  label={t("receivedDate")}
+                  icon={<Calendar className="h-3.5 w-3.5" />}
+                >
+                  {formatDateThai(job.receivedDate)}
+                </DetailItem>
               )}
               {job.reviewDeadline != null && job.reviewDeadline !== "" && (
-                <div>
-                  <dt className="flex items-center gap-1.5 font-medium text-muted-foreground">
-                    <Calendar className="h-3.5 w-3.5" />
-                    {t("reviewDeadline")}
-                  </dt>
-                  <dd className="mt-1">
-                    <span
-                      className={
-                        isNearReviewDeadline(job.reviewDeadline)
-                          ? "rounded px-1 font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
-                          : undefined
-                      }
-                    >
-                      {formatDateThai(job.reviewDeadline)}
-                    </span>
-                  </dd>
-                </div>
+                <DetailItem
+                  label={t("reviewDeadline")}
+                  icon={<Calendar className="h-3.5 w-3.5" />}
+                >
+                  <span
+                    className={
+                      isNearReviewDeadline(job.reviewDeadline)
+                        ? "rounded px-1 font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+                        : undefined
+                    }
+                  >
+                    {formatDateThai(job.reviewDeadline)}
+                  </span>
+                </DetailItem>
               )}
               {job.publishDate != null && job.publishDate !== "" && (
-                <div>
-                  <dt className="flex items-center gap-1.5 font-medium text-muted-foreground">
-                    <Calendar className="h-3.5 w-3.5" />
-                    {t("publishDate")}
-                  </dt>
-                  <dd className="mt-1">
-                    <span
-                      className={
-                        isPublishDatePassed(job.publishDate)
-                          ? "rounded px-1 font-medium bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-300"
-                          : undefined
-                      }
-                    >
-                      {formatDateThai(job.publishDate)}
-                    </span>
-                  </dd>
-                </div>
+                <DetailItem
+                  label={t("publishDate")}
+                  icon={<Calendar className="h-3.5 w-3.5" />}
+                >
+                  <span
+                    className={
+                      isPublishDatePassed(job.publishDate)
+                        ? "rounded px-1 font-medium bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-300"
+                        : undefined
+                    }
+                  >
+                    {formatDateThai(job.publishDate)}
+                  </span>
+                </DetailItem>
               )}
               {job.paymentDate != null && job.paymentDate !== "" && (
-                <div>
-                  <dt className="flex items-center gap-1.5 font-medium text-muted-foreground">
-                    <Calendar className="h-3.5 w-3.5" />
-                    {t("paymentDate")}
-                  </dt>
-                  <dd className="mt-1">{formatDateThai(job.paymentDate)}</dd>
-                </div>
+                <DetailItem
+                  label={t("paymentDate")}
+                  icon={<Calendar className="h-3.5 w-3.5" />}
+                >
+                  {formatDateThai(job.paymentDate)}
+                </DetailItem>
               )}
             </dl>
           </CardContent>
@@ -529,24 +759,26 @@ export function JobDetailClient({ id }: { id: string }) {
       )}
 
       {job.notes && (
-        <Card>
-          <CardHeader>
+        <Card className="gap-4 py-4 shadow-sm md:py-5">
+          <CardHeader className="px-4 md:px-5">
             <CardTitle className="text-base">{t("notes")}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm whitespace-pre-wrap">{job.notes}</p>
+          <CardContent className="px-4 md:px-5">
+            <p className="rounded-lg bg-muted/25 p-3 text-sm leading-6 whitespace-pre-wrap">
+              {job.notes}
+            </p>
           </CardContent>
         </Card>
       )}
 
-      {showEvidence && documents.length > 0 && (
-        <Card>
-          <CardHeader>
+      {showEvidence && evidenceDocs.length > 0 && (
+        <Card className="gap-4 py-4 shadow-sm md:py-5">
+          <CardHeader className="px-4 md:px-5">
             <CardTitle className="text-base">{t("evidenceImages")}</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-4 md:px-5">
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-              {documents.map((doc) => (
+              {evidenceDocs.map((doc) => (
                 <div
                   key={doc.id}
                   className="relative group rounded-lg border bg-muted/30 overflow-hidden"
@@ -561,7 +793,7 @@ export function JobDetailClient({ id }: { id: string }) {
                     variant="destructive"
                     size="icon"
                     loading={deletingDocId === doc.id}
-                    className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 data-[loading]:opacity-100"
+                    className="absolute right-2 top-2 h-11 w-11 opacity-100 transition-opacity data-[loading]:opacity-100 md:h-8 md:w-8 md:opacity-0 md:group-hover:opacity-100"
                     onClick={() => handleDeleteDocument(doc.id)}
                   >
                     {deletingDocId === doc.id ? null : (
@@ -575,10 +807,47 @@ export function JobDetailClient({ id }: { id: string }) {
         </Card>
       )}
 
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 p-3 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur md:hidden">
+        <div className="mx-auto grid max-w-md grid-cols-[1fr_1fr_auto] gap-2">
+          <AddToCalendarButton
+            job={{
+              title: job.title,
+              platforms: job.platforms,
+              contentType: job.contentType,
+              payerName: job.payerName,
+              notes: job.notes,
+              reviewDeadline: job.reviewDeadline ?? null,
+              publishDate: job.publishDate ?? null,
+            }}
+            className="min-h-11 w-full"
+          />
+          <Button
+            variant="outline"
+            className="min-h-11"
+            onClick={() => setEditOpen(true)}
+          >
+            <Pencil className="h-4 w-4" />
+            {tCommon("edit")}
+          </Button>
+          <Button
+            variant="destructive"
+            size="icon"
+            className="h-11 w-11"
+            aria-label={tCommon("delete")}
+            onClick={() => setDeleteOpen(true)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("editJob")}</DialogTitle>
+        <DialogContent
+          aria-describedby={undefined}
+          className="top-0 max-h-[100dvh] max-w-full translate-y-0 gap-0 rounded-none border-0 p-0 sm:top-[50%] sm:max-h-[calc(100dvh-2rem)] sm:max-w-2xl sm:translate-y-[-50%] sm:rounded-lg sm:border md:max-w-3xl"
+        >
+          <DialogHeader className="sticky top-0 z-10 border-b bg-background px-4 py-4 pr-12 text-left sm:px-6">
+            <DialogTitle className="text-xl">{t("editJob")}</DialogTitle>
           </DialogHeader>
           <JobForm
             schema={reviewJobCreateSchema}

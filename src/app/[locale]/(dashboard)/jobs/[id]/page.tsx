@@ -7,7 +7,7 @@ export default async function JobDetailPage({
 }) {
   const { id } = await params;
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
+    <div className="mx-auto w-full max-w-5xl">
       <JobDetailClient id={id} />
     </div>
   );

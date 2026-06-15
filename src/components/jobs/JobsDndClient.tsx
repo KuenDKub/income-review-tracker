@@ -199,7 +199,9 @@ export function JobsDndClient() {
         const res = await fetch(`/api/jobs/board${search}`);
         const json = await res.json();
         if (!res.ok) throw new Error(json.error ?? t("loadingError"));
-        const data = (json.data ?? []) as JobItem[];
+        const data = (json.data ?? []) as Array<
+          JobItem & { brief?: string | null; briefLink?: string | null }
+        >;
         setJobs(
           data.map((j) => ({
             id: j.id,
@@ -214,6 +216,7 @@ export function JobsDndClient() {
             paymentDate: j.paymentDate ?? null,
             grossAmount: j.grossAmount ?? null,
             netAmount: j.netAmount ?? null,
+            hasBrief: Boolean(j.brief?.trim() || j.briefLink?.trim()),
           }))
         );
       } catch (e) {

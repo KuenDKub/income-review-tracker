@@ -249,6 +249,9 @@ export async function createJob(body: {
   paymentDate?: string | null;
   tags?: string[];
   notes?: string | null;
+  brief?: string | null;
+  briefLink?: string | null;
+  briefLinkNote?: string | null;
   isBrotherJob?: boolean;
 }): Promise<ReviewJobJson> {
   const data = deserializeReviewJobBody(body);
@@ -265,6 +268,9 @@ export async function createJob(body: {
       payment_date: data.payment_date ? new Date(data.payment_date) : null,
       tags: data.tags,
       notes: data.notes,
+      brief: data.brief,
+      brief_link: data.brief_link,
+      brief_link_note: data.brief_link_note,
       is_brother_job: data.is_brother_job,
     },
   });
@@ -285,6 +291,9 @@ export async function updateJob(
     paymentDate: string | null;
     tags: string[];
     notes: string | null;
+    brief: string | null;
+    briefLink: string | null;
+    briefLinkNote: string | null;
     isBrotherJob: boolean;
   }>,
 ): Promise<ReviewJobJson | null> {
@@ -320,6 +329,13 @@ export async function updateJob(
       : (existing.paymentDate ?? null),
     tags: has("tags") ? (body.tags ?? existing.tags) : existing.tags,
     notes: has("notes") ? (body.notes ?? existing.notes) : existing.notes,
+    brief: has("brief") ? (body.brief ?? existing.brief) : existing.brief,
+    briefLink: has("briefLink")
+      ? (body.briefLink ?? existing.briefLink)
+      : existing.briefLink,
+    briefLinkNote: has("briefLinkNote")
+      ? (body.briefLinkNote ?? existing.briefLinkNote)
+      : existing.briefLinkNote,
     isBrotherJob: has("isBrotherJob")
       ? (body.isBrotherJob ?? false)
       : (existing.isBrotherJob ?? false),
@@ -338,6 +354,9 @@ export async function updateJob(
       payment_date: data.payment_date ? new Date(data.payment_date) : null,
       tags: data.tags,
       notes: data.notes,
+      brief: data.brief,
+      brief_link: data.brief_link,
+      brief_link_note: data.brief_link_note,
       is_brother_job: data.is_brother_job,
     },
   });

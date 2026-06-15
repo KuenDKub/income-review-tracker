@@ -1,7 +1,7 @@
 import {
   STATUS_BADGE_CLASS,
   DEFAULT_STATUS_BADGE_CLASS,
-} from "@/components/jobs/statusBadge";
+} from "@/components/jobs/statusBadgeClasses";
 
 /** i18n label keys (namespace "jobs") per review job status. */
 export const STATUS_KEYS: Record<string, string> = {

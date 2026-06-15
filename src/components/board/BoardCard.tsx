@@ -2,8 +2,9 @@
 
 import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { useDraggable } from "@dnd-kit/core";
-import { GripVertical } from "lucide-react";
+import { GripVertical, ClipboardList } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { PlatformBadges } from "@/components/jobs/PlatformBadges";
 import { DueChip } from "@/components/jobs/DueChip";
@@ -54,6 +55,18 @@ export function BoardCardContent({
             reviewDeadline={job.reviewDeadline}
             publishDate={job.publishDate}
           />
+          {job.hasBrief && (
+            <Link
+              href={`/jobs/${job.id}#brief`}
+              title={t("brief")}
+              aria-label={t("brief")}
+              className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <ClipboardList className="h-3 w-3" />
+              {t("brief")}
+            </Link>
+          )}
         </div>
 
         {job.publishDate && (
