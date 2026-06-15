@@ -9,6 +9,10 @@ const profileSchema = z.object({
   handle: z.string().max(80).optional(),
   tagline: z.string().max(200).optional(),
   contactEmail: z.string().max(160).nullable().optional(),
+  avatarUrl: z.string().max(2048).nullable().optional(),
+  coverUrl: z.string().max(2048).nullable().optional(),
+  contactTitle: z.string().max(120).optional(),
+  contactHint: z.string().max(280).optional(),
   isPublic: z.boolean().optional(),
 });
 

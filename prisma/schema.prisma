@@ -59,6 +59,10 @@ model creator_profile {
   handle        String   @default("")
   tagline       String   @default("")
   contact_email String?
+  avatar_url    String?
+  cover_url     String?
+  contact_title String   @default("")
+  contact_hint  String   @default("")
   is_public     Boolean  @default(true)
   updated_at    DateTime @default(now()) @db.Timestamptz(6)
 }

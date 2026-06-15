@@ -20,9 +20,7 @@ export default function PublicPortfolioLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div
-      className={`${playfair.variable} min-h-dvh bg-[#FFF7FB] text-[#4A1B34] antialiased dark:bg-[#160C12] dark:text-[#F6E8EF]`}
-    >
+    <div className={`${playfair.variable} min-h-dvh antialiased`}>
       {children}
     </div>
   );

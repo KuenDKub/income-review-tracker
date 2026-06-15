@@ -100,6 +100,16 @@ CREATE TABLE IF NOT EXISTS creator_profile (
   handle TEXT NOT NULL DEFAULT '',
   tagline TEXT NOT NULL DEFAULT '',
   contact_email TEXT,
+  avatar_url TEXT,
+  cover_url TEXT,
   is_public BOOLEAN NOT NULL DEFAULT true,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Profile photo + hero banner for the portfolio (added after initial release).
+ALTER TABLE creator_profile ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+ALTER TABLE creator_profile ADD COLUMN IF NOT EXISTS cover_url TEXT;
+
+-- Editable contact CTA (title + hint); empty falls back to localized defaults.
+ALTER TABLE creator_profile ADD COLUMN IF NOT EXISTS contact_title TEXT NOT NULL DEFAULT '';
+ALTER TABLE creator_profile ADD COLUMN IF NOT EXISTS contact_hint TEXT NOT NULL DEFAULT '';

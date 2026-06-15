@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getTranslations } from "next-intl/server";
 import { getProfile } from "@/controllers/profileController";
+import { getPortfolioData } from "@/controllers/portfolioController";
 import { listRateCards, getMediaKitStats } from "@/controllers/rateCardController";
 import { buildMediaKitDocxBuffer } from "@/lib/docx/mediaKitWriter";
+import { loadImageForDocx } from "@/lib/docx/loadImage";
 import { routing } from "@/i18n/routing";
 
 export const runtime = "nodejs";
@@ -20,8 +22,9 @@ export async function GET(request: NextRequest) {
       ? (localeParam as string)
       : routing.defaultLocale;
 
-    const [profile, rates, stats, tRate] = await Promise.all([
+    const [profile, portfolio, rates, stats, tRate] = await Promise.all([
       getProfile(),
+      getPortfolioData(),
       listRateCards(),
       getMediaKitStats(),
       getTranslations({ locale, namespace: "rateCard" }),
@@ -32,12 +35,18 @@ export async function GET(request: NextRequest) {
     }
 
     const handle = profile.handle ? `@${profile.handle.replace(/^@/, "")}` : "";
+    const avatar = await loadImageForDocx(profile.avatarUrl, request.nextUrl.origin);
 
     const buffer = await buildMediaKitDocxBuffer({
       creatorName: profile.creatorName || profile.handle || "Creator",
       handle,
       tagline: profile.tagline || undefined,
+      avatar,
       stats,
+      collaborations: portfolio.collaborations.map((c) => ({
+        name: c.name,
+        dealCount: c.dealCount,
+      })),
       rates: rates
         .filter((r) => r.isPublished)
         .map((r) => ({

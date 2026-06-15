@@ -1,22 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   BadgeCheck,
   Briefcase,
   Building2,
+  Camera,
   Check,
   Copy,
   Download,
   ExternalLink,
   Globe,
+  Image as ImageIcon,
   ImagePlus,
   Link as LinkIcon,
   Loader2,
   Pencil,
+  Plus,
+  Save,
   Sparkles,
   Trash2,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -48,6 +53,23 @@ type RateCard = {
   price: number;
   currency: string;
   notes: string | null;
+};
+type RateRow = {
+  platform: string;
+  contentType: string;
+  price: number;
+  currency: string;
+  notes: string | null;
+};
+type Suggestion = {
+  platform: string;
+  contentType: string;
+  count: number;
+  avg: number;
+  min: number;
+  max: number;
+  last: number;
+  currency: string;
 };
 type Collab = {
   name: string;
@@ -99,12 +121,85 @@ export function PortfolioClient() {
   const [copied, setCopied] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
 
+  // Editable rate card + price suggestions (merged from the old rate-card page).
+  const [rateRows, setRateRows] = useState<RateRow[]>([]);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [savingRates, setSavingRates] = useState(false);
+
+  // Inline editing for the contact CTA card.
+  const [editingContact, setEditingContact] = useState(false);
+  const [savingContact, setSavingContact] = useState(false);
+  // Snapshot to restore the contact fields if the user cancels the inline edit.
+  const [contactSnapshot, setContactSnapshot] =
+    useState<{ title: string; hint: string } | null>(null);
+
+  function startEditContact() {
+    setContactSnapshot({ title: profile.contactTitle, hint: profile.contactHint });
+    setEditingContact(true);
+  }
+
+  function cancelEditContact() {
+    if (contactSnapshot) {
+      updateProfile({ contactTitle: contactSnapshot.title, contactHint: contactSnapshot.hint });
+    }
+    setEditingContact(false);
+  }
+
   // Add-work uploader state.
   const [jobs, setJobs] = useState<Array<{ id: string; title: string; payerName: string | null }>>([]);
   const [addOpen, setAddOpen] = useState(false);
   const [addJobId, setAddJobId] = useState<string>("");
   const [addFiles, setAddFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+
+  // Profile photo / cover uploader state.
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+
+  // Upload a single image and persist it onto the profile (avatar or cover).
+  const uploadProfileImage = useCallback(
+    async (kind: "avatar" | "cover", file: File | undefined | null) => {
+      if (!file) return;
+      const setBusy = kind === "avatar" ? setUploadingAvatar : setUploadingCover;
+      setBusy(true);
+      try {
+        const fd = new FormData();
+        fd.append("file", file);
+        const up = await fetch("/api/upload", { method: "POST", body: fd });
+        if (!up.ok) throw new Error("upload failed");
+        const { filePath } = await up.json();
+        const next = {
+          ...profile,
+          ...(kind === "avatar" ? { avatarUrl: filePath } : { coverUrl: filePath }),
+        };
+        updateProfile(kind === "avatar" ? { avatarUrl: filePath } : { coverUrl: filePath });
+        const ok = await saveProfile(next);
+        if (!ok) throw new Error("save failed");
+        toast.success(t("photoSaved"));
+      } catch {
+        toast.error(t("photoError"));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [profile, updateProfile, saveProfile, t],
+  );
+
+  const removeProfileImage = useCallback(
+    async (kind: "avatar" | "cover") => {
+      const next = {
+        ...profile,
+        ...(kind === "avatar" ? { avatarUrl: null } : { coverUrl: null }),
+      };
+      updateProfile(kind === "avatar" ? { avatarUrl: null } : { coverUrl: null });
+      const ok = await saveProfile(next);
+      if (ok) toast.success(t("photoSaved"));
+      else toast.error(t("photoError"));
+    },
+    [profile, updateProfile, saveProfile, t],
+  );
 
   const loadPortfolio = useCallback(() => {
     return fetch("/api/portfolio")
@@ -113,9 +208,60 @@ export function PortfolioClient() {
       .catch(() => setError(true));
   }, []);
 
+  const loadRateCards = useCallback(() => {
+    return fetch("/api/rate-cards")
+      .then((res) => (res.ok ? res.json() : Promise.reject(res)))
+      .then((json: { data: { rateCards: RateRow[]; suggestions: Suggestion[] } }) => {
+        setRateRows(json.data.rateCards);
+        setSuggestions(json.data.suggestions);
+      })
+      .catch(() => setError(true));
+  }, []);
+
   useEffect(() => {
     loadPortfolio();
-  }, [loadPortfolio]);
+    loadRateCards();
+  }, [loadPortfolio, loadRateCards]);
+
+  function addRateRow(seed?: Partial<RateRow>) {
+    setRateRows((prev) => [
+      ...prev,
+      {
+        platform: seed?.platform ?? "",
+        contentType: seed?.contentType ?? "",
+        price: seed?.price ?? 0,
+        currency: seed?.currency ?? "THB",
+        notes: seed?.notes ?? null,
+      },
+    ]);
+  }
+
+  function updateRateRow(index: number, patch: Partial<RateRow>) {
+    setRateRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)));
+  }
+
+  function removeRateRow(index: number) {
+    setRateRows((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  async function saveRates() {
+    setSavingRates(true);
+    try {
+      const res = await fetch("/api/rate-cards", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows: rateRows }),
+      });
+      if (!res.ok) throw new Error("save failed");
+      const json: { data: { rateCards: RateRow[] } } = await res.json();
+      setRateRows(json.data.rateCards);
+      toast.success(tRate("saved"));
+    } catch {
+      toast.error(tRate("saveError"));
+    } finally {
+      setSavingRates(false);
+    }
+  }
 
   useEffect(() => {
     if (!addOpen || jobs.length > 0) return;
@@ -182,6 +328,18 @@ export function PortfolioClient() {
       setEditing(false);
       toast.success(t("profileSaved"));
       await loadPortfolio();
+    } else {
+      toast.error(t("profileSaveError"));
+    }
+  }
+
+  async function saveContact() {
+    setSavingContact(true);
+    const ok = await saveProfile(profile);
+    setSavingContact(false);
+    if (ok) {
+      setEditingContact(false);
+      toast.success(t("profileSaved"));
     } else {
       toast.error(t("profileSaveError"));
     }
@@ -277,7 +435,7 @@ export function PortfolioClient() {
     );
   }
 
-  const { stats, rates, collaborations } = data;
+  const { stats, collaborations } = data;
   const heroStats = [
     { icon: Briefcase, label: tRate("statDeals"), value: stats.totalDeals },
     { icon: Building2, label: tRate("statBrands"), value: stats.brandCount },
@@ -287,22 +445,117 @@ export function PortfolioClient() {
   return (
     <div className="mx-auto max-w-5xl space-y-8 pb-10">
       {/* ---------- HERO ---------- */}
-      <section className="relative overflow-hidden rounded-3xl border bg-gradient-to-br from-primary/10 via-card to-violet-500/10 p-6 shadow-sm sm:p-9">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -right-10 -top-10 size-48 rounded-full bg-primary/20 blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -bottom-12 left-8 size-40 rounded-full bg-violet-500/20 blur-3xl"
-        />
+      <section className="relative overflow-hidden rounded-3xl border shadow-sm">
+        {/* Cover banner */}
+        <div className="relative h-32 w-full sm:h-44">
+          {profile.coverUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={profile.coverUrl}
+              alt={t("coverPhoto")}
+              className="size-full object-cover"
+            />
+          ) : (
+            <div className="size-full bg-gradient-to-br from-primary/30 via-fuchsia-400/20 to-violet-500/30" />
+          )}
+          {/* Cover controls */}
+          <div className="absolute right-3 top-3 flex gap-2">
+            <button
+              type="button"
+              onClick={() => coverInputRef.current?.click()}
+              disabled={uploadingCover}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-black/45 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm transition-colors hover:bg-black/60 disabled:opacity-60"
+            >
+              {uploadingCover ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <ImageIcon className="size-3.5" />
+              )}
+              {profile.coverUrl ? t("changePhoto") : t("coverPhoto")}
+            </button>
+            {profile.coverUrl && !uploadingCover && (
+              <button
+                type="button"
+                onClick={() => removeProfileImage("cover")}
+                aria-label={t("removePhoto")}
+                className="inline-flex cursor-pointer items-center rounded-full bg-black/45 p-1.5 text-white backdrop-blur-sm transition-colors hover:bg-destructive"
+              >
+                <Trash2 className="size-3.5" />
+              </button>
+            )}
+          </div>
+          <input
+            ref={coverInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              uploadProfileImage("cover", e.target.files?.[0]);
+              e.target.value = "";
+            }}
+          />
+        </div>
 
-        <div className="relative flex flex-col gap-6">
-          <div className="flex items-start gap-4 sm:gap-5">
-            <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-violet-500 text-2xl font-bold text-primary-foreground shadow-md shadow-primary/25 sm:size-20 sm:text-3xl">
-              {monogram(displayName)}
+        {/* Body */}
+        <div className="relative bg-gradient-to-br from-primary/10 via-card to-violet-500/10 px-6 pb-6 sm:px-9 sm:pb-9">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -bottom-12 left-8 size-40 rounded-full bg-violet-500/20 blur-3xl"
+          />
+
+          <div className="relative flex flex-col gap-6">
+            {/* Avatar (overlapping cover) + edit */}
+            <div className="-mt-12 flex items-end justify-between sm:-mt-14">
+              <div className="group relative shrink-0">
+                {profile.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={profile.avatarUrl}
+                    alt={displayName}
+                    className="size-24 rounded-2xl object-cover shadow-md ring-4 ring-card sm:size-28"
+                  />
+                ) : (
+                  <div className="flex size-24 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-violet-500 text-3xl font-bold text-primary-foreground shadow-md ring-4 ring-card sm:size-28 sm:text-4xl">
+                    {monogram(displayName)}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  aria-label={profile.avatarUrl ? t("changePhoto") : t("uploadPhoto")}
+                  className="absolute -bottom-1 -right-1 inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md ring-2 ring-card transition-transform hover:scale-105 disabled:opacity-60"
+                >
+                  {uploadingAvatar ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Camera className="size-4" />
+                  )}
+                </button>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    uploadProfileImage("avatar", e.target.files?.[0]);
+                    e.target.value = "";
+                  }}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setEditing((v) => !v)}
+                aria-label={t("editProfile")}
+              >
+                <Pencil className="size-4" />
+              </Button>
             </div>
-            <div className="min-w-0 flex-1">
+
+            {/* Name + handle + tagline */}
+            <div className="-mt-2 min-w-0">
               <div className="flex items-center gap-2">
                 <h1 className="truncate text-2xl font-bold tracking-tight sm:text-4xl">
                   {displayName}
@@ -318,17 +571,6 @@ export function PortfolioClient() {
                 <p className="mt-1.5 text-sm text-muted-foreground/70">{t("profileHint")}</p>
               )}
             </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="shrink-0"
-              onClick={() => setEditing((v) => !v)}
-              aria-label={t("editProfile")}
-            >
-              <Pencil className="size-4" />
-            </Button>
-          </div>
 
           {editing && (
             <div className="grid gap-3 rounded-2xl border bg-card/70 p-4 backdrop-blur sm:grid-cols-3">
@@ -446,6 +688,7 @@ export function PortfolioClient() {
               {copied ? <Check className="size-4 text-primary" /> : <Copy className="size-4" />}
               {copied ? t("contactCopied") : t("copyContact")}
             </Button>
+          </div>
           </div>
         </div>
       </section>
@@ -588,55 +831,197 @@ export function PortfolioClient() {
         </DialogContent>
       </Dialog>
 
-      {/* ---------- RATE CARD ---------- */}
-      {rates.length > 0 && (
-        <section className="space-y-4">
-          <SectionHeading icon={BadgeCheck} title={tRate("mediaKitRateCard")} />
-          <div className="grid gap-3 sm:grid-cols-2">
-            {rates.map((r) => (
-              <Card key={r.id} className="rounded-2xl transition-shadow hover:shadow-md">
-                <CardContent className="flex items-center justify-between gap-3 p-4">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">{r.contentType}</p>
-                    {r.platform && (
-                      <p className="truncate text-xs text-muted-foreground">{r.platform}</p>
-                    )}
-                    {r.notes && (
-                      <p className="mt-0.5 truncate text-xs text-muted-foreground/80">{r.notes}</p>
-                    )}
-                  </div>
-                  <p className="shrink-0 text-base font-bold tabular-nums text-primary">
-                    {r.price > 0 ? `${r.price.toLocaleString("en-US")} ${r.currency}` : "—"}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
-      )}
+      {/* ---------- RATE CARD (editable) ---------- */}
+      <section className="space-y-4">
+        <SectionHeading icon={BadgeCheck} title={tRate("mediaKitRateCard")} />
+
+        {/* Suggestions from past deals */}
+        {suggestions.length > 0 && (
+          <Card className="rounded-2xl">
+            <CardContent className="space-y-3 p-4">
+              <div>
+                <h3 className="flex items-center gap-2 text-sm font-semibold">
+                  <Sparkles className="size-4 text-primary" />
+                  {tRate("suggestionsTitle")}
+                </h3>
+                <p className="text-xs text-muted-foreground">{tRate("suggestionsHint")}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {suggestions.map((s, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() =>
+                      addRateRow({
+                        platform: s.platform,
+                        contentType: s.contentType,
+                        price: s.avg,
+                        currency: s.currency,
+                      })
+                    }
+                    className="inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 text-xs transition-colors hover:bg-primary/5 active:scale-[0.98]"
+                  >
+                    <Plus className="size-3 text-primary" />
+                    <span className="font-medium">
+                      {[s.platform, s.contentType].filter(Boolean).join(" · ")}
+                    </span>
+                    <span className="text-primary">
+                      {s.avg.toLocaleString("en-US")} {s.currency}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {tRate("dealCount", { count: s.count })}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Rate editor */}
+        <Card className="rounded-2xl">
+          <CardContent className="space-y-3 p-4">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold">{tRate("rateCardTitle")}</h3>
+              <Button type="button" variant="outline" size="sm" onClick={() => addRateRow()}>
+                <Plus className="size-4" />
+                {tRate("addRow")}
+              </Button>
+            </div>
+            {rateRows.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                {tRate("emptyRows")}
+              </p>
+            ) : (
+              rateRows.map((row, i) => (
+                <div
+                  key={i}
+                  className="grid grid-cols-2 gap-2 rounded-xl border bg-muted/20 p-3 sm:grid-cols-[1.3fr_1fr_0.9fr_1.3fr_auto]"
+                >
+                  <Input
+                    value={row.contentType}
+                    placeholder={tRate("colDeliverable")}
+                    onChange={(e) => updateRateRow(i, { contentType: e.target.value })}
+                  />
+                  <Input
+                    value={row.platform}
+                    placeholder={tRate("colPlatform")}
+                    onChange={(e) => updateRateRow(i, { platform: e.target.value })}
+                  />
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    value={row.price ? String(row.price) : ""}
+                    placeholder={tRate("colPrice")}
+                    onChange={(e) => updateRateRow(i, { price: Number(e.target.value) || 0 })}
+                  />
+                  <Input
+                    value={row.notes ?? ""}
+                    placeholder={tRate("colNotes")}
+                    onChange={(e) => updateRateRow(i, { notes: e.target.value || null })}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeRateRow(i)}
+                    aria-label={tRate("removeRow")}
+                    className="justify-self-end"
+                  >
+                    <Trash2 className="size-4 text-destructive" />
+                  </Button>
+                </div>
+              ))
+            )}
+            <div className="flex justify-end">
+              <Button type="button" onClick={saveRates} disabled={savingRates}>
+                {savingRates ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                {tRate("save")}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
 
       {/* ---------- CONTACT ---------- */}
       <section>
-        <Card className="rounded-2xl border-primary/20 bg-gradient-to-br from-primary/5 to-violet-500/5">
+        <Card className="relative rounded-2xl border-primary/20 bg-gradient-to-br from-primary/5 to-violet-500/5">
+          {!editingContact && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={startEditContact}
+              aria-label={t("editContact")}
+              className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+            >
+              <Pencil className="size-4" />
+            </Button>
+          )}
           <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
-            <h3 className="text-lg font-semibold">{t("contactTitle")}</h3>
-            <p className="max-w-md text-sm text-muted-foreground">{t("contactHint")}</p>
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              {handleAt && (
-                <span className="rounded-full bg-card px-4 py-2 text-sm font-semibold text-primary shadow-sm">
-                  {handleAt}
-                </span>
-              )}
-              <Button
-                type="button"
-                onClick={downloadMediaKit}
-                disabled={downloading}
-                className="bg-gradient-to-r from-primary to-violet-500"
-              >
-                {downloading ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
-                {tRate("downloadMediaKit")}
-              </Button>
-            </div>
+            {editingContact ? (
+              <div className="w-full max-w-md space-y-3 text-left">
+                <div className="space-y-1.5">
+                  <Label htmlFor="ct-title">{t("contactTitleLabel")}</Label>
+                  <Input
+                    id="ct-title"
+                    value={profile.contactTitle}
+                    placeholder={t("contactTitle")}
+                    onChange={(e) => updateProfile({ contactTitle: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="ct-hint">{t("contactHintLabel")}</Label>
+                  <Input
+                    id="ct-hint"
+                    value={profile.contactHint}
+                    placeholder={t("contactHint")}
+                    onChange={(e) => updateProfile({ contactHint: e.target.value })}
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={cancelEditContact}
+                    disabled={savingContact}
+                  >
+                    <X className="size-4" />
+                    {t("cancel")}
+                  </Button>
+                  <Button type="button" size="sm" onClick={saveContact} disabled={savingContact}>
+                    {savingContact ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
+                    {t("saveProfile")}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <h3 className="text-lg font-semibold">
+                  {profile.contactTitle?.trim() || t("contactTitle")}
+                </h3>
+                <p className="max-w-md text-sm text-muted-foreground">
+                  {profile.contactHint?.trim() || t("contactHint")}
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  {handleAt && (
+                    <span className="rounded-full bg-card px-4 py-2 text-sm font-semibold text-primary shadow-sm">
+                      {handleAt}
+                    </span>
+                  )}
+                  <Button
+                    type="button"
+                    onClick={downloadMediaKit}
+                    disabled={downloading}
+                    className="bg-gradient-to-r from-primary to-violet-500"
+                  >
+                    {downloading ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+                    {tRate("downloadMediaKit")}
+                  </Button>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </section>

@@ -6,7 +6,6 @@ import {
   Receipt,
   Film,
   CalendarDays,
-  BadgeDollarSign,
   Sparkles,
   type LucideIcon,
 } from "lucide-react";
@@ -33,7 +32,6 @@ export const navItems: readonly NavItem[] = [
   { href: "/calendar", labelKey: "calendar.title", icon: CalendarDays },
   { href: "/tax", labelKey: "tax.title", icon: Receipt },
   { href: "/storyline", labelKey: "storyline.title", icon: Film },
-  { href: "/rate-card", labelKey: "rateCard.title", icon: BadgeDollarSign },
   { href: "/portfolio-edit", labelKey: "portfolio.title", icon: Sparkles },
 ] as const;
 

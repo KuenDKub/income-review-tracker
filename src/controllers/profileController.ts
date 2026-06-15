@@ -11,6 +11,10 @@ export type CreatorProfile = {
   handle: string;
   tagline: string;
   contactEmail: string | null;
+  avatarUrl: string | null;
+  coverUrl: string | null;
+  contactTitle: string;
+  contactHint: string;
   isPublic: boolean;
 };
 
@@ -19,6 +23,10 @@ const EMPTY: CreatorProfile = {
   handle: "",
   tagline: "",
   contactEmail: null,
+  avatarUrl: null,
+  coverUrl: null,
+  contactTitle: "",
+  contactHint: "",
   isPublic: true,
 };
 
@@ -33,6 +41,10 @@ export async function getProfile(): Promise<CreatorProfile> {
       handle: row.handle,
       tagline: row.tagline,
       contactEmail: row.contact_email,
+      avatarUrl: row.avatar_url,
+      coverUrl: row.cover_url,
+      contactTitle: row.contact_title ?? "",
+      contactHint: row.contact_hint ?? "",
       isPublic: row.is_public,
     };
   } catch (err) {
@@ -48,6 +60,10 @@ export async function saveProfile(input: {
   handle?: string;
   tagline?: string;
   contactEmail?: string | null;
+  avatarUrl?: string | null;
+  coverUrl?: string | null;
+  contactTitle?: string;
+  contactHint?: string;
   isPublic?: boolean;
 }): Promise<CreatorProfile> {
   const existing = await prisma.creator_profile.findFirst({
@@ -62,6 +78,16 @@ export async function saveProfile(input: {
       input.contactEmail !== undefined
         ? input.contactEmail?.trim() || null
         : (existing?.contact_email ?? null),
+    avatar_url:
+      input.avatarUrl !== undefined
+        ? input.avatarUrl || null
+        : (existing?.avatar_url ?? null),
+    cover_url:
+      input.coverUrl !== undefined
+        ? input.coverUrl || null
+        : (existing?.cover_url ?? null),
+    contact_title: (input.contactTitle ?? existing?.contact_title ?? "").trim(),
+    contact_hint: (input.contactHint ?? existing?.contact_hint ?? "").trim(),
     is_public: input.isPublic ?? existing?.is_public ?? true,
     updated_at: new Date(),
   };
@@ -75,6 +101,10 @@ export async function saveProfile(input: {
     handle: row.handle,
     tagline: row.tagline,
     contactEmail: row.contact_email,
+    avatarUrl: row.avatar_url,
+    coverUrl: row.cover_url,
+    contactTitle: row.contact_title,
+    contactHint: row.contact_hint,
     isPublic: row.is_public,
   };
 }

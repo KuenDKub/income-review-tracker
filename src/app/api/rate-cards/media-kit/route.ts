@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { listRateCards, getMediaKitStats } from "@/controllers/rateCardController";
+import { getProfile } from "@/controllers/profileController";
+import { getPortfolioData } from "@/controllers/portfolioController";
 import { buildMediaKitDocxBuffer } from "@/lib/docx/mediaKitWriter";
+import { loadImageForDocx } from "@/lib/docx/loadImage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,18 +32,33 @@ const DEFAULT_LABELS = {
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as Body;
-    const [rates, stats] = await Promise.all([
+    const [rates, stats, profile, portfolio] = await Promise.all([
       listRateCards(),
       getMediaKitStats(),
+      getProfile(),
+      getPortfolioData(),
     ]);
 
     const labels = { ...DEFAULT_LABELS, ...(body.labels ?? {}) };
+    const origin = (() => {
+      try {
+        return new URL(request.url).origin;
+      } catch {
+        return undefined;
+      }
+    })();
+    const avatar = await loadImageForDocx(profile.avatarUrl, origin);
 
     const buffer = await buildMediaKitDocxBuffer({
       creatorName: (body.creatorName ?? "Creator").trim() || "Creator",
       handle: (body.handle ?? "").trim(),
       tagline: body.tagline?.trim() || undefined,
+      avatar,
       stats,
+      collaborations: portfolio.collaborations.map((c) => ({
+        name: c.name,
+        dealCount: c.dealCount,
+      })),
       rates: rates
         .filter((r) => r.isPublished)
         .map((r) => ({

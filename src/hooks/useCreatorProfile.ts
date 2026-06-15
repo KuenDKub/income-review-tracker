@@ -7,6 +7,10 @@ export type CreatorProfile = {
   handle: string;
   tagline: string;
   contactEmail: string | null;
+  avatarUrl: string | null;
+  coverUrl: string | null;
+  contactTitle: string;
+  contactHint: string;
   isPublic: boolean;
 };
 
@@ -15,6 +19,10 @@ const DEFAULT_PROFILE: CreatorProfile = {
   handle: "",
   tagline: "",
   contactEmail: null,
+  avatarUrl: null,
+  coverUrl: null,
+  contactTitle: "",
+  contactHint: "",
   isPublic: true,
 };
 
