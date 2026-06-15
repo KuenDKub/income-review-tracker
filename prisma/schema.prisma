@@ -44,12 +44,43 @@ model income {
   net_amount         Decimal     @db.Decimal(15, 2)
   payment_date       DateTime    @db.Date
   currency           String      @default("THB")
+  withholding_cert_received Boolean @default(false)
   created_at         DateTime    @default(now()) @db.Timestamptz(6)
   documents          documents[]
   review_jobs        review_jobs @relation(fields: [review_job_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([payment_date], map: "idx_income_payment_date")
   @@index([review_job_id], map: "idx_income_review_job_id")
+}
+
+model creator_profile {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  creator_name  String   @default("")
+  handle        String   @default("")
+  tagline       String   @default("")
+  contact_email String?
+  avatar_url    String?
+  cover_url     String?
+  contact_title String   @default("")
+  contact_hint  String   @default("")
+  is_public     Boolean  @default(true)
+  updated_at    DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model rate_cards {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  platform     String   @default("")
+  content_type String
+  price        Decimal  @default(0) @db.Decimal(15, 2)
+  currency     String   @default("THB")
+  notes        String?
+  sort_order   Int      @default(0)
+  is_published Boolean  @default(true)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([platform, content_type], map: "rate_cards_platform_content_unique")
+  @@index([sort_order], map: "idx_rate_cards_sort_order")
 }
 
 model review_jobs {

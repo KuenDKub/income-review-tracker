@@ -20,12 +20,14 @@ export type IncomeItem = {
   netAmount: number;
   paymentDate: string;
   currency?: string;
+  withholdingCertReceived?: boolean;
 };
 
 type IncomeTableProps = {
   items: IncomeItem[];
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onToggleCert?: (id: string, value: boolean) => void;
   selectedIds?: Set<string>;
   onToggleSelected?: (id: string) => void;
   onToggleAllSelected?: () => void;
@@ -35,6 +37,7 @@ export function IncomeTable({
   items,
   onEdit,
   onDelete,
+  onToggleCert,
   selectedIds,
   onToggleSelected,
   onToggleAllSelected,
@@ -65,6 +68,9 @@ export function IncomeTable({
           <TableHead className="text-right">{tDashboard("gross")}</TableHead>
           <TableHead className="text-right">{tDashboard("withholding")}</TableHead>
           <TableHead className="text-right">{tDashboard("net")}</TableHead>
+          {onToggleCert && (
+            <TableHead className="text-center">{t("certShort")}</TableHead>
+          )}
           {showActions && <TableHead className="text-right w-[120px]">{tCommon("action")}</TableHead>}
         </TableRow>
       </TableHeader>
@@ -75,6 +81,7 @@ export function IncomeTable({
             item={item}
             onEdit={onEdit}
             onDelete={onDelete}
+            onToggleCert={onToggleCert}
             selected={canSelect ? selectedIds!.has(item.id) : undefined}
             onToggleSelected={canSelect ? () => onToggleSelected!(item.id) : undefined}
           />

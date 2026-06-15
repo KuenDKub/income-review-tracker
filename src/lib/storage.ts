@@ -32,6 +32,12 @@ function getSupabaseStorage() {
     endpoint,
     credentials: { accessKeyId, secretAccessKey },
     forcePathStyle: true,
+    // Supabase (and other S3-compatible providers) don't support the automatic
+    // CRC32 checksum / aws-chunked encoding that @aws-sdk/client-s3 >= 3.729
+    // sends by default. Leaving it on makes PutObject fail with an unparseable
+    // response ("char 'P' is not expected"). Only add checksums when required.
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
   });
 
   const base = publicUrlBase.endsWith("/")

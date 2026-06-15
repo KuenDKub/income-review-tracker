@@ -46,6 +46,7 @@ function IncomeTableSkeleton() {
           <TableHead className="text-right"><Skeleton className="h-4 w-14 ml-auto" /></TableHead>
           <TableHead className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableHead>
           <TableHead className="text-right"><Skeleton className="h-4 w-14 ml-auto" /></TableHead>
+          <TableHead className="text-center"><Skeleton className="h-4 w-8 mx-auto" /></TableHead>
           <TableHead className="text-right w-[120px]"><Skeleton className="h-4 w-14 ml-auto" /></TableHead>
         </TableRow>
       </TableHeader>
@@ -57,6 +58,7 @@ function IncomeTableSkeleton() {
             <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
             <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
             <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+            <TableCell className="text-center"><Skeleton className="h-4 w-4 mx-auto" /></TableCell>
             <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
           </TableRow>
         ))}
@@ -74,6 +76,7 @@ type IncomeJson = {
   netAmount: number;
   paymentDate: string;
   currency: string;
+  withholdingCertReceived?: boolean;
 };
 
 type ReviewJobJson = { id: string; title: string };
@@ -144,6 +147,7 @@ export function IncomePageClient() {
         netAmount: i.netAmount,
         paymentDate: i.paymentDate,
         currency: i.currency,
+        withholdingCertReceived: i.withholdingCertReceived,
       }))
     );
     setTotal(incomeData.total ?? 0);
@@ -168,6 +172,26 @@ export function IncomePageClient() {
 
   const handleDelete = (id: string) => {
     setDeleteId(id);
+  };
+
+  const handleToggleCert = async (id: string, value: boolean) => {
+    // Optimistic update; revert on failure.
+    setItems((prev) =>
+      prev.map((it) => (it.id === id ? { ...it, withholdingCertReceived: value } : it)),
+    );
+    try {
+      const res = await fetch(`/api/income/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ withholdingCertReceived: value }),
+      });
+      if (!res.ok) throw new Error("cert update failed");
+    } catch (e) {
+      setItems((prev) =>
+        prev.map((it) => (it.id === id ? { ...it, withholdingCertReceived: !value } : it)),
+      );
+      toast.error(t("updateError"), String(e));
+    }
   };
 
   const toNumber = (v: unknown): number => (typeof v === "number" ? v : Number(v) || 0);
@@ -357,6 +381,7 @@ export function IncomePageClient() {
               items={items}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onToggleCert={handleToggleCert}
               selectedIds={selectedIds}
               onToggleSelected={(id) => {
                 setSelectedIds((prev) => {

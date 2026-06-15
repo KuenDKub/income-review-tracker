@@ -1,12 +1,8 @@
 import { NextIntlClientProvider } from "next-intl";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "next-intl/server";
 import { hasLocale } from "next-intl";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
-import { Header } from "@/components/layout/Header";
-import { Sidebar } from "@/components/layout/Sidebar";
-import { BottomNav } from "@/components/layout/BottomNav";
-import { Footer } from "@/components/layout/Footer";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 type Props = {
@@ -18,6 +14,10 @@ export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
 
+/**
+ * Locale-level providers only. App chrome lives in (dashboard)/layout.tsx so
+ * public routes (e.g. the shared portfolio) can opt out of it.
+ */
 export default async function LocaleLayout({ children, params }: Props) {
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) {
@@ -25,27 +25,9 @@ export default async function LocaleLayout({ children, params }: Props) {
   }
   setRequestLocale(locale);
 
-  const t = await getTranslations("app");
-
   return (
     <NextIntlClientProvider>
-      <NuqsAdapter>
-        <div className="flex min-h-dvh">
-          <Sidebar />
-          <div className="flex min-w-0 flex-1 flex-col bg-muted/30 dark:bg-background">
-            <Header title={t("title")} />
-            <main className="flex min-w-0 flex-1 flex-col p-4 pb-[calc(9rem+env(safe-area-inset-bottom))] sm:p-6 sm:pb-[calc(9rem+env(safe-area-inset-bottom))] lg:pb-8">
-              <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col">
-                {children}
-              </div>
-            </main>
-            <div className="hidden lg:block">
-              <Footer />
-            </div>
-            <BottomNav />
-          </div>
-        </div>
-      </NuqsAdapter>
+      <NuqsAdapter>{children}</NuqsAdapter>
     </NextIntlClientProvider>
   );
 }

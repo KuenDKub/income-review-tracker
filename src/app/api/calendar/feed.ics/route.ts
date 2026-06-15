@@ -83,6 +83,8 @@ export async function GET(req: Request) {
           date: job.publishDate,
           description,
           uid: `job-${job.id}-publish@${FEED_DOMAIN}`,
+          // Native 9am reminder on the publish day to post the content.
+          alarm: { trigger: "PT9H", description: `Post: ${job.title}` },
         });
       }
       if (job.paymentDate) {

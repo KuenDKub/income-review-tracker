@@ -9,6 +9,7 @@ export const incomeSchema = z.object({
   netAmount: z.number().min(0).optional(), // gross - withholding
   paymentDate: z.string().min(1, "Payment date is required"), // ISO date
   currency: z.string().length(3).default("THB"),
+  withholdingCertReceived: z.boolean().optional(), // 50 ทวิ certificate received
 });
 
 export type IncomeInput = z.infer<typeof incomeSchema>;
@@ -16,4 +17,5 @@ export type IncomeInput = z.infer<typeof incomeSchema>;
 export const incomeCreateSchema = incomeSchema;
 export const incomeUpdateSchema = incomeSchema.partial().extend({
   reviewJobId: z.string().uuid().optional(),
+  withholdingCertReceived: z.boolean().optional(),
 });

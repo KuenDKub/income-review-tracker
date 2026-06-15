@@ -71,6 +71,13 @@ export type CalendarEvent = {
   date: string; // YYYY-MM-DD
   description?: string;
   uid?: string;
+  /**
+   * Optional display reminder. `trigger` is an iCalendar duration relative to
+   * DTSTART (event midnight). For an all-day event, "PT9H" fires at 9am on the
+   * day; "-P1D" fires the day before. When set, a VALARM is emitted so Apple /
+   * Google Calendar shows a native notification.
+   */
+  alarm?: { trigger: string; description?: string };
 };
 
 /** UTC timestamp in iCalendar form: yyyymmddThhmmssZ. */
@@ -99,6 +106,15 @@ function buildVevent(ev: CalendarEvent, dtstamp?: string): string {
   const summary = escapeIcs(ev.title);
   const description = ev.description ? escapeIcs(ev.description) : "";
   const uid = escapeIcs(ev.uid ?? `${start}-${ev.title}`.slice(0, 200));
+  const alarmLines = ev.alarm
+    ? [
+        "BEGIN:VALARM",
+        "ACTION:DISPLAY",
+        `TRIGGER:${ev.alarm.trigger}`,
+        `DESCRIPTION:${escapeIcs(ev.alarm.description ?? ev.title)}`,
+        "END:VALARM",
+      ]
+    : [];
   return [
     "BEGIN:VEVENT",
     `UID:${uid}`,
@@ -107,6 +123,7 @@ function buildVevent(ev: CalendarEvent, dtstamp?: string): string {
     `DTEND;VALUE=DATE:${end}`,
     `SUMMARY:${summary}`,
     description ? `DESCRIPTION:${description}` : "",
+    ...alarmLines,
     "END:VEVENT",
   ]
     .filter(Boolean)
@@ -176,6 +193,8 @@ export function getDefaultCalendarEvents(job: CalendarJob): CalendarEvent[] {
       date: job.publishDate,
       description: details,
       uid: `publish-${job.publishDate}-${job.title}`,
+      // Remind at 9am on the publish day to post the content.
+      alarm: { trigger: "PT9H", description: `Post: ${job.title}` },
     });
   }
   return events;

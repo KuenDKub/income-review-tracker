@@ -6,6 +6,7 @@ import {
   Receipt,
   Film,
   CalendarDays,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 
@@ -31,6 +32,7 @@ export const navItems: readonly NavItem[] = [
   { href: "/calendar", labelKey: "calendar.title", icon: CalendarDays },
   { href: "/tax", labelKey: "tax.title", icon: Receipt },
   { href: "/storyline", labelKey: "storyline.title", icon: Film },
+  { href: "/portfolio-edit", labelKey: "portfolio.title", icon: Sparkles },
 ] as const;
 
 /** Sidebar sections (desktop). */
