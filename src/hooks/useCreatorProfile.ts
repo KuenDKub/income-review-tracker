@@ -12,6 +12,9 @@ export type CreatorProfile = {
   rateCardBgUrl: string | null;
   contactTitle: string;
   contactHint: string;
+  lineContact: string;
+  lineUrl: string;
+  badgeLabel: string;
   socialLinks: Array<{ imageUrl?: string; label: string; url: string }>;
   legalName: string;
   taxId: string;
@@ -31,6 +34,9 @@ const DEFAULT_PROFILE: CreatorProfile = {
   rateCardBgUrl: null,
   contactTitle: "",
   contactHint: "",
+  lineContact: "",
+  lineUrl: "",
+  badgeLabel: "",
   socialLinks: [],
   legalName: "",
   taxId: "",

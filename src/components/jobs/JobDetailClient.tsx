@@ -762,7 +762,7 @@ export function JobDetailClient({ id }: { id: string }) {
                     variant="destructive"
                     size="icon"
                     loading={deletingDocId === doc.id}
-                    className="absolute right-2 top-2 h-11 w-11 opacity-100 transition-opacity data-[loading]:opacity-100 md:h-8 md:w-8 md:opacity-0 md:group-hover:opacity-100"
+                    className="absolute right-2 top-2 h-11 w-11 opacity-100 transition-opacity data-[loading]:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 md:h-8 md:w-8 [@media(hover:hover)]:opacity-0"
                     onClick={() => handleDeleteDocument(doc.id)}
                   >
                     {deletingDocId === doc.id ? null : (

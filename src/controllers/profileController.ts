@@ -16,6 +16,11 @@ export type CreatorProfile = {
   rateCardBgUrl: string | null;
   contactTitle: string;
   contactHint: string;
+  /** LINE contact shown on the public portfolio (id for display, url for the button). */
+  lineContact: string;
+  lineUrl: string;
+  /** Optional override for the hero badge text; empty falls back to the default label. */
+  badgeLabel: string;
   socialLinks: Array<{ imageUrl?: string; label: string; url: string }>;
   /** Invoice issuer ("from") details. */
   legalName: string;
@@ -36,6 +41,9 @@ const EMPTY: CreatorProfile = {
   rateCardBgUrl: null,
   contactTitle: "",
   contactHint: "",
+  lineContact: "",
+  lineUrl: "",
+  badgeLabel: "",
   socialLinks: [],
   legalName: "",
   taxId: "",
@@ -109,6 +117,9 @@ export async function getProfile(): Promise<CreatorProfile> {
       rateCardBgUrl: row.rate_card_bg_url,
       contactTitle: row.contact_title ?? "",
       contactHint: row.contact_hint ?? "",
+      lineContact: row.line_contact ?? "",
+      lineUrl: row.line_url ?? "",
+      badgeLabel: row.badge_label ?? "",
       socialLinks: parseSocialLinks(row.social_links),
       legalName: row.legal_name ?? "",
       taxId: row.tax_id ?? "",
@@ -135,6 +146,9 @@ export async function saveProfile(input: {
   rateCardBgUrl?: string | null;
   contactTitle?: string;
   contactHint?: string;
+  lineContact?: string;
+  lineUrl?: string;
+  badgeLabel?: string;
   socialLinks?: Array<{ imageUrl?: string; label: string; url: string }>;
   legalName?: string;
   taxId?: string;
@@ -169,6 +183,9 @@ export async function saveProfile(input: {
         : (existing?.rate_card_bg_url ?? null),
     contact_title: (input.contactTitle ?? existing?.contact_title ?? "").trim(),
     contact_hint: (input.contactHint ?? existing?.contact_hint ?? "").trim(),
+    line_contact: (input.lineContact ?? existing?.line_contact ?? "").trim(),
+    line_url: (input.lineUrl ?? existing?.line_url ?? "").trim(),
+    badge_label: (input.badgeLabel ?? existing?.badge_label ?? "").trim(),
     social_links:
       input.socialLinks !== undefined
         ? serializeSocialLinks(input.socialLinks)
@@ -196,6 +213,9 @@ export async function saveProfile(input: {
     rateCardBgUrl: row.rate_card_bg_url,
     contactTitle: row.contact_title,
     contactHint: row.contact_hint,
+    lineContact: row.line_contact ?? "",
+    lineUrl: row.line_url ?? "",
+    badgeLabel: row.badge_label ?? "",
     socialLinks: parseSocialLinks(row.social_links),
     legalName: row.legal_name ?? "",
     taxId: row.tax_id ?? "",
