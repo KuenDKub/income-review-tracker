@@ -145,3 +145,40 @@ ALTER TABLE review_jobs ADD COLUMN IF NOT EXISTS brief_link TEXT;
 -- ("slides 3–5"). The original brief files themselves are stored in the
 -- `documents` table with kind = 'brief'.
 ALTER TABLE review_jobs ADD COLUMN IF NOT EXISTS brief_link_note TEXT;
+
+-- Invoice issuer details for the creator's own billing header (the "from" block
+-- on a generated invoice). Optional; empty falls back to portfolio defaults.
+-- Additive + idempotent for the prod DB.
+ALTER TABLE creator_profile ADD COLUMN IF NOT EXISTS legal_name TEXT NOT NULL DEFAULT '';
+ALTER TABLE creator_profile ADD COLUMN IF NOT EXISTS tax_id TEXT NOT NULL DEFAULT '';
+ALTER TABLE creator_profile ADD COLUMN IF NOT EXISTS address TEXT NOT NULL DEFAULT '';
+ALTER TABLE creator_profile ADD COLUMN IF NOT EXISTS phone TEXT NOT NULL DEFAULT '';
+ALTER TABLE creator_profile ADD COLUMN IF NOT EXISTS bank_details TEXT NOT NULL DEFAULT '';
+
+-- Invoices issued to payers. One invoice may bill a single review job. Amounts
+-- are snapshotted at creation (so editing the job/income later never rewrites a
+-- sent invoice). `status` drives the accounts-receivable view: 'unpaid' (open),
+-- 'paid' (settled), 'cancelled' (voided). `due_date` is the NET payment term.
+CREATE TABLE IF NOT EXISTS invoices (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  review_job_id UUID NOT NULL REFERENCES review_jobs(id) ON DELETE CASCADE,
+  invoice_number TEXT NOT NULL,
+  issue_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  due_date DATE,
+  payer_name TEXT,
+  description TEXT,
+  currency TEXT NOT NULL DEFAULT 'THB',
+  subtotal DECIMAL(15,2) NOT NULL DEFAULT 0,
+  withholding_rate DECIMAL(5,2) NOT NULL DEFAULT 3,
+  withholding_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
+  total DECIMAL(15,2) NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'unpaid',
+  notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT invoices_number_unique UNIQUE (invoice_number)
+);
+
+CREATE INDEX IF NOT EXISTS idx_invoices_review_job_id ON invoices(review_job_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status);
+CREATE INDEX IF NOT EXISTS idx_invoices_due_date ON invoices(due_date);
