@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="TikTok">
+  <rect width="96" height="96" rx="24" fill="#111827"/>
+  <circle cx="36" cy="60" r="14" fill="#25F4EE"/>
+  <circle cx="42" cy="58" r="14" fill="#FE2C55"/>
+  <circle cx="40" cy="58" r="8" fill="#fff"/>
+  <path d="M50 21h14c1 12 7 20 18 24v14c-8-1-14-4-18-8v24H50V21Z" fill="#25F4EE"/>
+  <path d="M56 21h10c1 10 6 17 16 21v10c-8-1-15-4-20-10v33H50V34h6V21Z" fill="#FE2C55"/>
+  <path d="M54 21h8c1 9 6 15 16 19v8c-8-2-14-5-18-11v38H50V21h4Z" fill="#fff"/>
+</svg>

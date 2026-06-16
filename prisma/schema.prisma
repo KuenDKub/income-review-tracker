@@ -63,6 +63,8 @@ model creator_profile {
   cover_url     String?
   contact_title String   @default("")
   contact_hint  String   @default("")
+  rate_card_bg_url String?
+  social_links  String   @default("")
   is_public     Boolean  @default(true)
   updated_at    DateTime @default(now()) @db.Timestamptz(6)
 }

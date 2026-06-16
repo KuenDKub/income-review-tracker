@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Check, ChevronRight, Copy, Download, Heart, Sparkles, X } from "lucide-react";
+import { Check, ChevronRight, Copy, Download, ExternalLink, Heart, Sparkles, X } from "lucide-react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faArrowRight, faLeaf, faShoppingBag } from "@fortawesome/free-solid-svg-icons";
+import { Marquee } from "@/components/ui/marquee";
 import { cn } from "@/lib/utils";
 
 export type PortfolioViewData = {
@@ -19,9 +22,20 @@ export type PortfolioViewProfile = {
   contactEmail: string | null;
   avatarUrl: string | null;
   coverUrl: string | null;
+  rateCardBgUrl: string | null;
   contactTitle: string;
   contactHint: string;
+  socialLinks: Array<{ imageUrl?: string; label: string; url: string }>;
 };
+
+type SocialLink = {
+  imageUrl: string | null;
+  name: string;
+  url: string;
+};
+
+const AFFILIATE_LINK =
+  "https://francfoil19.passio.eco/?fbclid=IwY2xjawSdtNpleHRuA2FlbQIxMABicmlkETE0MDYwbEliRlFFaGp1TWxPc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHkAVYtqhQeLPYiTxmMEKM6V1i32y0EEuwLChoxRMQjzf6OYY53xK8Vu8Y1Nr_aem_icvsBpLiDJuwtDGcIm9jkA";
 
 const serif = "font-[family-name:var(--font-playfair)]";
 // Soft, warm rose → pink → lilac — a feminine signature gradient.
@@ -102,6 +116,14 @@ export function PortfolioView({
     { label: tRate("statBrands"), value: data.stats.brandCount },
     { label: tRate("statPlatforms"), value: data.stats.platforms.length },
   ];
+  const firstBrandRow = data.collaborations.slice(0, Math.ceil(data.collaborations.length / 2));
+  const secondBrandRow = data.collaborations.slice(Math.ceil(data.collaborations.length / 2));
+  const socialLinks: SocialLink[] =
+    profile.socialLinks.map((link) => ({
+      imageUrl: link.imageUrl ?? null,
+      name: link.label,
+      url: link.url,
+    }));
 
   function downloadMediaKit() {
     window.open(`/api/portfolio/media-kit?locale=${locale}`, "_blank");
@@ -348,61 +370,12 @@ export function PortfolioView({
         </div>
       </section>
 
-      {/* ── BRANDS ───────────────────────────────────────────── */}
-      {data.collaborations.length > 0 && (
-        <section className={cn(creamBg, "px-6 py-16 sm:px-10 sm:py-24")}>
-          <div className="mx-auto max-w-6xl">
-            <Reveal>
-              <SectionLabel index="01" title={t("collabsTitle")} />
-            </Reveal>
-            <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {data.collaborations.map((c, i) => (
-                <Reveal key={c.name} delay={Math.min(i, 8) * 60}>
-                <button
-                  type="button"
-                  onClick={() => setActiveBrand(c)}
-                  aria-label={t("viewBrand", { name: c.name })}
-                  className="group flex w-full cursor-pointer items-center gap-3 rounded-2xl border border-rose-100 bg-white p-4 text-left shadow-sm shadow-rose-100/40 transition-all hover:-translate-y-0.5 hover:border-rose-200 hover:shadow-md hover:shadow-rose-200/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
-                >
-                  {c.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={c.imageUrl}
-                      alt={c.name}
-                      loading="lazy"
-                      className="size-11 shrink-0 rounded-xl object-cover"
-                    />
-                  ) : (
-                    <span
-                      className={cn(
-                        serif,
-                        "flex size-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-rose-100 to-fuchsia-100 text-base font-bold text-rose-500",
-                      )}
-                    >
-                      {c.name.slice(0, 1).toUpperCase()}
-                    </span>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-[#5A3247]">{c.name}</p>
-                    <p className="text-[11px] font-medium text-rose-300">
-                      {t("deals", { count: c.dealCount })}
-                    </p>
-                  </div>
-                  <ChevronRight className="size-4 shrink-0 text-rose-200 transition-colors group-hover:text-rose-400" aria-hidden />
-                </button>
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
       {/* ── GALLERY ──────────────────────────────────────────── */}
       {data.gallery.length > 0 && (
         <section className={cn(lilacBg, "px-6 py-16 sm:px-10 sm:py-24")}>
           <div className="mx-auto max-w-6xl">
             <Reveal className="flex flex-wrap items-end justify-between gap-4">
-              <SectionLabel index="02" title={t("workTitle")} />
+              <SectionLabel index="01" title={t("workTitle")} />
               {data.platforms.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   <FilterPill active={filter === "all"} onClick={() => setFilter("all")}>
@@ -444,14 +417,72 @@ export function PortfolioView({
         </section>
       )}
 
-      {/* ── RATES ────────────────────────────────────────────── */}
-      {data.rates.length > 0 && (
+      {/* ── BRANDS ───────────────────────────────────────────── */}
+      {data.collaborations.length > 0 && (
         <section className={cn(creamBg, "px-6 py-16 sm:px-10 sm:py-24")}>
           <div className="mx-auto max-w-6xl">
             <Reveal>
+              <SectionLabel index="02" title={t("collabsTitle")} />
+            </Reveal>
+            <Reveal delay={80} className="relative mt-10 flex w-full flex-col gap-4 overflow-hidden py-1">
+              <Marquee pauseOnHover className="[--duration:38s]">
+                {firstBrandRow.map((brand) => (
+                  <BrandMarqueeCard
+                    key={brand.name}
+                    brand={brand}
+                    dealsLabel={t("deals", { count: brand.dealCount })}
+                    viewLabel={t("viewBrand", { name: brand.name })}
+                    onClick={() => setActiveBrand(brand)}
+                  />
+                ))}
+              </Marquee>
+              {secondBrandRow.length > 0 && (
+                <Marquee reverse pauseOnHover className="[--duration:42s]">
+                  {secondBrandRow.map((brand) => (
+                    <BrandMarqueeCard
+                      key={brand.name}
+                      brand={brand}
+                      dealsLabel={t("deals", { count: brand.dealCount })}
+                      viewLabel={t("viewBrand", { name: brand.name })}
+                      onClick={() => setActiveBrand(brand)}
+                    />
+                  ))}
+                </Marquee>
+              )}
+              <div className="pointer-events-none absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-[#FFFBF8] to-transparent sm:w-32" />
+              <div className="pointer-events-none absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-[#FFFBF8] to-transparent sm:w-32" />
+            </Reveal>
+          </div>
+        </section>
+      )}
+
+      {/* ── RATES ────────────────────────────────────────────── */}
+      {data.rates.length > 0 && (
+        <section className={cn(lilacBg, "relative overflow-hidden px-6 py-16 sm:px-10 sm:py-24")}>
+          {(profile.rateCardBgUrl || profile.coverUrl || heroImage?.imageUrl) && (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={profile.rateCardBgUrl || profile.coverUrl || heroImage?.imageUrl}
+                alt=""
+                aria-hidden
+                className="pointer-events-none absolute inset-0 size-full object-cover opacity-55 saturate-125"
+              />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#FBF1F7]/68 via-[#FFFBF8]/48 to-[#FFF5F8]/62"
+              />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-b from-transparent to-[#FBF1F7]/70"
+              />
+            </>
+          )}
+          <div className="relative mx-auto max-w-6xl">
+            <Reveal>
               <SectionLabel index="03" title={tRate("mediaKitRateCard")} />
             </Reveal>
-            <Reveal delay={80} className="mt-10 overflow-hidden rounded-[1.75rem] border border-rose-100 bg-white shadow-sm shadow-rose-100/50">
+            <Reveal delay={80} className="mt-10 overflow-hidden rounded-[1.75rem] border border-rose-100 bg-white/78 shadow-lg shadow-rose-200/40 backdrop-blur-[2px]">
               {data.rates.map((r, i) => (
                 <div
                   key={r.id}
@@ -525,6 +556,92 @@ export function PortfolioView({
             </button>
           </div>
         </Reveal>
+      </section>
+
+      <section className={cn(creamBg, "px-6 py-16 sm:px-10 sm:py-24")}>
+        <div className="mx-auto max-w-6xl">
+          <Reveal className="flex flex-col gap-8 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <SectionLabel index="04" title={t("socialTitle")} />
+              <p className="mt-4 max-w-md text-sm leading-relaxed text-[#8A5A72]">
+                {t("socialHint")}
+              </p>
+            </div>
+          </Reveal>
+
+          <Reveal delay={80} className="mt-10">
+            <a
+              href={AFFILIATE_LINK}
+              target="_blank"
+              rel="noreferrer"
+              className="group relative grid overflow-hidden rounded-[1.75rem] border border-rose-100 bg-white shadow-lg shadow-rose-200/40 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-rose-300/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300 md:grid-cols-[1fr_auto]"
+            >
+              <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-rose-50 via-white to-fuchsia-50" />
+              <div aria-hidden className="absolute -right-16 -top-20 size-56 rounded-full bg-rose-200/40 blur-3xl" />
+              <div className="relative flex items-start gap-4 p-6 sm:p-8">
+                <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-400 via-pink-400 to-fuchsia-400 text-white shadow-lg shadow-rose-300/40">
+                  <FontAwesomeIcon icon={faShoppingBag} className="size-5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-rose-400">
+                    {t("affiliateEyebrow")}
+                  </p>
+                  <h3 className={cn(serif, "mt-2 text-2xl font-semibold leading-tight text-[#5A3247] sm:text-3xl")}>
+                    {t("affiliateTitle")}
+                  </h3>
+                  <p className="mt-3 max-w-xl text-sm leading-relaxed text-[#8A5A72]">
+                    {t("affiliateHint")}
+                  </p>
+                </div>
+              </div>
+              <div className="relative flex items-center justify-between gap-4 border-t border-rose-100 px-6 py-5 md:border-l md:border-t-0 md:px-8">
+                <span className="inline-flex items-center gap-2 rounded-full bg-rose-50 px-4 py-2 text-xs font-semibold text-rose-500">
+                  <FontAwesomeIcon icon={faLeaf} className="size-3.5" />
+                  Passio.eco
+                </span>
+                <span className={cn(
+                  gradientBg,
+                  "inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-rose-300/40 transition-transform group-hover:translate-x-1",
+                )}>
+                  {t("affiliateCta")}
+                  <FontAwesomeIcon icon={faArrowRight} className="size-3.5" />
+                </span>
+              </div>
+            </a>
+          </Reveal>
+
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {socialLinks.map((link, i) => (
+              <Reveal key={`${link.name}-${link.url}`} delay={Math.min(i, 6) * 60}>
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group flex h-full items-center gap-3 rounded-2xl border border-rose-100 bg-white px-4 py-4 text-[#5A3247] shadow-sm shadow-rose-100/40 transition-all hover:-translate-y-0.5 hover:border-rose-200 hover:shadow-md hover:shadow-rose-200/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
+                >
+                  <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-rose-50 transition-colors group-hover:bg-rose-100">
+                    {link.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={link.imageUrl}
+                        alt=""
+                        aria-hidden
+                        loading="lazy"
+                        className="size-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-xs font-bold text-rose-400">
+                        {link.name.slice(0, 1).toUpperCase()}
+                      </span>
+                    )}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold">{link.name}</span>
+                  <ExternalLink className="size-4 shrink-0 text-rose-200 transition-colors group-hover:text-rose-400" />
+                </a>
+              </Reveal>
+            ))}
+          </div>
+        </div>
       </section>
 
       <footer className={cn(blushBg, "border-t border-rose-100 px-6 pb-10 pt-8 text-center sm:px-10")}>
@@ -705,6 +822,46 @@ function ModalLabel({ children }: { children: React.ReactNode }) {
     <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#B07B92]">
       {children}
     </span>
+  );
+}
+
+function BrandMarqueeCard({
+  brand,
+  dealsLabel,
+  viewLabel,
+  onClick,
+}: {
+  brand: PortfolioViewData["collaborations"][number];
+  dealsLabel: string;
+  viewLabel: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={viewLabel}
+      className="group flex h-20 w-[17.5rem] cursor-pointer items-center gap-3 rounded-2xl border border-rose-100 bg-white p-4 text-left shadow-sm shadow-rose-100/40 transition-all hover:-translate-y-0.5 hover:border-rose-200 hover:shadow-md hover:shadow-rose-200/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300 sm:w-80"
+    >
+      {brand.imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={brand.imageUrl}
+          alt={brand.name}
+          loading="lazy"
+          className="size-11 shrink-0 rounded-xl object-cover"
+        />
+      ) : (
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-rose-100 to-fuchsia-100 font-[family-name:var(--font-playfair)] text-base font-bold text-rose-500">
+          {brand.name.slice(0, 1).toUpperCase()}
+        </span>
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-[#5A3247]">{brand.name}</p>
+        <p className="text-[11px] font-medium text-rose-300">{dealsLabel}</p>
+      </div>
+      <ChevronRight className="size-4 shrink-0 text-rose-200 transition-colors group-hover:text-rose-400" aria-hidden />
+    </button>
   );
 }
 

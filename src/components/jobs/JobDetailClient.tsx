@@ -33,6 +33,7 @@ import {
   REVIEW_JOB_STATUSES,
 } from "@/lib/schemas/reviewJob";
 import { ConfirmDeleteDialog } from "@/components/ui/ConfirmDeleteDialog";
+import { briefLinkEmbed } from "@/lib/briefEmbed";
 import { toast } from "@/lib/toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -86,42 +87,6 @@ function DetailItem({
       <dd className="mt-1.5 min-h-5 text-sm font-medium">{children}</dd>
     </div>
   );
-}
-
-/**
- * If `link` points at a provider we can embed, return an iframe-able URL so the
- * brief renders inline. Handles public Canva design links (`.../view?embed`)
- * and Google Docs/Slides/Sheets (`/edit` → `/preview`). Returns null otherwise
- * (we just show an "open" button). Private docs show the provider's own
- * permission wall inside the iframe.
- */
-function briefLinkEmbed(link: string): string | null {
-  try {
-    const u = new URL(link);
-    const host = u.hostname.toLowerCase();
-    // Canva public design view link
-    if (
-      (host === "canva.com" || host.endsWith(".canva.com")) &&
-      u.pathname.includes("/design/")
-    ) {
-      return `${u.origin}${u.pathname}?embed`;
-    }
-    // Google Docs / Slides / Sheets — swap the trailing action for /preview
-    if (host === "docs.google.com") {
-      const m = u.pathname.match(
-        /^\/(document|presentation|spreadsheets)\/d\/([^/]+)/,
-      );
-      if (m) return `https://docs.google.com/${m[1]}/d/${m[2]}/preview`;
-    }
-    // Google Drive shared file (PDF, image, doc) — `/file/d/<id>/preview`
-    if (host === "drive.google.com") {
-      const m = u.pathname.match(/^\/file\/d\/([^/]+)/);
-      if (m) return `https://drive.google.com/file/d/${m[1]}/preview`;
-    }
-    return null;
-  } catch {
-    return null;
-  }
 }
 
 type ReviewJobJson = {

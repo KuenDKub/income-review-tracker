@@ -13,8 +13,10 @@ export type CreatorProfile = {
   contactEmail: string | null;
   avatarUrl: string | null;
   coverUrl: string | null;
+  rateCardBgUrl: string | null;
   contactTitle: string;
   contactHint: string;
+  socialLinks: Array<{ imageUrl?: string; label: string; url: string }>;
   isPublic: boolean;
 };
 
@@ -25,10 +27,60 @@ const EMPTY: CreatorProfile = {
   contactEmail: null,
   avatarUrl: null,
   coverUrl: null,
+  rateCardBgUrl: null,
   contactTitle: "",
   contactHint: "",
+  socialLinks: [],
   isPublic: true,
 };
+
+function socialImageFromLegacyIcon(icon: string | undefined, label: string): string | undefined {
+  const key = (icon || label).toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (key.includes("tiktok")) return "/social/tiktok.svg";
+  if (key.includes("instagram") || key === "ig") return "/social/instagram.svg";
+  if (key.includes("facebook") || key === "fb") return "/social/facebook.svg";
+  if (key.includes("youtube") || key === "yt") return "/social/youtube.svg";
+  if (key.includes("lemon")) return "/social/lemon8.svg";
+  return undefined;
+}
+
+function parseSocialLinks(value: string | null | undefined): CreatorProfile["socialLinks"] {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((item) => ({
+        imageUrl:
+          typeof item?.imageUrl === "string"
+            ? item.imageUrl.trim()
+            : socialImageFromLegacyIcon(
+                typeof item?.icon === "string" ? item.icon.trim() : undefined,
+                typeof item?.label === "string" ? item.label.trim() : "",
+              ),
+        label: typeof item?.label === "string" ? item.label.trim() : "",
+        url: typeof item?.url === "string" ? item.url.trim() : "",
+      }))
+      .filter((item) => item.label && item.url)
+      .slice(0, 8);
+  } catch {
+    return [];
+  }
+}
+
+function serializeSocialLinks(value: CreatorProfile["socialLinks"] | undefined): string {
+  if (!value) return "";
+  return JSON.stringify(
+    value
+      .map((item) => ({
+        imageUrl: item.imageUrl?.trim() || undefined,
+        label: item.label.trim(),
+        url: item.url.trim(),
+      }))
+      .filter((item) => item.label && item.url)
+      .slice(0, 8),
+  );
+}
 
 export async function getProfile(): Promise<CreatorProfile> {
   try {
@@ -43,8 +95,10 @@ export async function getProfile(): Promise<CreatorProfile> {
       contactEmail: row.contact_email,
       avatarUrl: row.avatar_url,
       coverUrl: row.cover_url,
+      rateCardBgUrl: row.rate_card_bg_url,
       contactTitle: row.contact_title ?? "",
       contactHint: row.contact_hint ?? "",
+      socialLinks: parseSocialLinks(row.social_links),
       isPublic: row.is_public,
     };
   } catch (err) {
@@ -62,8 +116,10 @@ export async function saveProfile(input: {
   contactEmail?: string | null;
   avatarUrl?: string | null;
   coverUrl?: string | null;
+  rateCardBgUrl?: string | null;
   contactTitle?: string;
   contactHint?: string;
+  socialLinks?: Array<{ imageUrl?: string; label: string; url: string }>;
   isPublic?: boolean;
 }): Promise<CreatorProfile> {
   const existing = await prisma.creator_profile.findFirst({
@@ -86,8 +142,16 @@ export async function saveProfile(input: {
       input.coverUrl !== undefined
         ? input.coverUrl || null
         : (existing?.cover_url ?? null),
+    rate_card_bg_url:
+      input.rateCardBgUrl !== undefined
+        ? input.rateCardBgUrl || null
+        : (existing?.rate_card_bg_url ?? null),
     contact_title: (input.contactTitle ?? existing?.contact_title ?? "").trim(),
     contact_hint: (input.contactHint ?? existing?.contact_hint ?? "").trim(),
+    social_links:
+      input.socialLinks !== undefined
+        ? serializeSocialLinks(input.socialLinks)
+        : (existing?.social_links ?? ""),
     is_public: input.isPublic ?? existing?.is_public ?? true,
     updated_at: new Date(),
   };
@@ -103,8 +167,10 @@ export async function saveProfile(input: {
     contactEmail: row.contact_email,
     avatarUrl: row.avatar_url,
     coverUrl: row.cover_url,
+    rateCardBgUrl: row.rate_card_bg_url,
     contactTitle: row.contact_title,
     contactHint: row.contact_hint,
+    socialLinks: parseSocialLinks(row.social_links),
     isPublic: row.is_public,
   };
 }
