@@ -24,6 +24,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { JobForm } from "./JobForm";
 import { BriefAttachments } from "./BriefAttachments";
@@ -33,6 +34,7 @@ import {
   REVIEW_JOB_STATUSES,
 } from "@/lib/schemas/reviewJob";
 import { ConfirmDeleteDialog } from "@/components/ui/ConfirmDeleteDialog";
+import { briefLinkEmbed } from "@/lib/briefEmbed";
 import { toast } from "@/lib/toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -86,42 +88,6 @@ function DetailItem({
       <dd className="mt-1.5 min-h-5 text-sm font-medium">{children}</dd>
     </div>
   );
-}
-
-/**
- * If `link` points at a provider we can embed, return an iframe-able URL so the
- * brief renders inline. Handles public Canva design links (`.../view?embed`)
- * and Google Docs/Slides/Sheets (`/edit` → `/preview`). Returns null otherwise
- * (we just show an "open" button). Private docs show the provider's own
- * permission wall inside the iframe.
- */
-function briefLinkEmbed(link: string): string | null {
-  try {
-    const u = new URL(link);
-    const host = u.hostname.toLowerCase();
-    // Canva public design view link
-    if (
-      (host === "canva.com" || host.endsWith(".canva.com")) &&
-      u.pathname.includes("/design/")
-    ) {
-      return `${u.origin}${u.pathname}?embed`;
-    }
-    // Google Docs / Slides / Sheets — swap the trailing action for /preview
-    if (host === "docs.google.com") {
-      const m = u.pathname.match(
-        /^\/(document|presentation|spreadsheets)\/d\/([^/]+)/,
-      );
-      if (m) return `https://docs.google.com/${m[1]}/d/${m[2]}/preview`;
-    }
-    // Google Drive shared file (PDF, image, doc) — `/file/d/<id>/preview`
-    if (host === "drive.google.com") {
-      const m = u.pathname.match(/^\/file\/d\/([^/]+)/);
-      if (m) return `https://drive.google.com/file/d/${m[1]}/preview`;
-    }
-    return null;
-  } catch {
-    return null;
-  }
 }
 
 type ReviewJobJson = {
@@ -842,38 +808,38 @@ export function JobDetailClient({ id }: { id: string }) {
       </div>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent
-          aria-describedby={undefined}
-          className="top-0 max-h-[100dvh] max-w-full translate-y-0 gap-0 rounded-none border-0 p-0 sm:top-[50%] sm:max-h-[calc(100dvh-2rem)] sm:max-w-2xl sm:translate-y-[-50%] sm:rounded-lg sm:border md:max-w-3xl"
-        >
+        <DialogContent className="top-0 max-h-[100dvh] max-w-full translate-y-0 gap-0 rounded-none border-0 p-0 sm:top-[50%] sm:max-h-[calc(100dvh-2rem)] sm:max-w-2xl sm:translate-y-[-50%] sm:rounded-lg sm:border md:max-w-3xl">
           <DialogHeader className="sticky top-0 z-10 border-b bg-background px-4 py-4 pr-12 text-left sm:px-6">
             <DialogTitle className="text-xl">{t("editJob")}</DialogTitle>
+            <DialogDescription>{t("jobFormHint")}</DialogDescription>
           </DialogHeader>
-          <JobForm
-            schema={reviewJobCreateSchema}
-            defaultValues={defaultValues}
-            onSubmit={handleEditSubmit}
-            submitLabel={tCommon("save")}
-            payerNames={payerNames}
-            evidenceFiles={evidenceFiles}
-            onEvidenceFilesChange={setEvidenceFiles}
-            existingEvidenceImages={existingEvidenceImages}
-            onRemoveExistingEvidence={async (docId) => {
-              try {
-                const res = await fetch(`/api/documents/${docId}`, {
-                  method: "DELETE",
-                });
-                if (!res.ok) throw new Error(t("deleteDocError"));
-                setExistingEvidenceImages((prev) =>
-                  prev.filter((img) => img.id !== docId),
-                );
-                await load();
-                toast.success(t("removeImageSuccess"));
-              } catch (e) {
-                toast.error(t("removeImageError"), String(e));
-              }
-            }}
-          />
+          <div className="px-4 py-5 sm:px-6">
+            <JobForm
+              schema={reviewJobCreateSchema}
+              defaultValues={defaultValues}
+              onSubmit={handleEditSubmit}
+              submitLabel={tCommon("save")}
+              payerNames={payerNames}
+              evidenceFiles={evidenceFiles}
+              onEvidenceFilesChange={setEvidenceFiles}
+              existingEvidenceImages={existingEvidenceImages}
+              onRemoveExistingEvidence={async (docId) => {
+                try {
+                  const res = await fetch(`/api/documents/${docId}`, {
+                    method: "DELETE",
+                  });
+                  if (!res.ok) throw new Error(t("deleteDocError"));
+                  setExistingEvidenceImages((prev) =>
+                    prev.filter((img) => img.id !== docId),
+                  );
+                  await load();
+                  toast.success(t("removeImageSuccess"));
+                } catch (e) {
+                  toast.error(t("removeImageError"), String(e));
+                }
+              }}
+            />
+          </div>
         </DialogContent>
       </Dialog>
 

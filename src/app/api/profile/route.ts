@@ -11,8 +11,19 @@ const profileSchema = z.object({
   contactEmail: z.string().max(160).nullable().optional(),
   avatarUrl: z.string().max(2048).nullable().optional(),
   coverUrl: z.string().max(2048).nullable().optional(),
+  rateCardBgUrl: z.string().max(2048).nullable().optional(),
   contactTitle: z.string().max(120).optional(),
   contactHint: z.string().max(280).optional(),
+  socialLinks: z
+    .array(
+      z.object({
+        imageUrl: z.string().trim().max(2048).optional(),
+        label: z.string().trim().min(1).max(40),
+        url: z.string().trim().url().max(2048),
+      }),
+    )
+    .max(8)
+    .optional(),
   isPublic: z.boolean().optional(),
 });
 

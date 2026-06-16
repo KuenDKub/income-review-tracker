@@ -9,8 +9,10 @@ export type CreatorProfile = {
   contactEmail: string | null;
   avatarUrl: string | null;
   coverUrl: string | null;
+  rateCardBgUrl: string | null;
   contactTitle: string;
   contactHint: string;
+  socialLinks: Array<{ imageUrl?: string; label: string; url: string }>;
   isPublic: boolean;
 };
 
@@ -21,8 +23,10 @@ const DEFAULT_PROFILE: CreatorProfile = {
   contactEmail: null,
   avatarUrl: null,
   coverUrl: null,
+  rateCardBgUrl: null,
   contactTitle: "",
   contactHint: "",
+  socialLinks: [],
   isPublic: true,
 };
 

@@ -129,6 +129,7 @@ export function PortfolioClient() {
   // Inline editing for the contact CTA card.
   const [editingContact, setEditingContact] = useState(false);
   const [savingContact, setSavingContact] = useState(false);
+  const [savingSocial, setSavingSocial] = useState(false);
   // Snapshot to restore the contact fields if the user cancels the inline edit.
   const [contactSnapshot, setContactSnapshot] =
     useState<{ title: string; hint: string } | null>(null);
@@ -145,6 +146,26 @@ export function PortfolioClient() {
     setEditingContact(false);
   }
 
+  function addSocialLink() {
+    updateProfile({
+      socialLinks: [...profile.socialLinks, { imageUrl: "", label: "", url: "" }],
+    });
+  }
+
+  function updateSocialLink(index: number, patch: Partial<{ imageUrl?: string; label: string; url: string }>) {
+    updateProfile({
+      socialLinks: profile.socialLinks.map((link, i) =>
+        i === index ? { ...link, ...patch } : link,
+      ),
+    });
+  }
+
+  function removeSocialLink(index: number) {
+    updateProfile({
+      socialLinks: profile.socialLinks.filter((_, i) => i !== index),
+    });
+  }
+
   // Add-work uploader state.
   const [jobs, setJobs] = useState<Array<{ id: string; title: string; payerName: string | null }>>([]);
   const [addOpen, setAddOpen] = useState(false);
@@ -155,8 +176,10 @@ export function PortfolioClient() {
   // Profile photo / cover uploader state.
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const rateCardBgInputRef = useRef<HTMLInputElement>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [uploadingRateCardBg, setUploadingRateCardBg] = useState(false);
 
   // Upload a single image and persist it onto the profile (avatar or cover).
   const uploadProfileImage = useCallback(
@@ -187,6 +210,30 @@ export function PortfolioClient() {
     [profile, updateProfile, saveProfile, t],
   );
 
+  const uploadRateCardBg = useCallback(
+    async (file: File | undefined | null) => {
+      if (!file) return;
+      setUploadingRateCardBg(true);
+      try {
+        const fd = new FormData();
+        fd.append("file", file);
+        const up = await fetch("/api/upload", { method: "POST", body: fd });
+        if (!up.ok) throw new Error("upload failed");
+        const { filePath } = await up.json();
+        const next = { ...profile, rateCardBgUrl: filePath };
+        updateProfile({ rateCardBgUrl: filePath });
+        const ok = await saveProfile(next);
+        if (!ok) throw new Error("save failed");
+        toast.success(t("rateCardBgSaved"));
+      } catch {
+        toast.error(t("photoError"));
+      } finally {
+        setUploadingRateCardBg(false);
+      }
+    },
+    [profile, updateProfile, saveProfile, t],
+  );
+
   const removeProfileImage = useCallback(
     async (kind: "avatar" | "cover") => {
       const next = {
@@ -200,6 +247,14 @@ export function PortfolioClient() {
     },
     [profile, updateProfile, saveProfile, t],
   );
+
+  const removeRateCardBg = useCallback(async () => {
+    const next = { ...profile, rateCardBgUrl: null };
+    updateProfile({ rateCardBgUrl: null });
+    const ok = await saveProfile(next);
+    if (ok) toast.success(t("rateCardBgSaved"));
+    else toast.error(t("photoError"));
+  }, [profile, updateProfile, saveProfile, t]);
 
   const loadPortfolio = useCallback(() => {
     return fetch("/api/portfolio")
@@ -339,6 +394,23 @@ export function PortfolioClient() {
     setSavingContact(false);
     if (ok) {
       setEditingContact(false);
+      toast.success(t("profileSaved"));
+    } else {
+      toast.error(t("profileSaveError"));
+    }
+  }
+
+  async function saveSocialLinks() {
+    setSavingSocial(true);
+    const ok = await saveProfile({
+      ...profile,
+      socialLinks: profile.socialLinks.filter((link) => link.label.trim() && link.url.trim()),
+    });
+    setSavingSocial(false);
+    if (ok) {
+      updateProfile({
+        socialLinks: profile.socialLinks.filter((link) => link.label.trim() && link.url.trim()),
+      });
       toast.success(t("profileSaved"));
     } else {
       toast.error(t("profileSaveError"));
@@ -835,6 +907,63 @@ export function PortfolioClient() {
       <section className="space-y-4">
         <SectionHeading icon={BadgeCheck} title={tRate("mediaKitRateCard")} />
 
+        <Card className="overflow-hidden rounded-2xl">
+          <CardContent className="grid gap-4 p-4 sm:grid-cols-[12rem_1fr] sm:items-center">
+            <div className="relative aspect-video overflow-hidden rounded-xl border bg-muted">
+              {profile.rateCardBgUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={profile.rateCardBgUrl}
+                  alt={t("rateCardBg")}
+                  className="size-full object-cover"
+                />
+              ) : (
+                <div className="flex size-full items-center justify-center bg-gradient-to-br from-primary/10 to-violet-500/10 text-muted-foreground">
+                  <ImageIcon className="size-6" />
+                </div>
+              )}
+            </div>
+            <div className="space-y-3">
+              <div>
+                <h3 className="text-sm font-semibold">{t("rateCardBg")}</h3>
+                <p className="text-xs text-muted-foreground">{t("rateCardBgHint")}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => rateCardBgInputRef.current?.click()}
+                  disabled={uploadingRateCardBg}
+                >
+                  {uploadingRateCardBg ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <ImageIcon className="size-4" />
+                  )}
+                  {profile.rateCardBgUrl ? t("changePhoto") : t("uploadPhoto")}
+                </Button>
+                {profile.rateCardBgUrl && !uploadingRateCardBg && (
+                  <Button type="button" variant="ghost" size="sm" onClick={removeRateCardBg}>
+                    <Trash2 className="size-4 text-destructive" />
+                    {t("removePhoto")}
+                  </Button>
+                )}
+              </div>
+              <input
+                ref={rateCardBgInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  uploadRateCardBg(e.target.files?.[0]);
+                  e.target.value = "";
+                }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Suggestions from past deals */}
         {suggestions.length > 0 && (
           <Card className="rounded-2xl">
@@ -1025,6 +1154,66 @@ export function PortfolioClient() {
           </CardContent>
         </Card>
       </section>
+
+      {/* ---------- SOCIAL MEDIA ---------- */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between gap-2">
+          <SectionHeading icon={ExternalLink} title={t("socialTitle")} />
+          <Button type="button" variant="outline" size="sm" onClick={addSocialLink}>
+            <Plus className="size-4" />
+            {t("addSocialLink")}
+          </Button>
+        </div>
+        <Card className="rounded-2xl">
+          <CardContent className="space-y-3 p-4">
+            {profile.socialLinks.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                {t("socialEmpty")}
+              </p>
+            ) : (
+              profile.socialLinks.map((link, i) => (
+                <div
+                  key={i}
+                  className="grid gap-2 rounded-xl border bg-muted/20 p-3 sm:grid-cols-[0.7fr_0.8fr_1.6fr_auto]"
+                >
+                  <Input
+                    value={link.imageUrl ?? ""}
+                    placeholder={t("socialImagePlaceholder")}
+                    onChange={(e) => updateSocialLink(i, { imageUrl: e.target.value })}
+                  />
+                  <Input
+                    value={link.label}
+                    placeholder={t("socialLabelPlaceholder")}
+                    onChange={(e) => updateSocialLink(i, { label: e.target.value })}
+                  />
+                  <Input
+                    type="url"
+                    value={link.url}
+                    placeholder={t("socialUrlPlaceholder")}
+                    onChange={(e) => updateSocialLink(i, { url: e.target.value })}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeSocialLink(i)}
+                    aria-label={t("removeSocialLink")}
+                    className="justify-self-end"
+                  >
+                    <Trash2 className="size-4 text-destructive" />
+                  </Button>
+                </div>
+              ))
+            )}
+            <div className="flex justify-end">
+              <Button type="button" onClick={saveSocialLinks} disabled={savingSocial}>
+                {savingSocial ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                {t("saveProfile")}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
     </div>
   );
 }
@@ -1033,7 +1222,7 @@ function SectionHeading({
   icon: Icon,
   title,
 }: {
-  icon: typeof Sparkles;
+  icon: React.ComponentType<{ className?: string }>;
   title: string;
 }) {
   return (

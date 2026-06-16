@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -183,6 +184,10 @@ export function JobsPageClient() {
   const [existingEvidenceImages, setExistingEvidenceImages] = useState<
     Array<{ id: string; url: string }>
   >([]);
+  const [briefFiles, setBriefFiles] = useState<File[]>([]);
+  const [existingBriefFiles, setExistingBriefFiles] = useState<
+    Array<{ id: string; url: string }>
+  >([]);
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -267,6 +272,8 @@ export function JobsPageClient() {
       setEditingId(null);
       setEvidenceFiles([]);
       setExistingEvidenceImages([]);
+      setBriefFiles([]);
+      setExistingBriefFiles([]);
       setDialogOpen(true);
       void setNewParam(null);
     }
@@ -276,6 +283,8 @@ export function JobsPageClient() {
     setEditingId(null);
     setEvidenceFiles([]);
     setExistingEvidenceImages([]);
+    setBriefFiles([]);
+    setExistingBriefFiles([]);
     setDialogOpen(true);
   };
 
@@ -315,8 +324,8 @@ export function JobsPageClient() {
         toast.success(t("createSuccess"));
       }
 
-      if (evidenceFiles.length > 0) {
-        for (const file of evidenceFiles) {
+      const uploadDocs = async (files: File[], kind: "evidence" | "brief") => {
+        for (const file of files) {
           const formData = new FormData();
           formData.append("file", file);
           const uploadRes = await fetch("/api/upload", {
@@ -332,12 +341,20 @@ export function JobsPageClient() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               reviewJobId: jobId,
-              kind: "evidence",
+              kind,
               filePath: uploadJson.filePath,
             }),
           });
         }
+      };
+
+      if (evidenceFiles.length > 0) {
+        await uploadDocs(evidenceFiles, "evidence");
         setEvidenceFiles([]);
+      }
+      if (briefFiles.length > 0) {
+        await uploadDocs(briefFiles, "brief");
+        setBriefFiles([]);
       }
 
       setDialogOpen(false);
@@ -373,6 +390,8 @@ export function JobsPageClient() {
       setEditDefaultValues(undefined);
       setExistingEvidenceImages([]);
       setEvidenceFiles([]);
+      setExistingBriefFiles([]);
+      setBriefFiles([]);
       return;
     }
     let cancelled = false;
@@ -435,16 +454,24 @@ export function JobsPageClient() {
         const docs = (docsJson.data ?? []) as Array<{
           id: string;
           filePath: string;
+          kind: string;
         }>;
+        const withPath = docs.filter((doc) => doc.filePath);
         setExistingEvidenceImages(
-          docs
-            .filter((doc) => doc.filePath)
+          withPath
+            .filter((doc) => doc.kind !== "brief")
+            .map((doc) => ({ id: doc.id, url: doc.filePath })),
+        );
+        setExistingBriefFiles(
+          withPath
+            .filter((doc) => doc.kind === "brief")
             .map((doc) => ({ id: doc.id, url: doc.filePath })),
         );
       })
       .catch(() => {
         setEditDefaultValues(undefined);
         setExistingEvidenceImages([]);
+        setExistingBriefFiles([]);
       });
     return () => {
       cancelled = true;
@@ -606,40 +633,60 @@ export function JobsPageClient() {
       />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
+        <DialogContent className="top-0 max-h-[100dvh] max-w-full translate-y-0 gap-0 rounded-none border-0 p-0 sm:top-[50%] sm:max-h-[calc(100dvh-2rem)] sm:max-w-2xl sm:translate-y-[-50%] sm:rounded-lg sm:border md:max-w-3xl">
+          <DialogHeader className="sticky top-0 z-10 border-b bg-background px-4 py-4 pr-12 text-left sm:px-6">
+            <DialogTitle className="text-xl">
               {editingId ? t("editJob") : t("createJob")}
             </DialogTitle>
+            <DialogDescription>{t("jobFormHint")}</DialogDescription>
           </DialogHeader>
-          {showForm ? (
-            <JobForm
-              schema={reviewJobCreateSchema}
-              defaultValues={editingId ? editDefaultValues : undefined}
-              onSubmit={handleDialogSubmit}
-              submitLabel={tCommon("save")}
-              payerNames={payerNames}
-              evidenceFiles={evidenceFiles}
-              onEvidenceFilesChange={setEvidenceFiles}
-              existingEvidenceImages={existingEvidenceImages}
-              onRemoveExistingEvidence={async (docId) => {
-                try {
-                  const res = await fetch(`/api/documents/${docId}`, {
-                    method: "DELETE",
-                  });
-                  if (!res.ok) throw new Error(t("deleteDocError"));
-                  setExistingEvidenceImages((prev) =>
-                    prev.filter((img) => img.id !== docId),
-                  );
-                  toast.success(t("removeImageSuccess"));
-                } catch (e) {
-                  toast.error(t("removeImageError"), String(e));
-                }
-              }}
-            />
-          ) : dialogOpen && editingId ? (
-            <DialogFormSkeleton />
-          ) : null}
+          <div className="px-4 py-5 sm:px-6">
+            {showForm ? (
+              <JobForm
+                schema={reviewJobCreateSchema}
+                defaultValues={editingId ? editDefaultValues : undefined}
+                onSubmit={handleDialogSubmit}
+                submitLabel={tCommon("save")}
+                payerNames={payerNames}
+                evidenceFiles={evidenceFiles}
+                onEvidenceFilesChange={setEvidenceFiles}
+                existingEvidenceImages={existingEvidenceImages}
+                onRemoveExistingEvidence={async (docId) => {
+                  try {
+                    const res = await fetch(`/api/documents/${docId}`, {
+                      method: "DELETE",
+                    });
+                    if (!res.ok) throw new Error(t("deleteDocError"));
+                    setExistingEvidenceImages((prev) =>
+                      prev.filter((img) => img.id !== docId),
+                    );
+                    toast.success(t("removeImageSuccess"));
+                  } catch (e) {
+                    toast.error(t("removeImageError"), String(e));
+                  }
+                }}
+                briefFiles={briefFiles}
+                onBriefFilesChange={setBriefFiles}
+                existingBriefFiles={existingBriefFiles}
+                onRemoveExistingBrief={async (docId) => {
+                  try {
+                    const res = await fetch(`/api/documents/${docId}`, {
+                      method: "DELETE",
+                    });
+                    if (!res.ok) throw new Error(t("deleteDocError"));
+                    setExistingBriefFiles((prev) =>
+                      prev.filter((f) => f.id !== docId),
+                    );
+                    toast.success(t("removeImageSuccess"));
+                  } catch (e) {
+                    toast.error(t("removeImageError"), String(e));
+                  }
+                }}
+              />
+            ) : dialogOpen && editingId ? (
+              <DialogFormSkeleton />
+            ) : null}
+          </div>
         </DialogContent>
       </Dialog>
 

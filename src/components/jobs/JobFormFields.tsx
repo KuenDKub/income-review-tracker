@@ -51,6 +51,10 @@ type JobFormFieldsProps = {
   existingEvidenceImages?: Array<{ id: string; url: string }>;
   onRemoveExistingEvidence?: (id: string) => void;
   showEvidence?: boolean;
+  briefFiles?: File[];
+  onBriefFilesChange?: (files: File[]) => void;
+  existingBriefFiles?: Array<{ id: string; url: string }>;
+  onRemoveExistingBrief?: (id: string) => void;
 };
 
 const PLATFORM_OPTIONS = [
@@ -71,6 +75,10 @@ export function JobFormFields({
   existingEvidenceImages = [],
   onRemoveExistingEvidence,
   showEvidence = true,
+  briefFiles = [],
+  onBriefFilesChange,
+  existingBriefFiles = [],
+  onRemoveExistingBrief,
 }: JobFormFieldsProps) {
   const t = useTranslations("jobs");
   const [payerDropdownOpen, setPayerDropdownOpen] = useState(false);
@@ -395,7 +403,39 @@ export function JobFormFields({
             </FormItem>
           )}
         />
+        {onBriefFilesChange && (
+          <FormItem>
+            <FormLabel>{t("briefFiles")}</FormLabel>
+            <FileUpload
+              value={briefFiles}
+              onChange={onBriefFilesChange}
+              accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+              multiple
+              buttonLabel={t("addBriefFiles")}
+              existingImages={existingBriefFiles}
+              onRemoveExisting={onRemoveExistingBrief}
+            />
+          </FormItem>
+        )}
       </div>
+
+      <FormField
+        control={form.control}
+        name="notes"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>{t("notes")}</FormLabel>
+            <FormControl>
+              <Textarea
+                rows={3}
+                placeholder={t("notesPlaceholder")}
+                {...field}
+                value={field.value ?? ""}
+              />
+            </FormControl>
+          </FormItem>
+        )}
+      />
 
       <div className="space-y-4">
         <FormField
