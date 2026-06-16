@@ -60,6 +60,11 @@ function fileType(path: string): FileType {
   return "other";
 }
 
+/** Word documents we can extract text from server-side (mammoth handles .docx). */
+function isExtractableDoc(path: string): boolean {
+  return fileExt(path) === "docx";
+}
+
 /**
  * Microsoft Office Online viewer — renders doc/docx/xls/xlsx/ppt/pptx inside an
  * iframe without downloading. Requires a publicly reachable file URL (our S3
@@ -186,22 +191,30 @@ export function BriefAttachments({
   };
 
   /**
-   * Extract text from the previewed image into the selectable panel. Runs a
-   * vision model server-side (/api/ocr → OpenRouter) — far more accurate on Thai
-   * marketing graphics than on-device OCR. The result is shown in an editable,
-   * selectable area so the user can grab just the part they need (a hashtag, the
-   * link, a code snippet) and fix any slip before copying — not a forced copy.
+   * Extract text from the previewed brief into the selectable panel. Images go
+   * to a vision model (/api/ocr) — far more accurate on Thai marketing graphics
+   * than on-device OCR. Word docs go to /api/extract-doc, which pulls the text
+   * with mammoth and tidies it with the AI helper. Either way the result lands
+   * in an editable, selectable area so the user can grab just the part they need
+   * (a hashtag, the link, a code snippet) and fix any slip — not a forced copy.
    */
-  const handleExtractText = async (src: string) => {
+  const handleExtractText = async (src: string, type: FileType) => {
     if (ocrBusy) return;
     setOcrBusy(true);
     try {
-      const imageUrl = new URL(src, window.location.origin).href;
-      const res = await fetch("/api/ocr", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl }),
-      });
+      const fileUrl = new URL(src, window.location.origin).href;
+      const res =
+        type === "image"
+          ? await fetch("/api/ocr", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ imageUrl: fileUrl }),
+            })
+          : await fetch("/api/extract-doc", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ fileUrl }),
+            });
       if (!res.ok) throw new Error(await res.text());
       const { text } = (await res.json()) as { text?: string };
       const clean = (text ?? "").trim();
@@ -385,17 +398,21 @@ export function BriefAttachments({
               {t("filePreview")}
             </DialogDescription>
             <div className="flex shrink-0 items-center gap-2">
-              {preview && previewType === "image" && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  loading={ocrBusy}
-                  onClick={() => handleExtractText(preview.filePath)}
-                >
-                  <ScanText className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t("extractText")}</span>
-                </Button>
-              )}
+              {preview &&
+                (previewType === "image" ||
+                  isExtractableDoc(preview.filePath)) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    loading={ocrBusy}
+                    onClick={() =>
+                      handleExtractText(preview.filePath, previewType)
+                    }
+                  >
+                    <ScanText className="h-4 w-4" />
+                    <span className="hidden sm:inline">{t("extractText")}</span>
+                  </Button>
+                )}
               {preview && (
                 <Button variant="outline" size="sm" asChild>
                   <a
@@ -472,7 +489,7 @@ export function BriefAttachments({
 
             {/* Selectable extracted-text panel (editable so the user can fix a
                 slip, and select/copy just the part they need). */}
-            {previewType === "image" && ocrText !== null && (
+            {ocrText !== null && (
               <div className="flex h-[45dvh] min-h-0 flex-col border-t bg-background">
                 <div className="flex items-center justify-between gap-2 border-b px-3 py-2">
                   <span className="text-xs font-medium text-muted-foreground">

@@ -24,6 +24,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { JobForm } from "./JobForm";
 import { BriefAttachments } from "./BriefAttachments";
@@ -807,38 +808,38 @@ export function JobDetailClient({ id }: { id: string }) {
       </div>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent
-          aria-describedby={undefined}
-          className="top-0 max-h-[100dvh] max-w-full translate-y-0 gap-0 rounded-none border-0 p-0 sm:top-[50%] sm:max-h-[calc(100dvh-2rem)] sm:max-w-2xl sm:translate-y-[-50%] sm:rounded-lg sm:border md:max-w-3xl"
-        >
+        <DialogContent className="top-0 max-h-[100dvh] max-w-full translate-y-0 gap-0 rounded-none border-0 p-0 sm:top-[50%] sm:max-h-[calc(100dvh-2rem)] sm:max-w-2xl sm:translate-y-[-50%] sm:rounded-lg sm:border md:max-w-3xl">
           <DialogHeader className="sticky top-0 z-10 border-b bg-background px-4 py-4 pr-12 text-left sm:px-6">
             <DialogTitle className="text-xl">{t("editJob")}</DialogTitle>
+            <DialogDescription>{t("jobFormHint")}</DialogDescription>
           </DialogHeader>
-          <JobForm
-            schema={reviewJobCreateSchema}
-            defaultValues={defaultValues}
-            onSubmit={handleEditSubmit}
-            submitLabel={tCommon("save")}
-            payerNames={payerNames}
-            evidenceFiles={evidenceFiles}
-            onEvidenceFilesChange={setEvidenceFiles}
-            existingEvidenceImages={existingEvidenceImages}
-            onRemoveExistingEvidence={async (docId) => {
-              try {
-                const res = await fetch(`/api/documents/${docId}`, {
-                  method: "DELETE",
-                });
-                if (!res.ok) throw new Error(t("deleteDocError"));
-                setExistingEvidenceImages((prev) =>
-                  prev.filter((img) => img.id !== docId),
-                );
-                await load();
-                toast.success(t("removeImageSuccess"));
-              } catch (e) {
-                toast.error(t("removeImageError"), String(e));
-              }
-            }}
-          />
+          <div className="px-4 py-5 sm:px-6">
+            <JobForm
+              schema={reviewJobCreateSchema}
+              defaultValues={defaultValues}
+              onSubmit={handleEditSubmit}
+              submitLabel={tCommon("save")}
+              payerNames={payerNames}
+              evidenceFiles={evidenceFiles}
+              onEvidenceFilesChange={setEvidenceFiles}
+              existingEvidenceImages={existingEvidenceImages}
+              onRemoveExistingEvidence={async (docId) => {
+                try {
+                  const res = await fetch(`/api/documents/${docId}`, {
+                    method: "DELETE",
+                  });
+                  if (!res.ok) throw new Error(t("deleteDocError"));
+                  setExistingEvidenceImages((prev) =>
+                    prev.filter((img) => img.id !== docId),
+                  );
+                  await load();
+                  toast.success(t("removeImageSuccess"));
+                } catch (e) {
+                  toast.error(t("removeImageError"), String(e));
+                }
+              }}
+            />
+          </div>
         </DialogContent>
       </Dialog>
 

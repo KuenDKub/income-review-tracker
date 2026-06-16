@@ -21,6 +21,10 @@ type JobFormProps = {
   existingEvidenceImages?: Array<{ id: string; url: string }>;
   onRemoveExistingEvidence?: (id: string) => void;
   showEvidence?: boolean;
+  briefFiles?: File[];
+  onBriefFilesChange?: (files: File[]) => void;
+  existingBriefFiles?: Array<{ id: string; url: string }>;
+  onRemoveExistingBrief?: (id: string) => void;
 };
 
 export function JobForm({
@@ -34,6 +38,10 @@ export function JobForm({
   existingEvidenceImages = [],
   onRemoveExistingEvidence,
   showEvidence = true,
+  briefFiles = [],
+  onBriefFilesChange,
+  existingBriefFiles = [],
+  onRemoveExistingBrief,
 }: JobFormProps) {
   const form = useForm<JobFormValues>({
     resolver: zodResolver(schema) as never,
@@ -52,6 +60,10 @@ export function JobForm({
           existingEvidenceImages={existingEvidenceImages}
           onRemoveExistingEvidence={onRemoveExistingEvidence}
           showEvidence={showEvidence}
+          briefFiles={briefFiles}
+          onBriefFilesChange={onBriefFilesChange}
+          existingBriefFiles={existingBriefFiles}
+          onRemoveExistingBrief={onRemoveExistingBrief}
         />
         <Button
           type="submit"
