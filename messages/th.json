@@ -503,6 +503,14 @@
     "contactEmailPlaceholder": "you@email.com (แสดงต่อสาธารณะ)",
     "contactTitleLabel": "หัวข้อส่วนติดต่อ",
     "contactHintLabel": "ข้อความรองส่วนติดต่อ",
+    "lineContactLabel": "LINE ID",
+    "lineContactPlaceholder": "เช่น francfoil19",
+    "lineUrlLabel": "ลิงก์ LINE",
+    "lineUrlPlaceholder": "https://line.me/ti/p/xxxxxxxx",
+    "lineUrlHint": "ลิงก์เพิ่มเพื่อนของ LINE — กดปุ่มจะเปิดหน้าเพิ่มเพื่อนให้เลย",
+    "badgeLabelLabel": "ป้ายบนหน้าพอร์ต",
+    "badgeLabelPlaceholder": "เช่น พอร์ตโฟลิโอ · ทำคอนเทนต์ตั้งแต่ปี 2566",
+    "badgeLabelHint": "ป้ายเล็กเหนือชื่อในหน้าสาธารณะ เว้นว่างไว้จะใช้ข้อความอัตโนมัติ (พอร์ตโฟลิโอ + ปีเริ่มทำงาน)",
     "shareHint": "ส่งลิงก์นี้ให้แบรนด์ได้เลย — แบรนด์จะเห็นหน้าสาธารณะที่สะอาดตา (ไม่ต้องล็อกอิน)",
     "copyLink": "คัดลอกลิงก์",
     "linkCopiedShort": "คัดลอกแล้ว",
@@ -510,7 +518,7 @@
     "linkCopyError": "คัดลอกลิงก์ไม่สำเร็จ",
     "viewPublic": "ดูหน้าสาธารณะ",
     "portfolioLabel": "พอร์ตโฟลิโอ",
-    "getInTouch": "ติดต่อร่วมงาน",
+    "getInTouch": "มาร่วมงานกัน",
     "profilePhoto": "รูปโปรไฟล์",
     "coverPhoto": "รูปปก",
     "uploadPhoto": "อัปโหลดรูป",
@@ -527,6 +535,8 @@
     "brandNoWork": "ยังไม่มีรูปผลงานของแบรนด์นี้",
     "close": "ปิด",
     "viewBrand": "ดูรายละเอียด {name}",
-    "goToSlide": "ไปที่สไลด์ {index}"
+    "goToSlide": "ไปที่สไลด์ {index}",
+    "viewAllWorks": "ดูผลงานทั้งหมด ({count})",
+    "showLessWorks": "แสดงน้อยลง"
   }
 }

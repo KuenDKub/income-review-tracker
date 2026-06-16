@@ -503,6 +503,14 @@
     "contactEmailPlaceholder": "you@email.com (shown publicly)",
     "contactTitleLabel": "Contact heading",
     "contactHintLabel": "Contact subtext",
+    "lineContactLabel": "LINE ID",
+    "lineContactPlaceholder": "e.g. francfoil19",
+    "lineUrlLabel": "LINE link",
+    "lineUrlPlaceholder": "https://line.me/ti/p/xxxxxxxx",
+    "lineUrlHint": "Your LINE add-friend link — the button opens it directly.",
+    "badgeLabelLabel": "Hero badge",
+    "badgeLabelPlaceholder": "e.g. Portfolio · Creating content since 2023",
+    "badgeLabelHint": "Small badge above your name on the public page. Leave blank to use the automatic text (Portfolio + first year).",
     "shareHint": "Share this link with brands — they see a clean public page (no login).",
     "copyLink": "Copy link",
     "linkCopiedShort": "Copied",
@@ -510,7 +518,7 @@
     "linkCopyError": "Could not copy link",
     "viewPublic": "View public page",
     "portfolioLabel": "Portfolio",
-    "getInTouch": "Get in touch",
+    "getInTouch": "Work with me",
     "profilePhoto": "Profile photo",
     "coverPhoto": "Cover photo",
     "uploadPhoto": "Upload photo",
@@ -527,6 +535,8 @@
     "brandNoWork": "No images for this brand yet",
     "close": "Close",
     "viewBrand": "View {name} details",
-    "goToSlide": "Go to slide {index}"
+    "goToSlide": "Go to slide {index}",
+    "viewAllWorks": "View all works ({count})",
+    "showLessWorks": "Show less"
   }
 }

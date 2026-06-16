@@ -113,6 +113,9 @@ ALTER TABLE creator_profile ADD COLUMN IF NOT EXISTS cover_url TEXT;
 -- Editable contact CTA (title + hint); empty falls back to localized defaults.
 ALTER TABLE creator_profile ADD COLUMN IF NOT EXISTS contact_title TEXT NOT NULL DEFAULT '';
 ALTER TABLE creator_profile ADD COLUMN IF NOT EXISTS contact_hint TEXT NOT NULL DEFAULT '';
+ALTER TABLE creator_profile ADD COLUMN IF NOT EXISTS line_contact TEXT NOT NULL DEFAULT '';
+ALTER TABLE creator_profile ADD COLUMN IF NOT EXISTS line_url TEXT NOT NULL DEFAULT '';
+ALTER TABLE creator_profile ADD COLUMN IF NOT EXISTS badge_label TEXT NOT NULL DEFAULT '';
 ALTER TABLE creator_profile ADD COLUMN IF NOT EXISTS rate_card_bg_url TEXT;
 ALTER TABLE creator_profile ADD COLUMN IF NOT EXISTS social_links TEXT NOT NULL DEFAULT '';
 
@@ -134,6 +137,14 @@ SET
   updated_at = now()
 WHERE social_links LIKE '%"icon"%'
   AND social_links LIKE '%francfoil%';
+
+-- Seed the LINE contact once, only while it is still empty.
+UPDATE creator_profile
+SET
+  line_contact = 'francfoil19',
+  line_url = 'https://line.me/ti/p/LEa7H7NTXB',
+  updated_at = now()
+WHERE NULLIF(trim(line_url), '') IS NULL;
 
 -- Customer brief: the job spec the payer sends. `brief` holds pasted/structured
 -- text; `brief_link` holds an external deck URL (e.g. a Canva design) that is

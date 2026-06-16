@@ -63,6 +63,9 @@ model creator_profile {
   cover_url     String?
   contact_title String   @default("")
   contact_hint  String   @default("")
+  line_contact  String   @default("")
+  line_url      String   @default("")
+  badge_label   String   @default("")
   rate_card_bg_url String?
   social_links  String   @default("")
   legal_name    String   @default("")

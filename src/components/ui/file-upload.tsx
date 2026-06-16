@@ -127,7 +127,7 @@ export function FileUpload({
                 <button
                   type="button"
                   onClick={() => onRemoveExisting(img.id)}
-                  className="absolute top-1 right-1 rounded-full bg-destructive p-1 text-destructive-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                  className="absolute top-1 right-1 rounded-full bg-destructive p-1 text-destructive-foreground opacity-100 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:hover)]:opacity-0"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -154,7 +154,7 @@ export function FileUpload({
               <button
                 type="button"
                 onClick={() => handleRemove(index)}
-                className="absolute top-1 right-1 rounded-full bg-destructive p-1 text-destructive-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                className="absolute top-1 right-1 rounded-full bg-destructive p-1 text-destructive-foreground opacity-100 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:hover)]:opacity-0"
               >
                 <X className="h-4 w-4" />
               </button>

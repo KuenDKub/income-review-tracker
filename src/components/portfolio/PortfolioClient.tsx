@@ -47,6 +47,7 @@ import { FileUpload } from "@/components/ui/file-upload";
 import { useCreatorProfile } from "@/hooks/useCreatorProfile";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
+import { platformBadgeClass } from "@/lib/platformStyle";
 
 type RateCard = {
   id: string;
@@ -136,16 +137,26 @@ export function PortfolioClient() {
   const [savingBilling, setSavingBilling] = useState(false);
   // Snapshot to restore the contact fields if the user cancels the inline edit.
   const [contactSnapshot, setContactSnapshot] =
-    useState<{ title: string; hint: string } | null>(null);
+    useState<{ title: string; hint: string; lineContact: string; lineUrl: string } | null>(null);
 
   function startEditContact() {
-    setContactSnapshot({ title: profile.contactTitle, hint: profile.contactHint });
+    setContactSnapshot({
+      title: profile.contactTitle,
+      hint: profile.contactHint,
+      lineContact: profile.lineContact,
+      lineUrl: profile.lineUrl,
+    });
     setEditingContact(true);
   }
 
   function cancelEditContact() {
     if (contactSnapshot) {
-      updateProfile({ contactTitle: contactSnapshot.title, contactHint: contactSnapshot.hint });
+      updateProfile({
+        contactTitle: contactSnapshot.title,
+        contactHint: contactSnapshot.hint,
+        lineContact: contactSnapshot.lineContact,
+        lineUrl: contactSnapshot.lineUrl,
+      });
     }
     setEditingContact(false);
   }
@@ -694,6 +705,16 @@ export function PortfolioClient() {
                   onChange={(e) => updateProfile({ contactEmail: e.target.value || null })}
                 />
               </div>
+              <div className="space-y-1.5 sm:col-span-3">
+                <Label htmlFor="pf-badge">{t("badgeLabelLabel")}</Label>
+                <Input
+                  id="pf-badge"
+                  value={profile.badgeLabel}
+                  placeholder={t("badgeLabelPlaceholder")}
+                  onChange={(e) => updateProfile({ badgeLabel: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground">{t("badgeLabelHint")}</p>
+              </div>
               <div className="sm:col-span-3">
                 <Button type="button" size="sm" onClick={saveAndCloseProfile} disabled={savingProfile}>
                   {savingProfile ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
@@ -709,7 +730,10 @@ export function PortfolioClient() {
               {stats.platforms.map((p) => (
                 <span
                   key={p}
-                  className="rounded-full bg-violet-500/10 px-3 py-1 text-xs font-medium text-violet-700 dark:text-violet-300"
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-xs font-semibold",
+                    platformBadgeClass(p),
+                  )}
                 >
                   {p}
                 </span>
@@ -860,11 +884,11 @@ export function PortfolioClient() {
                   type="button"
                   onClick={() => deleteWork(w.id)}
                   aria-label={t("workRemove")}
-                  className="absolute right-2 top-2 rounded-full bg-black/55 p-1.5 text-white opacity-0 transition-opacity hover:bg-destructive group-hover:opacity-100"
+                  className="absolute right-2 top-2 rounded-full bg-black/55 p-1.5 text-white opacity-100 transition-opacity hover:bg-destructive group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:hover)]:opacity-0"
                 >
                   <Trash2 className="size-3.5" />
                 </button>
-                <figcaption className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent p-3 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                <figcaption className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent p-3 opacity-100 transition-opacity duration-200 group-hover:opacity-100 [@media(hover:hover)]:opacity-0">
                   <p className="truncate text-xs font-semibold text-white">{w.payerName ?? w.title}</p>
                   <p className="truncate text-[11px] text-white/80">
                     {[w.contentType, w.platforms.join(", ")].filter(Boolean).join(" · ")}
@@ -1119,6 +1143,26 @@ export function PortfolioClient() {
                     onChange={(e) => updateProfile({ contactHint: e.target.value })}
                   />
                 </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="ct-line-id">{t("lineContactLabel")}</Label>
+                  <Input
+                    id="ct-line-id"
+                    value={profile.lineContact}
+                    placeholder={t("lineContactPlaceholder")}
+                    onChange={(e) => updateProfile({ lineContact: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="ct-line-url">{t("lineUrlLabel")}</Label>
+                  <Input
+                    id="ct-line-url"
+                    type="url"
+                    value={profile.lineUrl}
+                    placeholder={t("lineUrlPlaceholder")}
+                    onChange={(e) => updateProfile({ lineUrl: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">{t("lineUrlHint")}</p>
+                </div>
                 <div className="flex justify-end gap-2 pt-1">
                   <Button
                     type="button"
@@ -1145,10 +1189,15 @@ export function PortfolioClient() {
                   {profile.contactHint?.trim() || t("contactHint")}
                 </p>
                 <div className="flex flex-wrap items-center justify-center gap-2">
-                  {handleAt && (
-                    <span className="rounded-full bg-card px-4 py-2 text-sm font-semibold text-primary shadow-sm">
-                      {handleAt}
-                    </span>
+                  {(profile.lineContact.trim() || handleAt) && (
+                    <a
+                      href={profile.lineUrl.trim() || undefined}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-full bg-card px-4 py-2 text-sm font-semibold text-primary shadow-sm transition-colors hover:bg-primary/5"
+                    >
+                      {profile.lineContact.trim() ? `LINE ${profile.lineContact.trim()}` : handleAt}
+                    </a>
                   )}
                   <Button
                     type="button"

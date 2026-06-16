@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
-import { Check, ChevronRight, Copy, Download, ExternalLink, Heart, Sparkles, X } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { Check, Copy, ExternalLink, Heart, Sparkles, X } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowRight, faLeaf, faShoppingBag } from "@fortawesome/free-solid-svg-icons";
-import { Marquee } from "@/components/ui/marquee";
 import { cn } from "@/lib/utils";
+import { platformBadgeClass } from "@/lib/platformStyle";
 
 export type PortfolioViewData = {
   stats: { totalDeals: number; brandCount: number; platforms: string[]; firstDealYear: number | null };
@@ -25,6 +25,9 @@ export type PortfolioViewProfile = {
   rateCardBgUrl: string | null;
   contactTitle: string;
   contactHint: string;
+  lineContact: string;
+  lineUrl: string;
+  badgeLabel: string;
   socialLinks: Array<{ imageUrl?: string; label: string; url: string }>;
 };
 
@@ -34,10 +37,16 @@ type SocialLink = {
   url: string;
 };
 
+// Fallback LINE contact (used when the profile hasn't set one yet).
+const DEFAULT_LINE_CONTACT = "francfoil19";
+const DEFAULT_LINE_URL = "https://line.me/ti/p/LEa7H7NTXB";
+
 const AFFILIATE_LINK =
   "https://francfoil19.passio.eco/?fbclid=IwY2xjawSdtNpleHRuA2FlbQIxMABicmlkETE0MDYwbEliRlFFaGp1TWxPc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHkAVYtqhQeLPYiTxmMEKM6V1i32y0EEuwLChoxRMQjzf6OYY53xK8Vu8Y1Nr_aem_icvsBpLiDJuwtDGcIm9jkA";
 
-const serif = "font-[family-name:var(--font-playfair)]";
+// Playfair for English (Latin); Thai has no Playfair glyphs so it falls
+// through to Athiti (the app default).
+const serif = "font-[family-name:var(--font-playfair),var(--font-athiti)]";
 // Soft, warm rose → pink → lilac — a feminine signature gradient.
 const gradientText =
   "bg-gradient-to-br from-rose-400 via-pink-400 to-fuchsia-400 bg-clip-text text-transparent";
@@ -47,6 +56,13 @@ const blushBg = "bg-[#FFF5F8]";
 const creamBg = "bg-[#FFFBF8]";
 const lilacBg = "bg-[#FBF1F7]";
 const muted = "text-[#B07B92]";
+// The gallery shows only a first batch and lets the visitor expand from there.
+// These counts are picked so the mosaic (one 2×2 + one 2×1 + one 1×2 per 7 tiles
+// under `grid-auto-flow: dense`) fills the grid flush with no holes or stranded
+// tiles: 10 packs both the 2-col phone and 3-col tablet grids perfectly, and 11
+// fills the 4-col desktop grid into a clean rectangle.
+const COMPACT_GALLERY_LIMIT = 10;
+const DESKTOP_GALLERY_LIMIT = 11;
 
 export function PortfolioView({
   profile,
@@ -57,10 +73,21 @@ export function PortfolioView({
 }) {
   const t = useTranslations("portfolio");
   const tRate = useTranslations("rateCard");
-  const locale = useLocale();
 
   const [filter, setFilter] = useState("all");
   const [copied, setCopied] = useState(false);
+  // Collapse the gallery on small screens (< lg) into a first batch + "view all".
+  const [galleryExpanded, setGalleryExpanded] = useState(false);
+  const [isCompact, setIsCompact] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const sync = () => setIsCompact(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  // Collapse again whenever the platform filter changes.
+  useEffect(() => setGalleryExpanded(false), [filter]);
   // Drives the hero entrance animation once the component mounts.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -68,11 +95,24 @@ export function PortfolioView({
 
   const handleAt = profile.handle ? `@${profile.handle.replace(/^@/, "")}` : "";
   const displayName = profile.creatorName.trim() || profile.handle.trim() || t("creatorFallback");
+  const lineContact = profile.lineContact?.trim() || DEFAULT_LINE_CONTACT;
+  const lineUrl = profile.lineUrl?.trim() || DEFAULT_LINE_URL;
+  // Default badge: portfolio label + the first deal year, unless the profile overrides it.
+  const defaultBadge =
+    t("portfolioLabel") +
+    (data.stats.firstDealYear ? ` · ${tRate("since")} ${data.stats.firstDealYear}` : "");
+  const badgeLabel = profile.badgeLabel?.trim() || defaultBadge;
 
   const filteredGallery = useMemo(
     () => (filter === "all" ? data.gallery : data.gallery.filter((w) => w.platforms.includes(filter))),
     [data.gallery, filter],
   );
+  // Fewer up front on phones/tablets; a bit more on the wider desktop mosaic.
+  const galleryLimit = isCompact ? COMPACT_GALLERY_LIMIT : DESKTOP_GALLERY_LIMIT;
+  const visibleGallery = galleryExpanded
+    ? filteredGallery
+    : filteredGallery.slice(0, galleryLimit);
+  const hasMoreWorks = filteredGallery.length > galleryLimit;
   // Hero slideshow: auto-rotating crossfade through the first few works.
   const heroSlides = useMemo(() => data.gallery.slice(0, 6), [data.gallery]);
   const [heroIndex, setHeroIndex] = useState(0);
@@ -116,8 +156,6 @@ export function PortfolioView({
     { label: tRate("statBrands"), value: data.stats.brandCount },
     { label: tRate("statPlatforms"), value: data.stats.platforms.length },
   ];
-  const firstBrandRow = data.collaborations.slice(0, Math.ceil(data.collaborations.length / 2));
-  const secondBrandRow = data.collaborations.slice(Math.ceil(data.collaborations.length / 2));
   const socialLinks: SocialLink[] =
     profile.socialLinks.map((link) => ({
       imageUrl: link.imageUrl ?? null,
@@ -125,9 +163,6 @@ export function PortfolioView({
       url: link.url,
     }));
 
-  function downloadMediaKit() {
-    window.open(`/api/portfolio/media-kit?locale=${locale}`, "_blank");
-  }
   async function copyContact() {
     const value = profile.contactEmail || handleAt || displayName;
     try {
@@ -186,7 +221,7 @@ export function PortfolioView({
 
         {/* Hero body */}
         <div className="relative mx-auto max-w-6xl px-6 pb-0 pt-8 sm:px-10 sm:pt-12">
-          <div className="grid gap-12 pb-20 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-16 lg:pb-28">
+          <div className="grid gap-12 pb-20 md:grid-cols-[1.1fr_0.9fr] md:items-center md:gap-10 lg:gap-16 lg:pb-28">
             {/* Left: text */}
             <div
               className={cn(
@@ -210,8 +245,7 @@ export function PortfolioView({
               {/* Badge */}
               <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-rose-200/70 bg-white/70 px-4 py-1.5 text-[11px] font-semibold text-rose-500 shadow-sm shadow-rose-200/40 backdrop-blur-sm">
                 <Sparkles className="size-3 text-rose-400" aria-hidden />
-                {t("portfolioLabel")}
-                {data.stats.firstDealYear ? ` · ${tRate("since")} ${data.stats.firstDealYear}` : ""}
+                {badgeLabel}
               </div>
 
               {/* Display name */}
@@ -243,7 +277,10 @@ export function PortfolioView({
                   {data.stats.platforms.map((p) => (
                     <span
                       key={p}
-                      className="rounded-full border border-rose-200/70 bg-white/70 px-4 py-1.5 text-xs font-medium text-[#8A5A72] shadow-sm shadow-rose-100/50"
+                      className={cn(
+                        "rounded-full border px-4 py-1.5 text-xs font-semibold shadow-sm shadow-rose-100/50",
+                        platformBadgeClass(p),
+                      )}
                     >
                       {p}
                     </span>
@@ -255,17 +292,6 @@ export function PortfolioView({
               <div className="mt-9 flex flex-wrap gap-3">
                 <button
                   type="button"
-                  onClick={downloadMediaKit}
-                  className={cn(
-                    gradientBg,
-                    "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-rose-300/50 transition-all hover:opacity-90 active:scale-[0.98]",
-                  )}
-                >
-                  <Download className="size-4" />
-                  {tRate("downloadMediaKit")}
-                </button>
-                <button
-                  type="button"
                   onClick={copyContact}
                   className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-rose-200/80 bg-white/70 px-7 py-3 text-sm font-semibold text-[#8A5A72] shadow-sm transition-colors hover:bg-white"
                 >
@@ -275,16 +301,18 @@ export function PortfolioView({
               </div>
             </div>
 
-            {/* Right: hero image + floating stat badges (desktop) */}
+            {/* Right: hero slideshow (all screens) + stat-card fallback (desktop) */}
             <div
               className={cn(
-                "hidden lg:block",
+                // Hidden only when there's no image to show (the stat-card
+                // fallback is desktop-only — mobile already has the stats strip).
+                heroImage ? "block" : "hidden md:block",
                 "motion-safe:transition-all motion-safe:delay-200 motion-safe:duration-[900ms] motion-safe:ease-out",
                 mounted ? "opacity-100 translate-y-0" : "motion-safe:opacity-0 motion-safe:translate-y-8",
               )}
             >
               {heroImage ? (
-                <div className="relative">
+                <div className="relative mx-auto w-full max-w-xs sm:max-w-sm md:max-w-none">
                   <div aria-hidden className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-br from-rose-300/40 to-fuchsia-200/40 blur-2xl" />
                   {/* Auto-rotating crossfade slideshow */}
                   <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[2rem] shadow-2xl shadow-rose-300/40 ring-1 ring-white/70">
@@ -332,8 +360,8 @@ export function PortfolioView({
                   </div>
                 </div>
               ) : (
-                /* No hero image → stacked stat cards */
-                <div className="space-y-4">
+                /* No hero image → stacked stat cards (tablet & up) */
+                <div className="hidden space-y-4 md:block">
                   {stats.map((s) => (
                     <div
                       key={s.label}
@@ -390,20 +418,23 @@ export function PortfolioView({
               )}
             </Reveal>
 
-            <div className="mt-10 columns-1 gap-4 sm:columns-2 lg:columns-3 [&>*]:mb-4">
-              {filteredGallery.map((w, i) => (
-                <Reveal key={w.id} delay={Math.min(i, 8) * 50} className="break-inside-avoid">
+            {/* Designed mosaic: a fixed-row grid where featured tiles span extra
+                rows/cols on a repeating rhythm, so even uniform collages read as
+                a lively photo wall. `dense` auto-flow backfills the gaps. */}
+            <div className="mt-10 grid auto-rows-[150px] grid-cols-2 gap-3 [grid-auto-flow:dense] sm:auto-rows-[180px] sm:grid-cols-3 sm:gap-4 lg:auto-rows-[200px] lg:grid-cols-4">
+              {visibleGallery.map((w, i) => (
+                <Reveal key={w.id} delay={Math.min(i, 8) * 50} className={mosaicSpan(i)}>
                 <figure
-                  className="group relative break-inside-avoid overflow-hidden rounded-3xl shadow-sm shadow-rose-200/40 ring-1 ring-rose-100"
+                  className="group relative h-full overflow-hidden rounded-3xl shadow-sm shadow-rose-200/40 ring-1 ring-rose-100"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={w.imageUrl}
                     alt={`${w.title}${w.payerName ? ` — ${w.payerName}` : ""}`}
                     loading="lazy"
-                    className="w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                    className="size-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
                   />
-                  <figcaption className="absolute inset-x-0 bottom-0 translate-y-2 bg-gradient-to-t from-rose-900/70 via-rose-900/15 to-transparent p-5 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                  <figcaption className="absolute inset-x-0 bottom-0 translate-y-0 bg-gradient-to-t from-rose-900/70 via-rose-900/15 to-transparent p-5 opacity-100 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 [@media(hover:hover)]:translate-y-2 [@media(hover:hover)]:opacity-0">
                     <p className="text-sm font-semibold text-white">{w.payerName ?? w.title}</p>
                     <p className="mt-0.5 text-[11px] uppercase tracking-[0.15em] text-white/75">
                       {[w.contentType, w.platforms.join(", ")].filter(Boolean).join(" · ")}
@@ -413,6 +444,21 @@ export function PortfolioView({
                 </Reveal>
               ))}
             </div>
+
+            {/* Expand or collapse the gallery (all screen sizes) */}
+            {hasMoreWorks && (
+              <div className="mt-8 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setGalleryExpanded((v) => !v)}
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-rose-200/80 bg-white/70 px-7 py-3 text-sm font-semibold text-[#8A5A72] shadow-sm shadow-rose-100/50 backdrop-blur-sm transition-colors hover:bg-white"
+                >
+                  {galleryExpanded
+                    ? t("showLessWorks")
+                    : t("viewAllWorks", { count: filteredGallery.length })}
+                </button>
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -424,33 +470,16 @@ export function PortfolioView({
             <Reveal>
               <SectionLabel index="02" title={t("collabsTitle")} />
             </Reveal>
-            <Reveal delay={80} className="relative mt-10 flex w-full flex-col gap-4 overflow-hidden py-1">
-              <Marquee pauseOnHover className="[--duration:38s]">
-                {firstBrandRow.map((brand) => (
-                  <BrandMarqueeCard
-                    key={brand.name}
-                    brand={brand}
-                    dealsLabel={t("deals", { count: brand.dealCount })}
-                    viewLabel={t("viewBrand", { name: brand.name })}
-                    onClick={() => setActiveBrand(brand)}
-                  />
-                ))}
-              </Marquee>
-              {secondBrandRow.length > 0 && (
-                <Marquee reverse pauseOnHover className="[--duration:42s]">
-                  {secondBrandRow.map((brand) => (
-                    <BrandMarqueeCard
-                      key={brand.name}
-                      brand={brand}
-                      dealsLabel={t("deals", { count: brand.dealCount })}
-                      viewLabel={t("viewBrand", { name: brand.name })}
-                      onClick={() => setActiveBrand(brand)}
-                    />
-                  ))}
-                </Marquee>
-              )}
-              <div className="pointer-events-none absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-[#FFFBF8] to-transparent sm:w-32" />
-              <div className="pointer-events-none absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-[#FFFBF8] to-transparent sm:w-32" />
+            <Reveal delay={80} className="mt-10 grid grid-cols-4 gap-x-2 gap-y-6 sm:grid-cols-6 lg:grid-cols-8">
+              {data.collaborations.map((brand) => (
+                <BrandCard
+                  key={brand.name}
+                  brand={brand}
+                  dealsLabel={t("deals", { count: brand.dealCount })}
+                  viewLabel={t("viewBrand", { name: brand.name })}
+                  onClick={() => setActiveBrand(brand)}
+                />
+              ))}
             </Reveal>
           </div>
         </section>
@@ -510,53 +539,6 @@ export function PortfolioView({
           </div>
         </section>
       )}
-
-      {/* ── CONTACT CTA ──────────────────────────────────────── */}
-      <section className={cn(blushBg, "relative overflow-hidden px-6 py-24 sm:px-10 sm:py-36")}>
-        <div aria-hidden className="pointer-events-none absolute -top-20 left-1/3 size-[28rem] rounded-full bg-rose-200/50 blur-[130px]" />
-        <div aria-hidden className="pointer-events-none absolute bottom-0 right-1/3 size-[24rem] rounded-full bg-fuchsia-200/50 blur-[130px]" />
-        <Reveal className="relative mx-auto max-w-2xl text-center">
-          <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-white/80 shadow-sm shadow-rose-200/50">
-            <Heart className="size-5 fill-rose-300 text-rose-400" aria-hidden />
-          </span>
-          <p className={cn("mt-5 text-[11px] font-semibold uppercase tracking-[0.3em]", muted)}>
-            {t("getInTouch")}
-          </p>
-          <h2
-            className={cn(
-              serif,
-              "mx-auto mt-4 text-[clamp(2.25rem,7vw,4.5rem)] font-semibold leading-[1.05]",
-              gradientText,
-            )}
-          >
-            {profile.contactTitle?.trim() || t("contactTitle")}
-          </h2>
-          <p className="mx-auto mt-5 max-w-sm text-base leading-relaxed text-[#8A5A72]">
-            {profile.contactHint?.trim() || t("contactHint")}
-          </p>
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-            {(profile.contactEmail || handleAt) && (
-              <a
-                href={profile.contactEmail ? `mailto:${profile.contactEmail}` : undefined}
-                className="rounded-full border border-rose-200/80 bg-white/80 px-6 py-3 text-sm font-semibold text-[#8A5A72] shadow-sm transition-colors hover:bg-white"
-              >
-                {profile.contactEmail || handleAt}
-              </a>
-            )}
-            <button
-              type="button"
-              onClick={downloadMediaKit}
-              className={cn(
-                gradientBg,
-                "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-rose-300/50 transition-all hover:opacity-90 active:scale-[0.98]",
-              )}
-            >
-              <Download className="size-4" />
-              {tRate("downloadMediaKit")}
-            </button>
-          </div>
-        </Reveal>
-      </section>
 
       <section className={cn(creamBg, "px-6 py-16 sm:px-10 sm:py-24")}>
         <div className="mx-auto max-w-6xl">
@@ -642,6 +624,42 @@ export function PortfolioView({
             ))}
           </div>
         </div>
+      </section>
+
+      {/* ── CONTACT CTA ──────────────────────────────────────── */}
+      <section className={cn(blushBg, "relative overflow-hidden px-6 py-24 sm:px-10 sm:py-36")}>
+        <div aria-hidden className="pointer-events-none absolute -top-20 left-1/3 size-[28rem] rounded-full bg-rose-200/50 blur-[130px]" />
+        <div aria-hidden className="pointer-events-none absolute bottom-0 right-1/3 size-[24rem] rounded-full bg-fuchsia-200/50 blur-[130px]" />
+        <Reveal className="relative mx-auto max-w-2xl text-center">
+          <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-white/80 shadow-sm shadow-rose-200/50">
+            <Heart className="size-5 fill-rose-300 text-rose-400" aria-hidden />
+          </span>
+          <div className="mt-5 flex justify-center">
+            <SectionLabel index="05" title={t("getInTouch")} />
+          </div>
+          <h2
+            className={cn(
+              serif,
+              "mx-auto mt-4 text-[clamp(2.25rem,7vw,4.5rem)] font-semibold leading-[1.05]",
+              gradientText,
+            )}
+          >
+            {profile.contactTitle?.trim() || t("contactTitle")}
+          </h2>
+          <p className="mx-auto mt-5 max-w-sm text-base leading-relaxed text-[#8A5A72]">
+            {profile.contactHint?.trim() || t("contactHint")}
+          </p>
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+            <a
+              href={lineUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-rose-200/80 bg-white/80 px-6 py-3 text-sm font-semibold text-[#8A5A72] shadow-sm transition-colors hover:bg-white"
+            >
+              LINE {lineContact}
+            </a>
+          </div>
+        </Reveal>
       </section>
 
       <footer className={cn(blushBg, "border-t border-rose-100 px-6 pb-10 pt-8 text-center sm:px-10")}>
@@ -817,6 +835,25 @@ function Reveal({
   );
 }
 
+/**
+ * Maps a tile's position to a grid-span class so the gallery reads as a designed
+ * mosaic — a repeating rhythm of one big (2×2), one wide (2×1) and one tall (1×2)
+ * tile every 7 items, with the rest left at 1×1. `grid-auto-flow: dense` on the
+ * container backfills any gaps the larger tiles leave behind.
+ */
+function mosaicSpan(i: number): string {
+  switch (i % 7) {
+    case 0:
+      return "col-span-2 row-span-2"; // hero / big square
+    case 3:
+      return "col-span-2"; // wide banner
+    case 5:
+      return "row-span-2"; // tall portrait
+    default:
+      return "";
+  }
+}
+
 function ModalLabel({ children }: { children: React.ReactNode }) {
   return (
     <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#B07B92]">
@@ -825,7 +862,7 @@ function ModalLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function BrandMarqueeCard({
+function BrandCard({
   brand,
   dealsLabel,
   viewLabel,
@@ -841,7 +878,7 @@ function BrandMarqueeCard({
       type="button"
       onClick={onClick}
       aria-label={viewLabel}
-      className="group flex h-20 w-[17.5rem] cursor-pointer items-center gap-3 rounded-2xl border border-rose-100 bg-white p-4 text-left shadow-sm shadow-rose-100/40 transition-all hover:-translate-y-0.5 hover:border-rose-200 hover:shadow-md hover:shadow-rose-200/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300 sm:w-80"
+      className="group flex w-full cursor-pointer flex-col items-center gap-1.5 rounded-xl px-1 py-1 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200 focus-visible:ring-offset-2 focus-visible:ring-offset-[#FFFBF8]"
     >
       {brand.imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -849,18 +886,19 @@ function BrandMarqueeCard({
           src={brand.imageUrl}
           alt={brand.name}
           loading="lazy"
-          className="size-11 shrink-0 rounded-xl object-cover"
+          className="size-11 rounded-full object-cover ring-1 ring-rose-100 transition-all duration-300 group-hover:scale-105 group-hover:ring-2 group-hover:ring-rose-300 group-hover:ring-offset-2 group-hover:ring-offset-[#FFFBF8] sm:size-12"
         />
       ) : (
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-rose-100 to-fuchsia-100 font-[family-name:var(--font-playfair)] text-base font-bold text-rose-500">
+        <span className="flex size-11 items-center justify-center rounded-full bg-gradient-to-br from-rose-50 to-fuchsia-50 font-[family-name:var(--font-playfair),var(--font-athiti)] text-base font-semibold text-rose-400 ring-1 ring-rose-100 transition-all duration-300 group-hover:scale-105 group-hover:ring-2 group-hover:ring-rose-300 group-hover:ring-offset-2 group-hover:ring-offset-[#FFFBF8] sm:size-12">
           {brand.name.slice(0, 1).toUpperCase()}
         </span>
       )}
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-[#5A3247]">{brand.name}</p>
-        <p className="text-[11px] font-medium text-rose-300">{dealsLabel}</p>
+      <div className="w-full">
+        <p className="truncate text-[11px] font-medium text-[#7A5266] transition-colors group-hover:text-[#5A3247]">
+          {brand.name}
+        </p>
+        <p className="text-[9px] text-rose-300/90">{dealsLabel}</p>
       </div>
-      <ChevronRight className="size-4 shrink-0 text-rose-200 transition-colors group-hover:text-rose-400" aria-hidden />
     </button>
   );
 }
@@ -870,7 +908,7 @@ function SectionLabel({ index, title }: { index: string; title: string }) {
     <div className="flex items-center gap-3">
       <span
         className={cn(
-          "font-[family-name:var(--font-playfair)] text-2xl font-bold leading-none",
+          "font-[family-name:var(--font-playfair),var(--font-athiti)] text-2xl font-bold leading-none",
           "bg-gradient-to-br from-rose-400 via-pink-400 to-fuchsia-400 bg-clip-text text-transparent",
         )}
       >

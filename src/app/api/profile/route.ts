@@ -14,6 +14,9 @@ const profileSchema = z.object({
   rateCardBgUrl: z.string().max(2048).nullable().optional(),
   contactTitle: z.string().max(120).optional(),
   contactHint: z.string().max(280).optional(),
+  lineContact: z.string().max(120).optional(),
+  lineUrl: z.string().max(2048).optional(),
+  badgeLabel: z.string().max(120).optional(),
   socialLinks: z
     .array(
       z.object({
