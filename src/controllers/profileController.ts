@@ -17,6 +17,12 @@ export type CreatorProfile = {
   contactTitle: string;
   contactHint: string;
   socialLinks: Array<{ imageUrl?: string; label: string; url: string }>;
+  /** Invoice issuer ("from") details. */
+  legalName: string;
+  taxId: string;
+  address: string;
+  phone: string;
+  bankDetails: string;
   isPublic: boolean;
 };
 
@@ -31,6 +37,11 @@ const EMPTY: CreatorProfile = {
   contactTitle: "",
   contactHint: "",
   socialLinks: [],
+  legalName: "",
+  taxId: "",
+  address: "",
+  phone: "",
+  bankDetails: "",
   isPublic: true,
 };
 
@@ -99,6 +110,11 @@ export async function getProfile(): Promise<CreatorProfile> {
       contactTitle: row.contact_title ?? "",
       contactHint: row.contact_hint ?? "",
       socialLinks: parseSocialLinks(row.social_links),
+      legalName: row.legal_name ?? "",
+      taxId: row.tax_id ?? "",
+      address: row.address ?? "",
+      phone: row.phone ?? "",
+      bankDetails: row.bank_details ?? "",
       isPublic: row.is_public,
     };
   } catch (err) {
@@ -120,6 +136,11 @@ export async function saveProfile(input: {
   contactTitle?: string;
   contactHint?: string;
   socialLinks?: Array<{ imageUrl?: string; label: string; url: string }>;
+  legalName?: string;
+  taxId?: string;
+  address?: string;
+  phone?: string;
+  bankDetails?: string;
   isPublic?: boolean;
 }): Promise<CreatorProfile> {
   const existing = await prisma.creator_profile.findFirst({
@@ -152,6 +173,11 @@ export async function saveProfile(input: {
       input.socialLinks !== undefined
         ? serializeSocialLinks(input.socialLinks)
         : (existing?.social_links ?? ""),
+    legal_name: (input.legalName ?? existing?.legal_name ?? "").trim(),
+    tax_id: (input.taxId ?? existing?.tax_id ?? "").trim(),
+    address: (input.address ?? existing?.address ?? "").trim(),
+    phone: (input.phone ?? existing?.phone ?? "").trim(),
+    bank_details: (input.bankDetails ?? existing?.bank_details ?? "").trim(),
     is_public: input.isPublic ?? existing?.is_public ?? true,
     updated_at: new Date(),
   };
@@ -171,6 +197,11 @@ export async function saveProfile(input: {
     contactTitle: row.contact_title,
     contactHint: row.contact_hint,
     socialLinks: parseSocialLinks(row.social_links),
+    legalName: row.legal_name ?? "",
+    taxId: row.tax_id ?? "",
+    address: row.address ?? "",
+    phone: row.phone ?? "",
+    bankDetails: row.bank_details ?? "",
     isPublic: row.is_public,
   };
 }

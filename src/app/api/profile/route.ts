@@ -24,6 +24,11 @@ const profileSchema = z.object({
     )
     .max(8)
     .optional(),
+  legalName: z.string().max(160).optional(),
+  taxId: z.string().max(40).optional(),
+  address: z.string().max(400).optional(),
+  phone: z.string().max(60).optional(),
+  bankDetails: z.string().max(400).optional(),
   isPublic: z.boolean().optional(),
 });
 

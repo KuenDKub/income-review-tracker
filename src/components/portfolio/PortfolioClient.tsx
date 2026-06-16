@@ -18,6 +18,7 @@ import {
   Loader2,
   Pencil,
   Plus,
+  Receipt,
   Save,
   Sparkles,
   Trash2,
@@ -27,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -109,6 +111,7 @@ function monogram(name: string): string {
 export function PortfolioClient() {
   const t = useTranslations("portfolio");
   const tRate = useTranslations("rateCard");
+  const tBilling = useTranslations("billing");
 
   const { profile, update: updateProfile, save: saveProfile } = useCreatorProfile();
 
@@ -130,6 +133,7 @@ export function PortfolioClient() {
   const [editingContact, setEditingContact] = useState(false);
   const [savingContact, setSavingContact] = useState(false);
   const [savingSocial, setSavingSocial] = useState(false);
+  const [savingBilling, setSavingBilling] = useState(false);
   // Snapshot to restore the contact fields if the user cancels the inline edit.
   const [contactSnapshot, setContactSnapshot] =
     useState<{ title: string; hint: string } | null>(null);
@@ -415,6 +419,13 @@ export function PortfolioClient() {
     } else {
       toast.error(t("profileSaveError"));
     }
+  }
+
+  async function saveBilling() {
+    setSavingBilling(true);
+    const ok = await saveProfile(profile);
+    setSavingBilling(false);
+    toast[ok ? "success" : "error"](ok ? t("profileSaved") : t("profileSaveError"));
   }
 
   async function copyShareLink() {
@@ -1214,6 +1225,72 @@ export function PortfolioClient() {
           </CardContent>
         </Card>
       </section>
+
+      {/* ---------- BILLING / INVOICE DETAILS ---------- */}
+      {editing && (
+        <section className="space-y-4">
+          <SectionHeading icon={Receipt} title={tBilling("title")} />
+          <Card className="rounded-2xl">
+            <CardContent className="space-y-4 p-4">
+              <p className="text-sm text-muted-foreground">{tBilling("subtitle")}</p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="bl-name">{tBilling("legalName")}</Label>
+                  <Input
+                    id="bl-name"
+                    value={profile.legalName}
+                    onChange={(e) => updateProfile({ legalName: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="bl-tax">{tBilling("taxId")}</Label>
+                  <Input
+                    id="bl-tax"
+                    value={profile.taxId}
+                    onChange={(e) => updateProfile({ taxId: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="bl-phone">{tBilling("phone")}</Label>
+                  <Input
+                    id="bl-phone"
+                    value={profile.phone}
+                    onChange={(e) => updateProfile({ phone: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="bl-address">{tBilling("address")}</Label>
+                  <Input
+                    id="bl-address"
+                    value={profile.address}
+                    onChange={(e) => updateProfile({ address: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="bl-bank">{tBilling("bankDetails")}</Label>
+                <Textarea
+                  id="bl-bank"
+                  rows={3}
+                  value={profile.bankDetails}
+                  placeholder={tBilling("bankPlaceholder")}
+                  onChange={(e) => updateProfile({ bankDetails: e.target.value })}
+                />
+              </div>
+              <div className="flex justify-end">
+                <Button type="button" onClick={saveBilling} disabled={savingBilling}>
+                  {savingBilling ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Save className="size-4" />
+                  )}
+                  {t("saveProfile")}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+      )}
     </div>
   );
 }

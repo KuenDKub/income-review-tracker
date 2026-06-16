@@ -29,6 +29,7 @@ import {
 import { JobForm } from "./JobForm";
 import { BriefAttachments } from "./BriefAttachments";
 import { AddToCalendarButton } from "./AddToCalendarButton";
+import { JobInvoices } from "./JobInvoices";
 import {
   reviewJobCreateSchema,
   REVIEW_JOB_STATUSES,
@@ -663,6 +664,8 @@ export function JobDetailClient({ id }: { id: string }) {
           </CardContent>
         </Card>
       )}
+
+      {!job.isBrotherJob && <JobInvoices jobId={id} />}
 
       {hasAnyDate && (
         <Card className="gap-4 py-4 shadow-sm md:py-5">

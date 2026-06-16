@@ -13,6 +13,11 @@ export type CreatorProfile = {
   contactTitle: string;
   contactHint: string;
   socialLinks: Array<{ imageUrl?: string; label: string; url: string }>;
+  legalName: string;
+  taxId: string;
+  address: string;
+  phone: string;
+  bankDetails: string;
   isPublic: boolean;
 };
 
@@ -27,6 +32,11 @@ const DEFAULT_PROFILE: CreatorProfile = {
   contactTitle: "",
   contactHint: "",
   socialLinks: [],
+  legalName: "",
+  taxId: "",
+  address: "",
+  phone: "",
+  bankDetails: "",
   isPublic: true,
 };
 
