@@ -4,15 +4,60 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Check, Copy, ExternalLink, Heart, Sparkles, X } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowRight, faLeaf, faShoppingBag } from "@fortawesome/free-solid-svg-icons";
+import {
+  faArrowRight,
+  faLeaf,
+  faShoppingBag,
+} from "@fortawesome/free-solid-svg-icons";
 import { cn } from "@/lib/utils";
-import { platformBadgeClass } from "@/lib/platformStyle";
+import { platformOutlineClass } from "@/lib/platformStyle";
+import { PlatformIcon } from "@/components/ui/platform-icon";
+import { NumberTicker } from "@/components/ui/number-ticker";
+import { AuroraText } from "@/components/ui/aurora-text";
+import { BorderBeam } from "@/components/ui/border-beam";
+import { Particles } from "@/components/ui/particles";
+import { EmojiPointer } from "@/components/ui/emoji-pointer";
+import { BlurFade } from "@/components/ui/blur-fade";
+import { TextAnimate } from "@/components/ui/text-animate";
+import { TypingAnimation } from "@/components/ui/typing-animation";
+import { AnimatedShinyText } from "@/components/ui/animated-shiny-text";
+import { AnimatedGradientText } from "@/components/ui/animated-gradient-text";
+import { TextReveal } from "@/components/ui/text-reveal";
+import { SparklesText } from "@/components/ui/sparkles-text";
+import { ShinyButton } from "@/components/ui/shiny-button";
+import { PixelImage } from "@/components/ui/pixel-image";
+import { Meteors } from "@/components/ui/meteors";
 
 export type PortfolioViewData = {
-  stats: { totalDeals: number; brandCount: number; platforms: string[]; firstDealYear: number | null };
-  rates: Array<{ id: string; platform: string; contentType: string; price: number; currency: string; notes: string | null }>;
-  collaborations: Array<{ name: string; dealCount: number; platforms: string[]; contentTypes: string[]; imageUrl: string | null }>;
-  gallery: Array<{ id: string; imageUrl: string; title: string; payerName: string | null; platforms: string[]; contentType: string }>;
+  stats: {
+    totalDeals: number;
+    brandCount: number;
+    platforms: string[];
+    firstDealYear: number | null;
+  };
+  rates: Array<{
+    id: string;
+    platform: string;
+    contentType: string;
+    price: number;
+    currency: string;
+    notes: string | null;
+  }>;
+  collaborations: Array<{
+    name: string;
+    dealCount: number;
+    platforms: string[];
+    contentTypes: string[];
+    imageUrl: string | null;
+  }>;
+  gallery: Array<{
+    id: string;
+    imageUrl: string;
+    title: string;
+    payerName: string | null;
+    platforms: string[];
+    contentType: string;
+  }>;
   platforms: string[];
 };
 export type PortfolioViewProfile = {
@@ -91,25 +136,37 @@ export function PortfolioView({
   // Drives the hero entrance animation once the component mounts.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-  const [activeBrand, setActiveBrand] = useState<PortfolioViewData["collaborations"][number] | null>(null);
-  const [activeWork, setActiveWork] = useState<PortfolioViewData["gallery"][number] | null>(null);
+  const [activeBrand, setActiveBrand] = useState<
+    PortfolioViewData["collaborations"][number] | null
+  >(null);
+  const [activeWork, setActiveWork] = useState<
+    PortfolioViewData["gallery"][number] | null
+  >(null);
 
   const handleAt = profile.handle ? `@${profile.handle.replace(/^@/, "")}` : "";
-  const displayName = profile.creatorName.trim() || profile.handle.trim() || t("creatorFallback");
+  const displayName =
+    profile.creatorName.trim() || profile.handle.trim() || t("creatorFallback");
   const lineContact = profile.lineContact?.trim() || DEFAULT_LINE_CONTACT;
   const lineUrl = profile.lineUrl?.trim() || DEFAULT_LINE_URL;
   // Default badge: portfolio label + the first deal year, unless the profile overrides it.
   const defaultBadge =
     t("portfolioLabel") +
-    (data.stats.firstDealYear ? ` · ${tRate("since")} ${data.stats.firstDealYear}` : "");
+    (data.stats.firstDealYear
+      ? ` · ${tRate("since")} ${data.stats.firstDealYear}`
+      : "");
   const badgeLabel = profile.badgeLabel?.trim() || defaultBadge;
 
   const filteredGallery = useMemo(
-    () => (filter === "all" ? data.gallery : data.gallery.filter((w) => w.platforms.includes(filter))),
+    () =>
+      filter === "all"
+        ? data.gallery
+        : data.gallery.filter((w) => w.platforms.includes(filter)),
     [data.gallery, filter],
   );
   // Fewer up front on phones/tablets; a bit more on the wider desktop mosaic.
-  const galleryLimit = isCompact ? COMPACT_GALLERY_LIMIT : DESKTOP_GALLERY_LIMIT;
+  const galleryLimit = isCompact
+    ? COMPACT_GALLERY_LIMIT
+    : DESKTOP_GALLERY_LIMIT;
   const visibleGallery = galleryExpanded
     ? filteredGallery
     : filteredGallery.slice(0, galleryLimit);
@@ -133,7 +190,10 @@ export function PortfolioView({
 
   // Images for the currently-open brand (matched by payer name).
   const brandWorks = useMemo(
-    () => (activeBrand ? data.gallery.filter((w) => w.payerName === activeBrand.name) : []),
+    () =>
+      activeBrand
+        ? data.gallery.filter((w) => w.payerName === activeBrand.name)
+        : [],
     [activeBrand, data.gallery],
   );
 
@@ -172,12 +232,11 @@ export function PortfolioView({
     { label: tRate("statBrands"), value: data.stats.brandCount },
     { label: tRate("statPlatforms"), value: data.stats.platforms.length },
   ];
-  const socialLinks: SocialLink[] =
-    profile.socialLinks.map((link) => ({
-      imageUrl: link.imageUrl ?? null,
-      name: link.label,
-      url: link.url,
-    }));
+  const socialLinks: SocialLink[] = profile.socialLinks.map((link) => ({
+    imageUrl: link.imageUrl ?? null,
+    name: link.label,
+    url: link.url,
+  }));
 
   async function copyContact() {
     const value = profile.contactEmail || handleAt || displayName;
@@ -218,18 +277,47 @@ export function PortfolioView({
         ) : (
           <>
             {/* Soft pastel orbs (no cover photo set) */}
-            <div aria-hidden className="pointer-events-none absolute -top-28 left-1/4 size-[34rem] rounded-full bg-rose-300/30 blur-[140px]" />
-            <div aria-hidden className="pointer-events-none absolute bottom-0 right-1/4 size-[30rem] rounded-full bg-fuchsia-200/40 blur-[140px]" />
-            <div aria-hidden className="pointer-events-none absolute top-1/3 -left-20 size-[22rem] rounded-full bg-amber-100/40 blur-[120px]" />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -top-28 left-1/4 size-[34rem] rounded-full bg-rose-300/30 blur-[140px]"
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute bottom-0 right-1/4 size-[30rem] rounded-full bg-fuchsia-200/40 blur-[140px]"
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute top-1/3 -left-20 size-[22rem] rounded-full bg-amber-100/40 blur-[120px]"
+            />
           </>
         )}
 
+        {/* Drifting particle field + a playful emoji cursor over the hero */}
+        <Particles
+          className="absolute inset-0"
+          quantity={90}
+          color="#f9a8d4"
+          size={0.6}
+          staticity={40}
+        />
+        <EmojiPointer emoji="🌸" />
+
         {/* Nav */}
         <header className="relative mx-auto flex max-w-6xl items-center justify-between px-6 py-6 sm:px-10">
-          <span className={cn("text-[11px] font-semibold uppercase tracking-[0.28em]", muted)}>
+          <span
+            className={cn(
+              "text-[11px] font-semibold uppercase tracking-[0.28em]",
+              muted,
+            )}
+          >
             {handleAt || displayName}
           </span>
-          <span className={cn("flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.28em]", muted)}>
+          <span
+            className={cn(
+              "flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.28em]",
+              muted,
+            )}
+          >
             <Heart className="size-3 fill-rose-300 text-rose-300" aria-hidden />
             {t("portfolioLabel")}
           </span>
@@ -242,26 +330,32 @@ export function PortfolioView({
             <div
               className={cn(
                 "motion-safe:transition-all motion-safe:duration-[900ms] motion-safe:ease-out",
-                mounted ? "opacity-100 translate-y-0" : "motion-safe:opacity-0 motion-safe:translate-y-6",
+                mounted
+                  ? "opacity-100 translate-y-0"
+                  : "motion-safe:opacity-0 motion-safe:translate-y-6",
               )}
             >
               {/* Avatar */}
               {profile.avatarUrl && (
                 <div className="mb-6 inline-block">
-                  <div aria-hidden className="absolute -z-10 size-24 rounded-full bg-gradient-to-br from-rose-300/50 to-fuchsia-200/50 blur-xl sm:size-28" />
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={profile.avatarUrl}
-                    alt={displayName}
-                    className="size-24 rounded-full object-cover shadow-lg shadow-rose-300/40 ring-4 ring-white sm:size-28"
+                  <div
+                    aria-hidden
+                    className="absolute -z-10 size-24 rounded-full bg-gradient-to-br from-rose-300/50 to-fuchsia-200/50 blur-xl sm:size-28"
                   />
+                  <div className="size-24 overflow-hidden rounded-full shadow-lg shadow-rose-300/40 ring-4 ring-white sm:size-28">
+                    <PixelImage
+                      src={profile.avatarUrl}
+                      alt={displayName}
+                      grid={7}
+                    />
+                  </div>
                 </div>
               )}
 
               {/* Badge */}
-              <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-rose-200/70 bg-white/70 px-4 py-1.5 text-[11px] font-semibold text-rose-500 shadow-sm shadow-rose-200/40 backdrop-blur-sm">
+              <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-rose-200/70 bg-white/70 px-4 py-1.5 text-[11px] font-semibold text-rose-400/80 shadow-sm shadow-rose-200/40 backdrop-blur-sm">
                 <Sparkles className="size-3 text-rose-400" aria-hidden />
-                {badgeLabel}
+                <AnimatedShinyText>{badgeLabel}</AnimatedShinyText>
               </div>
 
               {/* Display name */}
@@ -269,51 +363,50 @@ export function PortfolioView({
                 className={cn(
                   serif,
                   "text-[clamp(3.5rem,11vw,7.5rem)] font-semibold leading-[0.9] tracking-tight",
-                  gradientText,
                 )}
               >
-                {displayName}
+                <AuroraText>{displayName}</AuroraText>
               </h1>
 
               {handleAt && (
                 <p className="mt-5 text-sm font-semibold uppercase tracking-[0.26em] text-rose-400/80">
-                  {handleAt}
+                  <TypingAnimation text={handleAt} speed={90} />
                 </p>
               )}
 
-              {profile.tagline && (
-                <p className={cn(serif, "mt-5 max-w-md text-lg italic leading-relaxed text-[#8A5A72]")}>
-                  &ldquo;{profile.tagline}&rdquo;
-                </p>
-              )}
-
-              {/* Platform tags */}
+              {/* Platform tags — staggered blur-fade in, hover lift */}
               {data.stats.platforms.length > 0 && (
                 <div className="mt-7 flex flex-wrap gap-2">
-                  {data.stats.platforms.map((p) => (
-                    <span
-                      key={p}
-                      className={cn(
-                        "rounded-full border px-4 py-1.5 text-xs font-semibold shadow-sm shadow-rose-100/50",
-                        platformBadgeClass(p),
-                      )}
-                    >
-                      {p}
-                    </span>
+                  {data.stats.platforms.map((p, i) => (
+                    <BlurFade key={p} delay={i * 90} yOffset={10}>
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold shadow-sm shadow-rose-100/50 transition-transform duration-300 hover:-translate-y-0.5 hover:scale-105",
+                          platformOutlineClass(p),
+                        )}
+                      >
+                        <PlatformIcon name={p} className="size-3.5" />
+                        {p}
+                      </span>
+                    </BlurFade>
                   ))}
                 </div>
               )}
 
               {/* CTAs */}
               <div className="mt-9 flex flex-wrap gap-3">
-                <button
+                <ShinyButton
                   type="button"
                   onClick={copyContact}
-                  className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-rose-200/80 bg-white/70 px-7 py-3 text-sm font-semibold text-[#8A5A72] shadow-sm transition-colors hover:bg-white"
+                  className="border border-rose-200/80 bg-white/70 text-[#8A5A72] shadow-sm hover:bg-white"
                 >
-                  {copied ? <Check className="size-4 text-rose-400" /> : <Copy className="size-4" />}
+                  {copied ? (
+                    <Check className="size-4 text-rose-400" />
+                  ) : (
+                    <Copy className="size-4" />
+                  )}
                   {copied ? t("contactCopied") : t("copyContact")}
-                </button>
+                </ShinyButton>
               </div>
             </div>
 
@@ -324,12 +417,17 @@ export function PortfolioView({
                 // fallback is desktop-only — mobile already has the stats strip).
                 heroImage ? "block" : "hidden md:block",
                 "motion-safe:transition-all motion-safe:delay-200 motion-safe:duration-[900ms] motion-safe:ease-out",
-                mounted ? "opacity-100 translate-y-0" : "motion-safe:opacity-0 motion-safe:translate-y-8",
+                mounted
+                  ? "opacity-100 translate-y-0"
+                  : "motion-safe:opacity-0 motion-safe:translate-y-8",
               )}
             >
               {heroImage ? (
                 <div className="relative mx-auto w-full max-w-xs sm:max-w-sm md:max-w-none">
-                  <div aria-hidden className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-br from-rose-300/40 to-fuchsia-200/40 blur-2xl" />
+                  <div
+                    aria-hidden
+                    className="absolute -inset-4 rounded-[2.5rem] bg-gradient-to-br from-rose-300/40 to-fuchsia-200/40 blur-2xl"
+                  />
                   {/* Auto-rotating crossfade slideshow */}
                   <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[2rem] shadow-2xl shadow-rose-300/40 ring-1 ring-white/70">
                     {heroSlides.map((slide, i) => (
@@ -357,7 +455,9 @@ export function PortfolioView({
                             aria-current={i === heroIndex}
                             className={cn(
                               "h-1.5 rounded-full shadow-sm transition-all duration-300",
-                              i === heroIndex ? "w-5 bg-white" : "w-1.5 bg-white/60 hover:bg-white/90",
+                              i === heroIndex
+                                ? "w-5 bg-white"
+                                : "w-1.5 bg-white/60 hover:bg-white/90",
                             )}
                           />
                         ))}
@@ -383,10 +483,21 @@ export function PortfolioView({
                       key={s.label}
                       className="flex items-center gap-6 rounded-3xl border border-rose-100 bg-white/70 p-6 shadow-sm shadow-rose-100/50 backdrop-blur-sm"
                     >
-                      <div className={cn(serif, "text-5xl font-bold tabular-nums", gradientText)}>
-                        {s.value}
+                      <div
+                        className={cn(
+                          serif,
+                          "text-5xl font-bold tabular-nums",
+                          gradientText,
+                        )}
+                      >
+                        <NumberTicker value={s.value} />
                       </div>
-                      <p className={cn("text-sm font-semibold uppercase tracking-[0.18em]", muted)}>
+                      <p
+                        className={cn(
+                          "text-sm font-semibold uppercase tracking-[0.18em]",
+                          muted,
+                        )}
+                      >
                         {s.label}
                       </p>
                     </div>
@@ -400,19 +511,134 @@ export function PortfolioView({
         {/* Stats strip */}
         <div className="relative mx-auto max-w-6xl px-6 pb-12 sm:px-10">
           <div className="grid grid-cols-3 divide-x divide-rose-100 rounded-[1.75rem] border border-rose-100 bg-white/70 shadow-sm shadow-rose-100/50 backdrop-blur-sm">
-            {stats.map((s) => (
-              <div key={s.label} className="px-4 py-7 text-center sm:px-6">
-                <div className={cn(serif, "text-3xl font-bold tabular-nums sm:text-4xl", gradientText)}>
-                  {s.value}
+            {stats.map((s, i) => (
+              <BlurFade
+                key={s.label}
+                delay={i * 120}
+                className="px-4 py-7 text-center sm:px-6"
+              >
+                <div
+                  className={cn(
+                    serif,
+                    "text-3xl font-bold tabular-nums sm:text-4xl",
+                    gradientText,
+                  )}
+                >
+                  <NumberTicker value={s.value} />
                 </div>
-                <p className={cn("mt-2 text-[10px] font-semibold uppercase tracking-[0.22em]", muted)}>
+                <p
+                  className={cn(
+                    "mt-2 text-[10px] font-semibold uppercase tracking-[0.22em]",
+                    muted,
+                  )}
+                >
                   {s.label}
                 </p>
-              </div>
+              </BlurFade>
             ))}
           </div>
         </div>
       </section>
+
+      {/* ── STATEMENT (scroll-revealed tagline) ──────────────── */}
+      {profile.tagline?.trim() && (
+        <section
+          className={cn(
+            creamBg,
+            "relative overflow-hidden px-6 py-28 sm:py-40",
+          )}
+        >
+          {/* Drifting blurred orbs */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -top-24 left-1/4 size-[26rem] rounded-full bg-rose-200/40 blur-[130px] motion-safe:animate-float-slow"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -bottom-24 right-1/4 size-[22rem] rounded-full bg-fuchsia-200/40 blur-[130px] motion-safe:animate-float-slow [animation-delay:2s]"
+          />
+
+          {/* Oversized decorative quotation marks */}
+          <span
+            aria-hidden
+            className={cn(
+              serif,
+              "pointer-events-none absolute left-2 top-2 select-none text-[7rem] leading-none text-rose-200/60 sm:left-16 sm:top-8 sm:text-[12rem]",
+            )}
+          >
+            &ldquo;
+          </span>
+          <span
+            aria-hidden
+            className={cn(
+              serif,
+              "pointer-events-none absolute bottom-[-2rem] right-2 select-none text-[7rem] leading-none text-rose-200/60 sm:bottom-0 sm:right-16 sm:text-[12rem]",
+            )}
+          >
+            &rdquo;
+          </span>
+
+          {/* Floating sparkles & hearts */}
+          <Sparkles
+            aria-hidden
+            className="pointer-events-none absolute left-[16%] top-[26%] size-5 text-rose-300/70 motion-safe:animate-float-slow"
+          />
+          <Heart
+            aria-hidden
+            className="pointer-events-none absolute right-[18%] top-[22%] size-4 fill-rose-200 text-rose-300/70 motion-safe:animate-float-slow [animation-delay:1.2s]"
+          />
+          <Sparkles
+            aria-hidden
+            className="pointer-events-none absolute right-[22%] bottom-[24%] size-4 text-fuchsia-300/70 motion-safe:animate-float-slow [animation-delay:2.2s]"
+          />
+          <Heart
+            aria-hidden
+            className="pointer-events-none absolute left-[22%] bottom-[22%] size-3.5 fill-rose-200 text-rose-300/60 motion-safe:animate-float-slow [animation-delay:0.6s]"
+          />
+
+          <Reveal className="relative mx-auto max-w-3xl text-center">
+            {/* Eyebrow */}
+            <div className="mb-8 flex justify-center">
+              <span className="inline-flex items-center gap-2 rounded-full border border-rose-200/70 bg-white/70 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.24em] text-rose-400/80 shadow-sm shadow-rose-200/40 backdrop-blur-sm">
+                <Sparkles className="size-3 text-rose-400" aria-hidden />
+                {t("portfolioLabel")}
+              </span>
+            </div>
+
+            {/* Tagline — word-reveal on scroll + flowing aurora gradient */}
+            <TextReveal
+              className={cn(
+                serif,
+                "py-1 px-5 text-3xl font-semibold italic leading-[1.5] sm:text-5xl lg:text-6xl",
+                "aurora-text-vivid bg-clip-text text-transparent",
+              )}
+            >
+              {profile.tagline}
+            </TextReveal>
+
+            {/* Attribution */}
+            <p className="mt-7 text-sm font-semibold uppercase tracking-[0.3em] text-rose-400/70">
+              &mdash; {displayName}
+            </p>
+
+            {/* Heart divider */}
+            <div className="mx-auto mt-8 flex items-center justify-center gap-3">
+              <span
+                aria-hidden
+                className="h-px w-12 bg-gradient-to-r from-transparent to-rose-300"
+              />
+              <Heart
+                className="size-4 fill-rose-300 text-rose-400 motion-safe:animate-pulse"
+                aria-hidden
+              />
+              <span
+                aria-hidden
+                className="h-px w-12 bg-gradient-to-l from-transparent to-rose-300"
+              />
+            </div>
+          </Reveal>
+        </section>
+      )}
 
       {/* ── GALLERY ──────────────────────────────────────────── */}
       {data.gallery.length > 0 && (
@@ -422,11 +648,18 @@ export function PortfolioView({
               <SectionLabel index="01" title={t("workTitle")} />
               {data.platforms.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  <FilterPill active={filter === "all"} onClick={() => setFilter("all")}>
+                  <FilterPill
+                    active={filter === "all"}
+                    onClick={() => setFilter("all")}
+                  >
                     {t("all")}
                   </FilterPill>
                   {data.platforms.map((p) => (
-                    <FilterPill key={p} active={filter === p} onClick={() => setFilter(p)}>
+                    <FilterPill
+                      key={p}
+                      active={filter === p}
+                      onClick={() => setFilter(p)}
+                    >
                       {p}
                     </FilterPill>
                   ))}
@@ -439,31 +672,37 @@ export function PortfolioView({
                 a lively photo wall. `dense` auto-flow backfills the gaps. */}
             <div className="mt-10 grid auto-rows-[150px] grid-cols-2 gap-3 [grid-auto-flow:dense] sm:auto-rows-[180px] sm:grid-cols-3 sm:gap-4 lg:auto-rows-[200px] lg:grid-cols-4">
               {visibleGallery.map((w, i) => (
-                <Reveal key={w.id} delay={Math.min(i, 8) * 50} className={mosaicSpan(i)}>
-                <figure
-                  className="group relative h-full overflow-hidden rounded-3xl shadow-sm shadow-rose-200/40 ring-1 ring-rose-100"
+                <Reveal
+                  key={w.id}
+                  delay={Math.min(i, 8) * 50}
+                  className={mosaicSpan(i)}
                 >
-                  <button
-                    type="button"
-                    onClick={() => setActiveWork(w)}
-                    aria-label={w.payerName ?? w.title}
-                    className="block size-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#FFFBF8]"
-                  >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={w.imageUrl}
-                    alt={`${w.title}${w.payerName ? ` — ${w.payerName}` : ""}`}
-                    loading="lazy"
-                    className="size-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-                  />
-                  <figcaption className="pointer-events-none absolute inset-x-0 bottom-0 translate-y-0 bg-gradient-to-t from-rose-400/55 via-rose-300/15 to-transparent p-5 opacity-100 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 [@media(hover:hover)]:translate-y-2 [@media(hover:hover)]:opacity-0">
-                    <p className="text-sm font-semibold text-white">{w.payerName ?? w.title}</p>
-                    <p className="mt-0.5 text-[11px] uppercase tracking-[0.15em] text-white/75">
-                      {[w.contentType, w.platforms.join(", ")].filter(Boolean).join(" · ")}
-                    </p>
-                  </figcaption>
-                  </button>
-                </figure>
+                  <figure className="group relative h-full overflow-hidden rounded-3xl shadow-sm shadow-rose-200/40 ring-1 ring-rose-100">
+                    <button
+                      type="button"
+                      onClick={() => setActiveWork(w)}
+                      aria-label={w.payerName ?? w.title}
+                      className="block size-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#FFFBF8]"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={w.imageUrl}
+                        alt={`${w.title}${w.payerName ? ` — ${w.payerName}` : ""}`}
+                        loading="lazy"
+                        className="size-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                      />
+                      <figcaption className="pointer-events-none absolute inset-x-0 bottom-0 translate-y-0 bg-gradient-to-t from-rose-400/55 via-rose-300/15 to-transparent p-5 opacity-100 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 [@media(hover:hover)]:translate-y-2 [@media(hover:hover)]:opacity-0">
+                        <p className="text-sm font-semibold text-white">
+                          {w.payerName ?? w.title}
+                        </p>
+                        <p className="mt-0.5 text-[11px] uppercase tracking-[0.15em] text-white/75">
+                          {[w.contentType, w.platforms.join(", ")]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </p>
+                      </figcaption>
+                    </button>
+                  </figure>
                 </Reveal>
               ))}
             </div>
@@ -493,29 +732,41 @@ export function PortfolioView({
             <Reveal>
               <SectionLabel index="02" title={t("collabsTitle")} />
             </Reveal>
-            <Reveal delay={80} className="mt-10 grid grid-cols-4 gap-x-2 gap-y-6 sm:grid-cols-6 lg:grid-cols-8">
-              {data.collaborations.map((brand) => (
-                <BrandCard
-                  key={brand.name}
-                  brand={brand}
-                  dealsLabel={t("deals", { count: brand.dealCount })}
-                  viewLabel={t("viewBrand", { name: brand.name })}
-                  onClick={() => setActiveBrand(brand)}
-                />
+            <div className="mt-10 grid grid-cols-4 gap-x-2 gap-y-6 sm:grid-cols-6 lg:grid-cols-8">
+              {data.collaborations.map((brand, i) => (
+                <BlurFade key={brand.name} delay={Math.min(i, 14) * 60}>
+                  <BrandCard
+                    brand={brand}
+                    dealsLabel={t("deals", { count: brand.dealCount })}
+                    viewLabel={t("viewBrand", { name: brand.name })}
+                    onClick={() => setActiveBrand(brand)}
+                  />
+                </BlurFade>
               ))}
-            </Reveal>
+            </div>
           </div>
         </section>
       )}
 
       {/* ── RATES ────────────────────────────────────────────── */}
       {data.rates.length > 0 && (
-        <section className={cn(lilacBg, "relative overflow-hidden px-6 py-16 sm:px-10 sm:py-24")}>
-          {(profile.rateCardBgUrl || profile.coverUrl || heroImage?.imageUrl) && (
+        <section
+          className={cn(
+            lilacBg,
+            "relative overflow-hidden px-6 py-16 sm:px-10 sm:py-24",
+          )}
+        >
+          {(profile.rateCardBgUrl ||
+            profile.coverUrl ||
+            heroImage?.imageUrl) && (
             <>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={profile.rateCardBgUrl || profile.coverUrl || heroImage?.imageUrl}
+                src={
+                  profile.rateCardBgUrl ||
+                  profile.coverUrl ||
+                  heroImage?.imageUrl
+                }
                 alt=""
                 aria-hidden
                 className="pointer-events-none absolute inset-0 size-full object-cover opacity-55 saturate-125"
@@ -534,7 +785,11 @@ export function PortfolioView({
             <Reveal>
               <SectionLabel index="03" title={tRate("mediaKitRateCard")} />
             </Reveal>
-            <Reveal delay={80} className="mt-10 overflow-hidden rounded-[1.75rem] border border-rose-100 bg-white/78 shadow-lg shadow-rose-200/40 backdrop-blur-[2px]">
+            <Reveal
+              delay={80}
+              className="relative mt-10 overflow-hidden rounded-[1.75rem] border border-rose-100 bg-white/78 shadow-lg shadow-rose-200/40 backdrop-blur-[2px]"
+            >
+              <BorderBeam size={120} duration={9} />
               {data.rates.map((r, i) => (
                 <div
                   key={r.id}
@@ -544,7 +799,12 @@ export function PortfolioView({
                   )}
                 >
                   <div className="min-w-0">
-                    <p className={cn(serif, "text-base font-semibold leading-tight text-[#5A3247]")}>
+                    <p
+                      className={cn(
+                        serif,
+                        "text-base font-semibold leading-tight text-[#5A3247]",
+                      )}
+                    >
                       {r.contentType}
                     </p>
                     {(r.platform || r.notes) && (
@@ -553,8 +813,16 @@ export function PortfolioView({
                       </p>
                     )}
                   </div>
-                  <p className={cn(serif, "shrink-0 text-xl font-bold tabular-nums", gradientText)}>
-                    {r.price > 0 ? `${r.price.toLocaleString("en-US")} ${r.currency}` : "—"}
+                  <p
+                    className={cn(
+                      serif,
+                      "shrink-0 text-xl font-bold tabular-nums",
+                      gradientText,
+                    )}
+                  >
+                    {r.price > 0
+                      ? `${r.price.toLocaleString("en-US")} ${r.currency}`
+                      : "—"}
                   </p>
                 </div>
               ))}
@@ -581,17 +849,38 @@ export function PortfolioView({
               rel="noreferrer"
               className="group relative grid overflow-hidden rounded-[1.75rem] border border-rose-100 bg-white shadow-lg shadow-rose-200/40 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-rose-300/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300 md:grid-cols-[1fr_auto]"
             >
-              <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-rose-50 via-white to-fuchsia-50" />
-              <div aria-hidden className="absolute -right-16 -top-20 size-56 rounded-full bg-rose-200/40 blur-3xl" />
+              <div
+                aria-hidden
+                className="absolute inset-0 bg-gradient-to-br from-rose-50 via-white to-fuchsia-50"
+              />
+              <div
+                aria-hidden
+                className="absolute -right-16 -top-20 size-56 rounded-full bg-rose-200/40 blur-3xl"
+              />
+              <BorderBeam size={120} duration={8} />
+              <BorderBeam
+                size={120}
+                duration={8}
+                delay={4}
+                colorFrom="#f9a8d4"
+                colorTo="#fb7185"
+              />
               <div className="relative flex items-start gap-4 p-6 sm:p-8">
                 <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-400 via-pink-400 to-fuchsia-400 text-white shadow-lg shadow-rose-300/40">
                   <FontAwesomeIcon icon={faShoppingBag} className="size-5" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-rose-400">
-                    {t("affiliateEyebrow")}
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em]">
+                    <AnimatedGradientText>
+                      {t("affiliateEyebrow")}
+                    </AnimatedGradientText>
                   </p>
-                  <h3 className={cn(serif, "mt-2 text-2xl font-semibold leading-tight text-[#5A3247] sm:text-3xl")}>
+                  <h3
+                    className={cn(
+                      serif,
+                      "mt-2 text-2xl font-semibold leading-tight text-[#5A3247] sm:text-3xl",
+                    )}
+                  >
                     {t("affiliateTitle")}
                   </h3>
                   <p className="mt-3 max-w-xl text-sm leading-relaxed text-[#8A5A72]">
@@ -604,10 +893,12 @@ export function PortfolioView({
                   <FontAwesomeIcon icon={faLeaf} className="size-3.5" />
                   Passio.eco
                 </span>
-                <span className={cn(
-                  gradientBg,
-                  "inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-rose-300/40 transition-transform group-hover:translate-x-1",
-                )}>
+                <span
+                  className={cn(
+                    gradientBg,
+                    "inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-rose-300/40 transition-transform group-hover:translate-x-1",
+                  )}
+                >
                   {t("affiliateCta")}
                   <FontAwesomeIcon icon={faArrowRight} className="size-3.5" />
                 </span>
@@ -617,7 +908,10 @@ export function PortfolioView({
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             {socialLinks.map((link, i) => (
-              <Reveal key={`${link.name}-${link.url}`} delay={Math.min(i, 6) * 60}>
+              <Reveal
+                key={`${link.name}-${link.url}`}
+                delay={Math.min(i, 6) * 60}
+              >
                 <a
                   href={link.url}
                   target="_blank"
@@ -640,7 +934,9 @@ export function PortfolioView({
                       </span>
                     )}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-sm font-semibold">{link.name}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold">
+                    {link.name}
+                  </span>
                   <ExternalLink className="size-4 shrink-0 text-rose-200 transition-colors group-hover:text-rose-400" />
                 </a>
               </Reveal>
@@ -650,9 +946,21 @@ export function PortfolioView({
       </section>
 
       {/* ── CONTACT CTA ──────────────────────────────────────── */}
-      <section className={cn(blushBg, "relative overflow-hidden px-6 py-24 sm:px-10 sm:py-36")}>
-        <div aria-hidden className="pointer-events-none absolute -top-20 left-1/3 size-[28rem] rounded-full bg-rose-200/50 blur-[130px]" />
-        <div aria-hidden className="pointer-events-none absolute bottom-0 right-1/3 size-[24rem] rounded-full bg-fuchsia-200/50 blur-[130px]" />
+      <section
+        className={cn(
+          blushBg,
+          "relative overflow-hidden px-6 py-24 sm:px-10 sm:py-36",
+        )}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-20 left-1/3 size-[28rem] rounded-full bg-rose-200/50 blur-[130px]"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute bottom-0 right-1/3 size-[24rem] rounded-full bg-fuchsia-200/50 blur-[130px]"
+        />
+        <Meteors number={24} />
         <Reveal className="relative mx-auto max-w-2xl text-center">
           <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-white/80 shadow-sm shadow-rose-200/50">
             <Heart className="size-5 fill-rose-300 text-rose-400" aria-hidden />
@@ -664,10 +972,11 @@ export function PortfolioView({
             className={cn(
               serif,
               "mx-auto mt-4 text-[clamp(2.25rem,7vw,4.5rem)] font-semibold leading-[1.05]",
-              gradientText,
             )}
           >
-            {profile.contactTitle?.trim() || t("contactTitle")}
+            <SparklesText className={gradientText}>
+              {profile.contactTitle?.trim() || t("contactTitle")}
+            </SparklesText>
           </h2>
           <p className="mx-auto mt-5 max-w-sm text-base leading-relaxed text-[#8A5A72]">
             {profile.contactHint?.trim() || t("contactHint")}
@@ -685,8 +994,19 @@ export function PortfolioView({
         </Reveal>
       </section>
 
-      <footer className={cn(blushBg, "border-t border-rose-100 px-6 pb-10 pt-8 text-center sm:px-10")}>
-        <p className={cn("text-[11px] font-semibold uppercase tracking-[0.24em]", muted, "opacity-70")}>
+      <footer
+        className={cn(
+          blushBg,
+          "border-t border-rose-100 px-6 pb-10 pt-8 text-center sm:px-10",
+        )}
+      >
+        <p
+          className={cn(
+            "text-[11px] font-semibold uppercase tracking-[0.24em]",
+            muted,
+            "opacity-70",
+          )}
+        >
           {displayName} · {tRate("generatedNote")}
         </p>
       </footer>
@@ -737,7 +1057,12 @@ export function PortfolioView({
                 </span>
               )}
               <div className="min-w-0">
-                <h3 className={cn(serif, "truncate text-xl font-bold text-[#5A3247]")}>
+                <h3
+                  className={cn(
+                    serif,
+                    "truncate text-xl font-bold text-[#5A3247]",
+                  )}
+                >
                   {activeBrand.name}
                 </h3>
                 <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-rose-400">
@@ -796,7 +1121,9 @@ export function PortfolioView({
                     ))}
                   </div>
                 ) : (
-                  <p className="mt-2 text-sm text-rose-300">{t("brandNoWork")}</p>
+                  <p className="mt-2 text-sm text-rose-300">
+                    {t("brandNoWork")}
+                  </p>
                 )}
               </div>
             </div>
@@ -840,7 +1167,12 @@ export function PortfolioView({
             </div>
 
             <div className="border-t border-rose-50 bg-gradient-to-br from-rose-50/70 to-fuchsia-50/50 p-6">
-              <h3 className={cn(serif, "truncate text-lg font-bold text-[#5A3247]")}>
+              <h3
+                className={cn(
+                  serif,
+                  "truncate text-lg font-bold text-[#5A3247]",
+                )}
+              >
                 {activeWork.payerName ?? activeWork.title}
               </h3>
               {[activeWork.contentType, activeWork.platforms.join(", ")]
@@ -902,7 +1234,9 @@ function Reveal({
       style={{ transitionDelay: `${delay}ms` }}
       className={cn(
         "motion-safe:transition-all motion-safe:duration-700 motion-safe:ease-out",
-        shown ? "opacity-100 translate-y-0" : "motion-safe:translate-y-8 motion-safe:opacity-0",
+        shown
+          ? "opacity-100 translate-y-0"
+          : "motion-safe:translate-y-8 motion-safe:opacity-0",
         className,
       )}
     >
@@ -991,9 +1325,13 @@ function SectionLabel({ index, title }: { index: string; title: string }) {
         {index}
       </span>
       <span className="h-px w-8 bg-gradient-to-r from-rose-300 to-transparent" />
-      <span className="text-xs font-semibold uppercase tracking-[0.22em] text-[#B07B92]">
+      <TextAnimate
+        by="char"
+        stagger={30}
+        className="text-xs font-semibold uppercase tracking-[0.22em] text-[#B07B92]"
+      >
         {title}
-      </span>
+      </TextAnimate>
     </div>
   );
 }

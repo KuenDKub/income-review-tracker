@@ -168,3 +168,187 @@
     animation: marquee-vertical var(--duration) linear infinite;
   }
 }
+
+/* Magic UI AuroraText — a gradient fill that slowly drifts across the text. */
+@keyframes aurora-text {
+  to {
+    background-position: 200% center;
+  }
+}
+
+@layer utilities {
+  .aurora-text {
+    background-image: linear-gradient(
+      110deg,
+      #fb7185,
+      #f472b6,
+      #e879f9,
+      #f9a8d4,
+      #fb7185
+    );
+    background-size: 200% auto;
+    animation: aurora-text 6s linear infinite;
+  }
+
+  /* Deeper, fully-saturated variant — keeps long text legible on light
+     backgrounds (no near-white stops). */
+  .aurora-text-vivid {
+    background-image: linear-gradient(
+      110deg,
+      #f43f5e,
+      #ec4899,
+      #d946ef,
+      #ec4899,
+      #f43f5e
+    );
+    background-size: 200% auto;
+    animation: aurora-text 5s linear infinite;
+  }
+}
+
+/* Magic UI BorderBeam — a light that travels around a card's rounded border.
+   Gated on offset-path support so it degrades to "nothing" where unavailable. */
+@keyframes border-beam {
+  to {
+    offset-distance: 100%;
+  }
+}
+
+@layer utilities {
+  .border-beam {
+    display: none;
+    offset-distance: 0%;
+  }
+}
+
+@supports (offset-path: rect(0% auto auto 0%)) {
+  .border-beam {
+    display: block;
+    animation-name: border-beam;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+}
+
+/* Magic UI AnimatedShinyText — a highlight band sweeps across the text. */
+@keyframes shiny-text {
+  0% {
+    background-position: calc(-100% - var(--shiny-width)) 0;
+  }
+  100% {
+    background-position: calc(100% + var(--shiny-width)) 0;
+  }
+}
+
+@layer utilities {
+  .animate-shiny-text {
+    animation: shiny-text 5s ease-in-out infinite;
+  }
+}
+
+/* Magic UI AnimatedGradientText — gradient fill scrolls horizontally. */
+@keyframes gradient-x {
+  to {
+    background-position: var(--bg-size, 300%) 0;
+  }
+}
+
+@layer utilities {
+  .animate-gradient {
+    animation: gradient-x 8s linear infinite;
+  }
+}
+
+/* Magic UI TextAnimate — per-token blur + slide-up entrance. */
+@keyframes text-animate-in {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(0.4em);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@layer utilities {
+  .animate-text-animate-in {
+    animation: text-animate-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+/* Magic UI TypingAnimation — blinking caret. */
+@keyframes caret-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@layer utilities {
+  .animate-caret-blink {
+    animation: caret-blink 1s step-end infinite;
+  }
+}
+
+/* Magic UI SparklesText — stars twinkle in and out. */
+@keyframes sparkle-spin {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(180deg);
+  }
+}
+
+@layer utilities {
+  .animate-sparkle-spin {
+    animation: sparkle-spin 2.4s ease-in-out infinite;
+  }
+}
+
+/* Gentle floating drift for decorative accents. */
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@layer utilities {
+  .animate-float-slow {
+    animation: float-slow 6s ease-in-out infinite;
+  }
+}
+
+/* Magic UI Meteors — diagonal shooting streaks. */
+@keyframes meteor {
+  0% {
+    transform: rotate(var(--angle)) translateX(0);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(var(--angle)) translateX(-500px);
+    opacity: 0;
+  }
+}
+
+@layer utilities {
+  .animate-meteor {
+    animation: meteor 5s linear infinite;
+  }
+}
