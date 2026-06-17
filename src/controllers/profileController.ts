@@ -5,6 +5,7 @@
  */
 
 import { prisma } from "@/lib/db/prisma";
+import { platformSocialIcon } from "@/lib/platformStyle";
 
 export type CreatorProfile = {
   creatorName: string;
@@ -54,13 +55,7 @@ const EMPTY: CreatorProfile = {
 };
 
 function socialImageFromLegacyIcon(icon: string | undefined, label: string): string | undefined {
-  const key = (icon || label).toLowerCase().replace(/[^a-z0-9]/g, "");
-  if (key.includes("tiktok")) return "/social/tiktok.svg";
-  if (key.includes("instagram") || key === "ig") return "/social/instagram.svg";
-  if (key.includes("facebook") || key === "fb") return "/social/facebook.svg";
-  if (key.includes("youtube") || key === "yt") return "/social/youtube.svg";
-  if (key.includes("lemon")) return "/social/lemon8.svg";
-  return undefined;
+  return platformSocialIcon(icon || label);
 }
 
 function parseSocialLinks(value: string | null | undefined): CreatorProfile["socialLinks"] {

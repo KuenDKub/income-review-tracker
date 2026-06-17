@@ -14,6 +14,7 @@ export function NumberTicker({
   className,
   duration = 1400,
   delay = 0,
+  decimalPlaces = 0,
 }: {
   value: number;
   className?: string;
@@ -21,6 +22,8 @@ export function NumberTicker({
   duration?: number;
   /** Delay before the count starts, in ms. */
   delay?: number;
+  /** Decimal places to display (e.g. 2 for currency). Defaults to whole numbers. */
+  decimalPlaces?: number;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   const [display, setDisplay] = useState(0);
@@ -46,7 +49,7 @@ export function NumberTicker({
         const tick = (now: number) => {
           const t = Math.min(1, Math.max(0, (now - start) / duration));
           const eased = 1 - Math.pow(1 - t, 3);
-          setDisplay(Math.round(eased * value));
+          setDisplay(eased * value);
           if (t < 1) raf = requestAnimationFrame(tick);
         };
         raf = requestAnimationFrame(tick);
@@ -62,7 +65,10 @@ export function NumberTicker({
 
   return (
     <span ref={ref} className={cn("inline-block tabular-nums", className)}>
-      {display.toLocaleString("en-US")}
+      {display.toLocaleString("en-US", {
+        minimumFractionDigits: decimalPlaces,
+        maximumFractionDigits: decimalPlaces,
+      })}
     </span>
   );
 }

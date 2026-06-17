@@ -3,6 +3,8 @@
 import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
+import { BorderBeam } from "@/components/ui/border-beam";
+import { NumberTicker } from "@/components/ui/number-ticker";
 import { formatTHB } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 
@@ -116,6 +118,7 @@ export function SummaryHeroCard({
         aria-hidden
         className="pointer-events-none absolute -bottom-16 -left-12 size-40 rounded-full bg-violet-500/15 blur-3xl"
       />
+      <BorderBeam size={140} duration={10} />
       <CardContent className="relative z-10 px-5 py-5 sm:px-6">
         <div className="flex items-center justify-between gap-3">
           <p className="min-w-0 truncate text-sm font-medium text-muted-foreground">
@@ -128,7 +131,7 @@ export function SummaryHeroCard({
         <div className="mt-4 flex items-center justify-between gap-4">
           <div className="min-w-0">
             <p className="text-3xl font-bold tabular-nums tracking-tight sm:text-4xl">
-              {formatTHB(net)}
+              <NumberTicker value={net} decimalPlaces={2} />
               <span className="ml-1.5 text-base font-medium text-muted-foreground">
                 THB
               </span>

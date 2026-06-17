@@ -33,6 +33,15 @@ export function MultiSelect({
   const [open, setOpen] = React.useState(false);
   const placeholderText = placeholder ?? t("selectPlaceholder");
 
+  // Close on any scroll (incl. a dialog's own scroll container) rather than
+  // letting the popover follow the trigger.
+  React.useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    window.addEventListener("scroll", close, true);
+    return () => window.removeEventListener("scroll", close, true);
+  }, [open]);
+
   const handleToggle = (optionValue: string) => {
     if (value.includes(optionValue)) {
       onChange(value.filter((v) => v !== optionValue));

@@ -10,6 +10,8 @@ import { WithholdingSummary } from "./WithholdingSummary";
 import { PNDHint } from "./PNDHint";
 import { AlertCircle, Calculator, HandCoins, PiggyBank } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
+import { BlurFade } from "@/components/ui/blur-fade";
+import { NumberTicker } from "@/components/ui/number-ticker";
 import { cn } from "@/lib/utils";
 
 function TaxSummarySkeleton() {
@@ -114,10 +116,14 @@ export function TaxSummaryView() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <PageHeader
-        title={t("title")}
-        actions={<TaxPeriodSelector selectedYear={year} onYearChange={setYear} />}
-      />
+      <BlurFade>
+        <PageHeader
+          title={t("title")}
+          actions={
+            <TaxPeriodSelector selectedYear={year} onYearChange={setYear} />
+          }
+        />
+      </BlurFade>
 
       <WithholdingSummary
         periodLabel={periodLabel}
@@ -126,9 +132,9 @@ export function TaxSummaryView() {
         totalNet={data.yearlyNet}
       />
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <BlurFade delay={80} className="grid gap-4 lg:grid-cols-2">
         {/* Receipt-style calculation breakdown */}
-        <Card className="rounded-2xl">
+        <Card className="rounded-2xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/5">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary/15 to-violet-500/15 text-primary">
@@ -179,7 +185,7 @@ export function TaxSummaryView() {
         {/* Result hero card */}
         <Card
           className={cn(
-            "relative flex flex-col justify-center overflow-hidden rounded-2xl",
+            "relative flex flex-col justify-center overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/5",
             data.refund
               ? "border-green-300/60 bg-green-50/60 dark:border-green-900 dark:bg-green-950/20"
               : "border-primary/10 bg-gradient-to-br from-primary/[0.08] via-card to-violet-500/[0.07]"
@@ -217,9 +223,10 @@ export function TaxSummaryView() {
                   data.refund && "text-green-700 dark:text-green-300"
                 )}
               >
-                {data.refund
-                  ? formatTHB(data.refundAmount)
-                  : formatTHB(data.taxPayable)}
+                <NumberTicker
+                  value={data.refund ? data.refundAmount : data.taxPayable}
+                  decimalPlaces={2}
+                />
                 <span className="ml-1.5 text-sm font-medium text-muted-foreground">
                   THB
                 </span>
@@ -227,7 +234,7 @@ export function TaxSummaryView() {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </BlurFade>
 
       <PNDHint />
     </div>

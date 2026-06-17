@@ -8,6 +8,7 @@ import { formatTHB } from "@/lib/currency";
 import { SummaryHeroCard } from "@/components/dashboard/SummaryHeroCard";
 import { AlertCircle, CalendarDays } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
+import { BlurFade } from "@/components/ui/blur-fade";
 import {
   Select,
   SelectContent,
@@ -128,6 +129,7 @@ export function IncomeSummaryView() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      <BlurFade>
       <PageHeader
         title={t("title")}
         actions={
@@ -173,6 +175,7 @@ export function IncomeSummaryView() {
           </>
         }
       />
+      </BlurFade>
 
       <div className="grid gap-4 md:grid-cols-2">
         <SummaryHeroCard

@@ -10,7 +10,7 @@ import {
   faShoppingBag,
 } from "@fortawesome/free-solid-svg-icons";
 import { cn } from "@/lib/utils";
-import { platformOutlineClass } from "@/lib/platformStyle";
+import { platformOutlineClass, sortPlatforms } from "@/lib/platformStyle";
 import { PlatformIcon } from "@/components/ui/platform-icon";
 import { NumberTicker } from "@/components/ui/number-ticker";
 import { AuroraText } from "@/components/ui/aurora-text";
@@ -377,7 +377,7 @@ export function PortfolioView({
               {/* Platform tags — staggered blur-fade in, hover lift */}
               {data.stats.platforms.length > 0 && (
                 <div className="mt-7 flex flex-wrap gap-2">
-                  {data.stats.platforms.map((p, i) => (
+                  {sortPlatforms(data.stats.platforms).map((p, i) => (
                     <BlurFade key={p} delay={i * 90} yOffset={10}>
                       <span
                         className={cn(
@@ -654,7 +654,7 @@ export function PortfolioView({
                   >
                     {t("all")}
                   </FilterPill>
-                  {data.platforms.map((p) => (
+                  {sortPlatforms(data.platforms).map((p) => (
                     <FilterPill
                       key={p}
                       active={filter === p}
@@ -691,12 +691,12 @@ export function PortfolioView({
                         loading="lazy"
                         className="size-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
                       />
-                      <figcaption className="pointer-events-none absolute inset-x-0 bottom-0 translate-y-0 bg-gradient-to-t from-rose-400/55 via-rose-300/15 to-transparent p-5 opacity-100 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 [@media(hover:hover)]:translate-y-2 [@media(hover:hover)]:opacity-0">
-                        <p className="text-sm font-semibold text-white">
+                      <figcaption className="pointer-events-none absolute inset-x-0 bottom-0 translate-y-0 bg-gradient-to-t from-rose-300/35 via-rose-200/8 to-transparent p-5 opacity-100 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 [@media(hover:hover)]:translate-y-2 [@media(hover:hover)]:opacity-0">
+                        <p className="text-sm font-semibold text-white drop-shadow-sm">
                           {w.payerName ?? w.title}
                         </p>
-                        <p className="mt-0.5 text-[11px] uppercase tracking-[0.15em] text-white/75">
-                          {[w.contentType, w.platforms.join(", ")]
+                        <p className="mt-0.5 text-[11px] uppercase tracking-[0.15em] text-white/85 drop-shadow-sm">
+                          {[w.contentType, sortPlatforms(w.platforms).join(", ")]
                             .filter(Boolean)
                             .join(" · ")}
                         </p>
@@ -1023,11 +1023,11 @@ export function PortfolioView({
           <div
             aria-hidden
             onClick={() => setActiveBrand(null)}
-            className="absolute inset-0 bg-rose-950/30 backdrop-blur-sm"
+            className="absolute inset-0 bg-rose-950/30 backdrop-blur-sm motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-300"
           />
 
           {/* Panel */}
-          <div className="relative max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-rose-100 bg-white shadow-2xl shadow-rose-400/30 sm:rounded-3xl">
+          <div className="relative max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-rose-100 bg-white shadow-2xl shadow-rose-400/30 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-95 motion-safe:slide-in-from-bottom-6 motion-safe:duration-300 motion-safe:ease-out sm:rounded-3xl sm:motion-safe:slide-in-from-bottom-2">
             <button
               type="button"
               onClick={() => setActiveBrand(null)}
@@ -1077,7 +1077,7 @@ export function PortfolioView({
                 <div>
                   <ModalLabel>{t("brandPlatforms")}</ModalLabel>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {activeBrand.platforms.map((p) => (
+                    {sortPlatforms(activeBrand.platforms).map((p) => (
                       <span
                         key={p}
                         className="rounded-full border border-rose-200/70 bg-rose-50/60 px-3 py-1 text-xs font-medium text-[#8A5A72]"
@@ -1110,13 +1110,13 @@ export function PortfolioView({
                 {brandWorks.length > 0 ? (
                   <div className="mt-3 grid grid-cols-3 gap-2">
                     {brandWorks.map((w) => (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <SkeletonImage
                         key={w.id}
                         src={w.imageUrl}
                         alt={w.title}
                         loading="lazy"
-                        className="aspect-square w-full rounded-xl object-cover ring-1 ring-rose-100"
+                        wrapperClassName="aspect-square w-full rounded-xl ring-1 ring-rose-100"
+                        className="size-full object-cover"
                       />
                     ))}
                   </div>
@@ -1143,11 +1143,11 @@ export function PortfolioView({
           <div
             aria-hidden
             onClick={() => setActiveWork(null)}
-            className="absolute inset-0 bg-rose-950/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-rose-950/40 backdrop-blur-sm motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-300"
           />
 
           {/* Panel */}
-          <div className="relative max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-3xl border border-rose-100 bg-white shadow-2xl shadow-rose-400/30">
+          <div className="relative max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-3xl border border-rose-100 bg-white shadow-2xl shadow-rose-400/30 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-95 motion-safe:duration-300 motion-safe:ease-out">
             <button
               type="button"
               onClick={() => setActiveWork(null)}
@@ -1157,14 +1157,14 @@ export function PortfolioView({
               <X className="size-4" />
             </button>
 
-            <div className="max-h-[70vh] overflow-hidden bg-rose-50/40">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={activeWork.imageUrl}
-                alt={activeWork.title}
-                className="max-h-[70vh] w-full object-contain"
-              />
-            </div>
+            <SkeletonImage
+              key={activeWork.id}
+              src={activeWork.imageUrl}
+              alt={activeWork.title}
+              loading="eager"
+              wrapperClassName="flex max-h-[70vh] min-h-[40vh] w-full items-center justify-center bg-rose-50/40"
+              className="max-h-[70vh] w-full object-contain"
+            />
 
             <div className="border-t border-rose-50 bg-gradient-to-br from-rose-50/70 to-fuchsia-50/50 p-6">
               <h3
@@ -1175,11 +1175,14 @@ export function PortfolioView({
               >
                 {activeWork.payerName ?? activeWork.title}
               </h3>
-              {[activeWork.contentType, activeWork.platforms.join(", ")]
+              {[activeWork.contentType, sortPlatforms(activeWork.platforms).join(", ")]
                 .filter(Boolean)
                 .join(" · ") && (
                 <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-rose-400">
-                  {[activeWork.contentType, activeWork.platforms.join(", ")]
+                  {[
+                    activeWork.contentType,
+                    sortPlatforms(activeWork.platforms).join(", "),
+                  ]
                     .filter(Boolean)
                     .join(" · ")}
                 </p>
@@ -1262,6 +1265,59 @@ function mosaicSpan(i: number): string {
     default:
       return "";
   }
+}
+
+/**
+ * An <img> that shows a soft, pulsing blush skeleton until the image finishes
+ * loading, then crossfades the placeholder away. Handles cached images (already
+ * `complete` on mount) so the skeleton never sticks. The image keeps its own
+ * classes (e.g. object-fit, hover transforms) untouched — only the overlaid
+ * skeleton fades — so it drops into existing layouts cleanly.
+ */
+function SkeletonImage({
+  src,
+  alt,
+  wrapperClassName,
+  className,
+  loading,
+  ariaHidden,
+}: {
+  src: string;
+  alt: string;
+  wrapperClassName?: string;
+  className?: string;
+  loading?: "lazy" | "eager";
+  ariaHidden?: boolean;
+}) {
+  const [loaded, setLoaded] = useState(false);
+
+  return (
+    <div className={cn("relative overflow-hidden", wrapperClassName)}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        // Images served from cache are already `complete` before onLoad fires,
+        // so check it as soon as the element is attached.
+        ref={(node) => {
+          if (node?.complete) setLoaded(true);
+        }}
+        src={src}
+        alt={alt}
+        aria-hidden={ariaHidden}
+        loading={loading}
+        onLoad={() => setLoaded(true)}
+        className={className}
+      />
+      <span
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-0 bg-gradient-to-br from-rose-100 via-rose-50 to-fuchsia-100 transition-opacity duration-500",
+          // `animate-pulse` keyframes drive opacity, so only run them while
+          // loading — otherwise they override `opacity-0` and keep breathing.
+          loaded ? "opacity-0" : "animate-pulse opacity-100",
+        )}
+      />
+    </div>
+  );
 }
 
 function ModalLabel({ children }: { children: React.ReactNode }) {

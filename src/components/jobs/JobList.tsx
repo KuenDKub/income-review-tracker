@@ -74,7 +74,10 @@ export function JobList({ jobs, onEdit, onDelete }: JobListProps) {
         {jobs.map((job) => {
           const netDisplay = netDisplayOf(job);
           return (
-            <Card key={job.id} className="overflow-hidden py-0">
+            <Card
+              key={job.id}
+              className="overflow-hidden py-0 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/5"
+            >
               <CardContent className="p-4">
                 <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                   {job.status && <StatusBadge status={job.status} />}
