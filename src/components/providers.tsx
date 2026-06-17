@@ -2,12 +2,14 @@
 
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
+import { RegisterServiceWorker } from "@/components/push/RegisterServiceWorker";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
       {children}
       <Toaster />
+      <RegisterServiceWorker />
     </ThemeProvider>
   );
 }

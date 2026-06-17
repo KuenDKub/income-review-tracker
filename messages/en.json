@@ -545,5 +545,26 @@
     "viewAllWorks": "View all works ({count})",
     "showLessWorks": "Show less",
     "confirmRemoveWork": "Remove this image from your portfolio? This can't be undone."
+  },
+  "notifications": {
+    "title": "Notifications",
+    "checking": "Checking…",
+    "enable": "Turn on notifications",
+    "enabled": "Notifications turned on",
+    "disable": "Turn off",
+    "disabled": "Notifications turned off",
+    "on": "Notifications are on",
+    "test": "Send test",
+    "turnOff": "Turn off",
+    "testSent": "Test notification sent",
+    "testFailed": "Could not send test notification",
+    "enableFailed": "Could not turn on notifications",
+    "disableFailed": "Could not turn off notifications",
+    "permissionDenied": "Permission was not granted",
+    "denied": "Notifications are blocked. Enable them in your browser/site settings.",
+    "unsupported": "This browser does not support notifications.",
+    "notConfigured": "Notifications are not configured on the server.",
+    "iosTitle": "Add to Home Screen first",
+    "iosInstall": "On iPhone/iPad, tap the Share button then \"Add to Home Screen\", open the app from your Home Screen, then turn on notifications."
   }
 }
