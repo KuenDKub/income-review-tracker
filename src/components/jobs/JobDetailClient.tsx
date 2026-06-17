@@ -35,6 +35,7 @@ import {
   REVIEW_JOB_STATUSES,
 } from "@/lib/schemas/reviewJob";
 import { ConfirmDeleteDialog } from "@/components/ui/ConfirmDeleteDialog";
+import { useConfirm } from "@/components/ui/useConfirm";
 import { briefLinkEmbed } from "@/lib/briefEmbed";
 import { toast } from "@/lib/toast";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -122,6 +123,7 @@ export function JobDetailClient({ id }: { id: string }) {
   const t = useTranslations("jobs");
   const tCommon = useTranslations("common");
   const tDashboard = useTranslations("dashboard");
+  const { confirm, confirmDialog } = useConfirm();
   const [job, setJob] = useState<ReviewJobJson | null>(null);
   const [payerNames, setPayerNames] = useState<string[]>([]);
   const [documents, setDocuments] = useState<DocumentJson[]>([]);
@@ -299,6 +301,7 @@ export function JobDetailClient({ id }: { id: string }) {
 
   const handleDeleteDocument = async (docId: string) => {
     if (deletingDocId) return;
+    if (!(await confirm({ description: t("confirmDeleteDocument") }))) return;
     setDeletingDocId(docId);
     try {
       const res = await fetch(`/api/documents/${docId}`, { method: "DELETE" });
@@ -827,6 +830,8 @@ export function JobDetailClient({ id }: { id: string }) {
               onEvidenceFilesChange={setEvidenceFiles}
               existingEvidenceImages={existingEvidenceImages}
               onRemoveExistingEvidence={async (docId) => {
+                if (!(await confirm({ description: t("confirmRemoveImage") })))
+                  return;
                 try {
                   const res = await fetch(`/api/documents/${docId}`, {
                     method: "DELETE",
@@ -851,6 +856,8 @@ export function JobDetailClient({ id }: { id: string }) {
         onOpenChange={setDeleteOpen}
         onConfirm={handleConfirmDelete}
       />
+
+      {confirmDialog}
     </div>
   );
 }

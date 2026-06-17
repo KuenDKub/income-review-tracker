@@ -46,6 +46,7 @@ import {
 import { FileUpload } from "@/components/ui/file-upload";
 import { useCreatorProfile } from "@/hooks/useCreatorProfile";
 import { toast } from "@/lib/toast";
+import { useConfirm } from "@/components/ui/useConfirm";
 import { cn } from "@/lib/utils";
 import { platformBadgeClass } from "@/lib/platformStyle";
 
@@ -113,6 +114,7 @@ export function PortfolioClient() {
   const t = useTranslations("portfolio");
   const tRate = useTranslations("rateCard");
   const tBilling = useTranslations("billing");
+  const { confirm, confirmDialog } = useConfirm();
 
   const { profile, update: updateProfile, save: saveProfile } = useCreatorProfile();
 
@@ -180,6 +182,9 @@ export function PortfolioClient() {
       socialLinks: profile.socialLinks.filter((_, i) => i !== index),
     });
   }
+
+  // Brand detail dialog state.
+  const [activeBrand, setActiveBrand] = useState<Collab | null>(null);
 
   // Add-work uploader state.
   const [jobs, setJobs] = useState<Array<{ id: string; title: string; payerName: string | null }>>([]);
@@ -378,6 +383,7 @@ export function PortfolioClient() {
   }
 
   async function deleteWork(id: string) {
+    if (!(await confirm({ description: t("confirmRemoveWork") }))) return;
     try {
       const res = await fetch(`/api/documents/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("delete failed");
@@ -806,29 +812,37 @@ export function PortfolioClient() {
           <SectionHeading icon={Building2} title={t("collabsTitle")} />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {collaborations.map((c) => (
-              <Card key={c.name} className="overflow-hidden rounded-2xl transition-shadow hover:shadow-md">
-                <CardContent className="flex items-center gap-3 p-3">
-                  {c.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={c.imageUrl}
-                      alt={c.name}
-                      loading="lazy"
-                      className="size-11 shrink-0 rounded-xl object-cover"
-                    />
-                  ) : (
-                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-violet-500/15 text-sm font-bold text-primary">
-                      {monogram(c.name)}
-                    </span>
-                  )}
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">{c.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {t("deals", { count: c.dealCount })}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              <button
+                key={c.name}
+                type="button"
+                onClick={() => setActiveBrand(c)}
+                aria-label={t("viewBrand", { name: c.name })}
+                className="cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-2xl"
+              >
+                <Card className="overflow-hidden rounded-2xl transition-shadow hover:shadow-md">
+                  <CardContent className="flex items-center gap-3 p-3">
+                    {c.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={c.imageUrl}
+                        alt={c.name}
+                        loading="lazy"
+                        className="size-11 shrink-0 rounded-xl object-cover"
+                      />
+                    ) : (
+                      <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-pink-100 to-rose-100 text-sm font-bold text-pink-500">
+                        {monogram(c.name)}
+                      </span>
+                    )}
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">{c.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("deals", { count: c.dealCount })}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </button>
             ))}
           </div>
         </section>
@@ -901,6 +915,92 @@ export function PortfolioClient() {
       </section>
 
       {/* ---------- ADD WORK DIALOG ---------- */}
+      {/* ---------- BRAND DETAIL DIALOG ---------- */}
+      <Dialog open={!!activeBrand} onOpenChange={(open) => !open && setActiveBrand(null)}>
+        <DialogContent>
+          {activeBrand && (
+            <>
+              <DialogHeader>
+                <div className="flex items-center gap-3">
+                  {activeBrand.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={activeBrand.imageUrl}
+                      alt={activeBrand.name}
+                      className="size-12 shrink-0 rounded-xl object-cover"
+                    />
+                  ) : (
+                    <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-pink-100 to-rose-100 text-base font-bold text-pink-500">
+                      {monogram(activeBrand.name)}
+                    </span>
+                  )}
+                  <div className="min-w-0 text-left">
+                    <DialogTitle className="truncate">{activeBrand.name}</DialogTitle>
+                    <p className="text-xs text-muted-foreground">
+                      {t("deals", { count: activeBrand.dealCount })}
+                    </p>
+                  </div>
+                </div>
+              </DialogHeader>
+              <div className="space-y-5">
+                {activeBrand.platforms.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>{t("brandPlatforms")}</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {activeBrand.platforms.map((p) => (
+                        <span
+                          key={p}
+                          className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground"
+                        >
+                          {p}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {activeBrand.contentTypes.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>{t("brandContentTypes")}</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {activeBrand.contentTypes.map((ct) => (
+                        <span
+                          key={ct}
+                          className="rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground"
+                        >
+                          {ct}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <Label>{t("brandWork")}</Label>
+                  {(() => {
+                    const works = data.gallery.filter((w) => w.payerName === activeBrand.name);
+                    return works.length > 0 ? (
+                      <div className="grid grid-cols-3 gap-2">
+                        {works.map((w) => (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            key={w.id}
+                            src={w.imageUrl}
+                            alt={w.title}
+                            loading="lazy"
+                            className="aspect-square w-full rounded-xl object-cover"
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">{t("brandNoWork")}</p>
+                    );
+                  })()}
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>
           <DialogHeader>
@@ -1340,6 +1440,8 @@ export function PortfolioClient() {
           </Card>
         </section>
       )}
+
+      {confirmDialog}
     </div>
   );
 }

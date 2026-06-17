@@ -35,7 +35,8 @@
     "language": "ภาษา",
     "theme": "ธีม",
     "themeLight": "สว่าง",
-    "themeDark": "มืด"
+    "themeDark": "มืด",
+    "confirm": "ยืนยัน"
   },
   "dashboard": {
     "title": "แดชบอร์ด",
@@ -100,7 +101,8 @@
     "subscribeCopyUrl": "คัดลอกลิงก์ฟีด",
     "subscribeCopied": "คัดลอกแล้ว!",
     "subscribeCopyError": "คัดลอกลิงก์ไม่สำเร็จ",
-    "subscribeGoogleHint": "Google Calendar: ปฏิทินอื่นๆ → จาก URL แล้ววางลิงก์ฟีดที่คัดลอกไว้"
+    "subscribeGoogleHint": "Google Calendar: ปฏิทินอื่นๆ → จาก URL แล้ววางลิงก์ฟีดที่คัดลอกไว้",
+    "confirmDeleteNote": "ลบโน้ตนี้หรือไม่? ไม่สามารถย้อนกลับได้"
   },
   "jobs": {
     "title": "งานรีวิว",
@@ -232,7 +234,10 @@
     "addLinkTitle": "เพิ่มลิงก์บรีฟ",
     "addLinkHint": "วางลิงก์ Canva หรือ Google Docs/Slides/Drive แล้วดูตัวอย่างได้ที่นี่ ลิงก์อื่นจะเปิดในแท็บใหม่",
     "linkAdded": "เพิ่มลิงก์แล้ว",
-    "invalidBriefLink": "กรุณาวางลิงก์ที่ถูกต้อง (ขึ้นต้นด้วย http)"
+    "invalidBriefLink": "กรุณาวางลิงก์ที่ถูกต้อง (ขึ้นต้นด้วย http)",
+    "confirmDeleteDocument": "ลบเอกสารนี้หรือไม่? ไม่สามารถย้อนกลับได้",
+    "confirmRemoveImage": "ลบรูปภาพนี้หรือไม่? ไม่สามารถย้อนกลับได้",
+    "confirmDeleteBrief": "ลบไฟล์นี้หรือไม่? ไม่สามารถย้อนกลับได้"
   },
   "payers": {
     "title": "Payers",
@@ -334,7 +339,8 @@
     "selectOrCreate": "เลือกฟอร์มจากรายการหรือกดฟอร์มใหม่เพื่อสร้างฟอร์ม",
     "deleteForm": "ลบฟอร์ม",
     "openFormList": "เลือกฟอร์ม",
-    "loading": "กำลังโหลด..."
+    "loading": "กำลังโหลด...",
+    "confirmDeleteForm": "ลบสตอรี่ไลน์นี้หรือไม่? ไม่สามารถย้อนกลับได้"
   },
   "ui": {
     "uploadImage": "อัปโหลดรูป",
@@ -537,6 +543,7 @@
     "viewBrand": "ดูรายละเอียด {name}",
     "goToSlide": "ไปที่สไลด์ {index}",
     "viewAllWorks": "ดูผลงานทั้งหมด ({count})",
-    "showLessWorks": "แสดงน้อยลง"
+    "showLessWorks": "แสดงน้อยลง",
+    "confirmRemoveWork": "ลบรูปภาพนี้ออกจากผลงานหรือไม่? ไม่สามารถย้อนกลับได้"
   }
 }

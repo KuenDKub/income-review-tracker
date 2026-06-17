@@ -92,6 +92,7 @@ export function PortfolioView({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const [activeBrand, setActiveBrand] = useState<PortfolioViewData["collaborations"][number] | null>(null);
+  const [activeWork, setActiveWork] = useState<PortfolioViewData["gallery"][number] | null>(null);
 
   const handleAt = profile.handle ? `@${profile.handle.replace(/^@/, "")}` : "";
   const displayName = profile.creatorName.trim() || profile.handle.trim() || t("creatorFallback");
@@ -150,6 +151,21 @@ export function PortfolioView({
       document.body.style.overflow = prevOverflow;
     };
   }, [activeBrand]);
+
+  // Close the work lightbox on Escape and lock background scroll while open.
+  useEffect(() => {
+    if (!activeWork) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setActiveWork(null);
+    };
+    window.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [activeWork]);
 
   const stats = [
     { label: tRate("statDeals"), value: data.stats.totalDeals },
@@ -427,6 +443,12 @@ export function PortfolioView({
                 <figure
                   className="group relative h-full overflow-hidden rounded-3xl shadow-sm shadow-rose-200/40 ring-1 ring-rose-100"
                 >
+                  <button
+                    type="button"
+                    onClick={() => setActiveWork(w)}
+                    aria-label={w.payerName ?? w.title}
+                    className="block size-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#FFFBF8]"
+                  >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={w.imageUrl}
@@ -434,12 +456,13 @@ export function PortfolioView({
                     loading="lazy"
                     className="size-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
                   />
-                  <figcaption className="absolute inset-x-0 bottom-0 translate-y-0 bg-gradient-to-t from-rose-900/70 via-rose-900/15 to-transparent p-5 opacity-100 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 [@media(hover:hover)]:translate-y-2 [@media(hover:hover)]:opacity-0">
+                  <figcaption className="pointer-events-none absolute inset-x-0 bottom-0 translate-y-0 bg-gradient-to-t from-rose-400/55 via-rose-300/15 to-transparent p-5 opacity-100 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 [@media(hover:hover)]:translate-y-2 [@media(hover:hover)]:opacity-0">
                     <p className="text-sm font-semibold text-white">{w.payerName ?? w.title}</p>
                     <p className="mt-0.5 text-[11px] uppercase tracking-[0.15em] text-white/75">
                       {[w.contentType, w.platforms.join(", ")].filter(Boolean).join(" · ")}
                     </p>
                   </figcaption>
+                  </button>
                 </figure>
                 </Reveal>
               ))}
@@ -776,6 +799,59 @@ export function PortfolioView({
                   <p className="mt-2 text-sm text-rose-300">{t("brandNoWork")}</p>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── WORK LIGHTBOX ────────────────────────────────────── */}
+      {activeWork && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={activeWork.payerName ?? activeWork.title}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        >
+          {/* Backdrop */}
+          <div
+            aria-hidden
+            onClick={() => setActiveWork(null)}
+            className="absolute inset-0 bg-rose-950/40 backdrop-blur-sm"
+          />
+
+          {/* Panel */}
+          <div className="relative max-h-[90vh] w-full max-w-2xl overflow-hidden rounded-3xl border border-rose-100 bg-white shadow-2xl shadow-rose-400/30">
+            <button
+              type="button"
+              onClick={() => setActiveWork(null)}
+              aria-label={t("close")}
+              className="absolute right-4 top-4 z-10 inline-flex size-9 cursor-pointer items-center justify-center rounded-full bg-white/80 text-[#8A5A72] shadow-sm backdrop-blur-sm transition-colors hover:bg-rose-50"
+            >
+              <X className="size-4" />
+            </button>
+
+            <div className="max-h-[70vh] overflow-hidden bg-rose-50/40">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={activeWork.imageUrl}
+                alt={activeWork.title}
+                className="max-h-[70vh] w-full object-contain"
+              />
+            </div>
+
+            <div className="border-t border-rose-50 bg-gradient-to-br from-rose-50/70 to-fuchsia-50/50 p-6">
+              <h3 className={cn(serif, "truncate text-lg font-bold text-[#5A3247]")}>
+                {activeWork.payerName ?? activeWork.title}
+              </h3>
+              {[activeWork.contentType, activeWork.platforms.join(", ")]
+                .filter(Boolean)
+                .join(" · ") && (
+                <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-rose-400">
+                  {[activeWork.contentType, activeWork.platforms.join(", ")]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              )}
             </div>
           </div>
         </div>

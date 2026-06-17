@@ -28,6 +28,7 @@ import {
 import { Textarea } from "../ui/textarea";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { formatDateThai } from "@/lib/formatDate";
+import { useConfirm } from "@/components/ui/useConfirm";
 import { toast } from "@/lib/toast";
 import { Link } from "@/i18n/navigation";
 import { format } from "date-fns";
@@ -254,6 +255,7 @@ const KIND_DOT_CLASS: Record<ReviewJobEventKind, string> = {
 
 export function CalendarClient({ feedToken = "" }: { feedToken?: string }) {
   const t = useTranslations("calendar");
+  const { confirm, confirmDialog } = useConfirm();
   const locale = useLocale();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const [currentDate, setCurrentDate] = useState<Date>(startOfDay(new Date()));
@@ -411,6 +413,7 @@ export function CalendarClient({ feedToken = "" }: { feedToken?: string }) {
 
   const handleDeleteNote = (id: string) => {
     const remove = async () => {
+      if (!(await confirm({ description: t("confirmDeleteNote") }))) return;
       try {
         const res = await fetch(`/api/calendar/notes/${id}`, {
           method: "DELETE",
@@ -750,6 +753,8 @@ export function CalendarClient({ feedToken = "" }: { feedToken?: string }) {
           <div className="px-4 pb-6">{dayDetail}</div>
         </SheetContent>
       </Sheet>
+
+      {confirmDialog}
     </div>
   );
 }

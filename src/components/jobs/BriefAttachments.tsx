@@ -24,6 +24,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { briefLinkEmbed, isHttpUrl, linkHostLabel } from "@/lib/briefEmbed";
+import { useConfirm } from "@/components/ui/useConfirm";
 import { toast } from "@/lib/toast";
 
 type BriefDoc = {
@@ -94,6 +95,7 @@ export function BriefAttachments({
 }) {
   const t = useTranslations("jobs");
   const tc = useTranslations("common");
+  const { confirm, confirmDialog } = useConfirm();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -176,6 +178,7 @@ export function BriefAttachments({
 
   const handleDelete = async (id: string) => {
     if (deletingId) return;
+    if (!(await confirm({ description: t("confirmDeleteBrief") }))) return;
     setDeletingId(id);
     try {
       const res = await fetch(`/api/documents/${id}`, { method: "DELETE" });
@@ -522,6 +525,8 @@ export function BriefAttachments({
           </div>
         </DialogContent>
       </Dialog>
+
+      {confirmDialog}
     </div>
   );
 }

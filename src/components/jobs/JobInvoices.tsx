@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDateThai } from "@/lib/formatDate";
+import { useConfirm } from "@/components/ui/useConfirm";
 import { toast } from "@/lib/toast";
 
 type InvoiceJson = {
@@ -31,6 +32,7 @@ function statusBadgeClass(status: string): string {
 export function JobInvoices({ jobId }: { jobId: string }) {
   const t = useTranslations("invoices");
   const locale = useLocale();
+  const { confirm, confirmDialog } = useConfirm();
   const [invoices, setInvoices] = useState<InvoiceJson[] | null>(null);
   const [creating, setCreating] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -82,7 +84,7 @@ export function JobInvoices({ jobId }: { jobId: string }) {
   }
 
   async function remove(id: string) {
-    if (!confirm(t("confirmDelete"))) return;
+    if (!(await confirm({ description: t("confirmDelete") }))) return;
     setBusyId(id);
     try {
       const res = await fetch(`/api/invoices/${id}`, { method: "DELETE" });
@@ -190,6 +192,7 @@ export function JobInvoices({ jobId }: { jobId: string }) {
         )}
         <p className="text-xs text-muted-foreground">{t("issuerHint")}</p>
       </CardContent>
+      {confirmDialog}
     </Card>
   );
 }
