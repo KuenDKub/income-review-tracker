@@ -13,6 +13,7 @@ import {
   FileText,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
+import { BlurFade } from "@/components/ui/blur-fade";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -117,7 +118,9 @@ export function PaymentsClient() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <PageHeader title={t("title")} description={t("subtitle")} />
+      <BlurFade>
+        <PageHeader title={t("title")} description={t("subtitle")} />
+      </BlurFade>
 
       {loading ? (
         <div className="grid gap-4 lg:grid-cols-2">
@@ -125,9 +128,9 @@ export function PaymentsClient() {
           <Skeleton className="h-64 rounded-2xl" />
         </div>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <BlurFade delay={80} className="grid gap-4 lg:grid-cols-2">
           {/* Outstanding invoices (accounts receivable) */}
-          <Card className="rounded-2xl">
+          <Card className="rounded-2xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/5">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
                 <span className="flex size-7 items-center justify-center rounded-full bg-gradient-to-br from-primary/15 to-violet-500/15 text-primary">
@@ -205,7 +208,7 @@ export function PaymentsClient() {
           </Card>
 
           {/* Awaiting payment (delivered, no income recorded) */}
-          <Card className="rounded-2xl">
+          <Card className="rounded-2xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/5">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
                 <span className="flex size-7 items-center justify-center rounded-full bg-gradient-to-br from-primary/15 to-violet-500/15 text-primary">
@@ -269,7 +272,7 @@ export function PaymentsClient() {
               )}
             </CardContent>
           </Card>
-        </div>
+        </BlurFade>
       )}
     </div>
   );

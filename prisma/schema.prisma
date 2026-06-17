@@ -146,3 +146,17 @@ model invoices {
   @@index([status], map: "idx_invoices_status")
   @@index([due_date], map: "idx_invoices_due_date")
 }
+
+/// Web Push (PWA) subscriptions. One row per browser/device that opted in.
+/// `endpoint` is the push-service URL (unique); `p256dh`/`auth` are the client
+/// encryption keys required by the Web Push protocol. Dead subscriptions are
+/// pruned when the push service returns 404/410.
+model push_subscriptions {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  endpoint   String   @unique(map: "push_subscriptions_endpoint_unique")
+  p256dh     String
+  auth       String
+  user_agent String?
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+}

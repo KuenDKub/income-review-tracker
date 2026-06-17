@@ -28,6 +28,12 @@ export default async function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // Cron jobs authenticate with a Bearer CRON_SECRET inside the route, not a
+  // session cookie — let them past the session gate here.
+  if (pathname.startsWith("/api/cron/")) {
+    return NextResponse.next();
+  }
+
   // Public portfolio is reachable without a session.
   if (pathname === PUBLIC_API) {
     return NextResponse.next();

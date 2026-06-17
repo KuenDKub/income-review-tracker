@@ -16,6 +16,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
+import { BlurFade } from "@/components/ui/blur-fade";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, type CalendarEvent } from "@/components/ui/calendar";
 import { CalendarSubscribe } from "@/components/calendar/CalendarSubscribe";
@@ -564,6 +565,7 @@ export function CalendarClient({ feedToken = "" }: { feedToken?: string }) {
 
   return (
     <div className="min-w-0 space-y-4 sm:space-y-6">
+      <BlurFade>
       <PageHeader
         title={t("pageTitle")}
         actions={
@@ -605,6 +607,7 @@ export function CalendarClient({ feedToken = "" }: { feedToken?: string }) {
           </>
         }
       />
+      </BlurFade>
 
       <div className="min-w-0">
           {isLoading ? (

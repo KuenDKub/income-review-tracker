@@ -64,7 +64,7 @@ export function AwaitingPaymentCard() {
   }
 
   return (
-    <Card className="rounded-2xl">
+    <Card className="rounded-2xl transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/5">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2">
           <h2 className="flex items-center gap-2 text-sm font-semibold">

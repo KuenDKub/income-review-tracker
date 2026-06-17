@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { ChevronsLeft, ChevronsRight, Sparkles } from "lucide-react";
 import { LocaleSwitcher } from "@/components/layout/LocaleSwitcher";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { PushToggle } from "@/components/push/PushToggle";
 import { navGroups, isNavItemActive } from "@/components/layout/nav-items";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -125,8 +126,13 @@ export function Sidebar() {
         ))}
       </nav>
 
-      {/* Footer: locale + theme + collapse toggle */}
-      <div className="shrink-0 space-y-1 border-t p-3">
+      {/* Footer: notifications + locale + theme + collapse toggle */}
+      <div className="shrink-0 space-y-2 border-t p-3">
+        {!collapsed && (
+          <div className="px-1 pb-1">
+            <PushToggle />
+          </div>
+        )}
         {collapsed ? (
           <div className="flex justify-center">
             <ThemeToggle />

@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/sheet";
 import { Fab } from "@/components/ui/fab";
 import { PageHeader } from "@/components/ui/page-header";
+import { BlurFade } from "@/components/ui/blur-fade";
 
 function DialogFormSkeleton() {
   return (
@@ -618,7 +619,9 @@ export function JobsPageClient() {
       {loading ? (
         <JobsListSkeleton />
       ) : (
-        <JobList jobs={jobs} onEdit={handleEdit} onDelete={handleDelete} />
+        <BlurFade key={`${page}-${statusFilter}`}>
+          <JobList jobs={jobs} onEdit={handleEdit} onDelete={handleDelete} />
+        </BlurFade>
       )}
 
       <DataTablePagination

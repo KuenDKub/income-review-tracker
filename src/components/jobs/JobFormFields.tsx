@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { UseFormReturn } from "react-hook-form";
 import {
@@ -21,6 +21,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MultiSelect } from "@/components/ui/multi-select";
+import {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+} from "@/components/ui/popover";
 import { FileUpload } from "@/components/ui/file-upload";
 import type { z } from "zod";
 import type { reviewJobSchema } from "@/lib/schemas/reviewJob";
@@ -82,8 +87,7 @@ export function JobFormFields({
 }: JobFormFieldsProps) {
   const t = useTranslations("jobs");
   const [payerDropdownOpen, setPayerDropdownOpen] = useState(false);
-  const payerWrapRef = useRef<HTMLDivElement>(null);
-  const payerListRef = useRef<HTMLUListElement>(null);
+  const payerAnchorRef = useRef<HTMLDivElement>(null);
 
   const payerValue = form.watch("payerName") ?? "";
   const statusValue = form.watch("status");
@@ -107,16 +111,14 @@ export function JobFormFields({
       )
     : payerNames;
 
+  // Close the suggestions on any scroll (incl. the dialog's own scroll
+  // container) rather than letting the popover follow the input.
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (payerWrapRef.current?.contains(event.target as Node)) {
-        return;
-      }
-      setPayerDropdownOpen(false);
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    if (!payerDropdownOpen) return;
+    const close = () => setPayerDropdownOpen(false);
+    window.addEventListener("scroll", close, true);
+    return () => window.removeEventListener("scroll", close, true);
+  }, [payerDropdownOpen]);
 
   return (
     <div className="space-y-6">
@@ -127,30 +129,46 @@ export function JobFormFields({
           render={({ field }) => (
             <FormItem>
               <FormLabel>{t("payer")}</FormLabel>
-              <div className="relative" ref={payerWrapRef}>
-                <FormControl>
-                  <Input
-                    placeholder={t("payerPlaceholder")}
-                    {...field}
-                    value={field.value ?? ""}
-                    onChange={(e) => {
-                      field.onChange(e.target.value);
-                      setPayerDropdownOpen(true);
-                    }}
-                    onFocus={() => setPayerDropdownOpen(true)}
-                  />
-                </FormControl>
-                {payerDropdownOpen && filteredPayers.length > 0 && (
-                  <ul
-                    ref={payerListRef}
-                    className="absolute z-50 mt-1 max-h-48 w-full overflow-auto rounded-md border bg-popover py-1 shadow-md"
-                  >
+              <Popover
+                open={payerDropdownOpen && filteredPayers.length > 0}
+                onOpenChange={setPayerDropdownOpen}
+              >
+                <PopoverAnchor asChild>
+                  <div ref={payerAnchorRef}>
+                    <FormControl>
+                      <Input
+                        placeholder={t("payerPlaceholder")}
+                        {...field}
+                        value={field.value ?? ""}
+                        onChange={(e) => {
+                          field.onChange(e.target.value);
+                          setPayerDropdownOpen(true);
+                        }}
+                        onFocus={() => setPayerDropdownOpen(true)}
+                      />
+                    </FormControl>
+                  </div>
+                </PopoverAnchor>
+                <PopoverContent
+                  align="start"
+                  sideOffset={4}
+                  // Keep focus in the input so the user can keep typing.
+                  onOpenAutoFocus={(e) => e.preventDefault()}
+                  // Don't close when the click lands back on the input itself.
+                  onInteractOutside={(e) => {
+                    if (payerAnchorRef.current?.contains(e.target as Node)) {
+                      e.preventDefault();
+                    }
+                  }}
+                  className="max-h-48 w-(--radix-popover-trigger-width) overflow-auto p-1"
+                >
+                  <ul role="listbox">
                     {filteredPayers.slice(0, 20).map((name) => (
                       <li
                         key={name}
                         role="option"
                         aria-selected={false}
-                        className="cursor-pointer px-3 py-2 text-sm hover:bg-accent"
+                        className="cursor-pointer rounded-sm px-3 py-2 text-sm hover:bg-accent"
                         onMouseDown={(e) => {
                           e.preventDefault();
                           field.onChange(name);
@@ -161,8 +179,8 @@ export function JobFormFields({
                       </li>
                     ))}
                   </ul>
-                )}
-              </div>
+                </PopoverContent>
+              </Popover>
             </FormItem>
           )}
         />

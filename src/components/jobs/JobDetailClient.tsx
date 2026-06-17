@@ -36,6 +36,8 @@ import {
 } from "@/lib/schemas/reviewJob";
 import { ConfirmDeleteDialog } from "@/components/ui/ConfirmDeleteDialog";
 import { useConfirm } from "@/components/ui/useConfirm";
+import { BlurFade } from "@/components/ui/blur-fade";
+import { NumberTicker } from "@/components/ui/number-ticker";
 import { briefLinkEmbed } from "@/lib/briefEmbed";
 import { toast } from "@/lib/toast";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -373,7 +375,7 @@ export function JobDetailClient({ id }: { id: string }) {
 
   return (
     <div className="space-y-5 pb-24 md:space-y-6 md:pb-0">
-      <div className="space-y-4 rounded-xl border bg-card p-4 shadow-sm md:p-6">
+      <BlurFade className="space-y-4 rounded-xl border bg-card p-4 shadow-sm md:p-6">
         <Button
           variant="ghost"
           size="sm"
@@ -487,7 +489,7 @@ export function JobDetailClient({ id }: { id: string }) {
             )}
           </DetailItem>
         </dl>
-      </div>
+      </BlurFade>
 
       <Card
         id="brief"
@@ -620,7 +622,11 @@ export function JobDetailClient({ id }: { id: string }) {
                   </DetailItem>
                   <DetailItem label={tDashboard("net")}>
                     <span className="tabular-nums">
-                      {formatTHB(jobIncome.netAmount)} THB
+                      <NumberTicker
+                        value={jobIncome.netAmount}
+                        decimalPlaces={2}
+                      />{" "}
+                      THB
                     </span>
                   </DetailItem>
                 </dl>
@@ -656,7 +662,11 @@ export function JobDetailClient({ id }: { id: string }) {
                             : "—"}
                         </TableCell>
                         <TableCell className="text-right tabular-nums font-semibold">
-                          {formatTHB(jobIncome.netAmount)} THB
+                          <NumberTicker
+                            value={jobIncome.netAmount}
+                            decimalPlaces={2}
+                          />{" "}
+                          THB
                         </TableCell>
                       </TableRow>
                     </TableBody>

@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/sheet";
 import { LocaleSwitcher } from "@/components/layout/LocaleSwitcher";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { PushToggle } from "@/components/push/PushToggle";
 import {
   primaryNavItems,
   moreNavItems,
@@ -122,7 +123,14 @@ export function BottomNav() {
               );
             })}
 
-            <div className="mt-2 flex items-center justify-between border-t pt-3">
+            <div className="mt-2 border-t pt-3">
+              <p className="mb-2 text-sm font-medium text-muted-foreground">
+                {t("notifications.title")}
+              </p>
+              <PushToggle />
+            </div>
+
+            <div className="mt-3 flex items-center justify-between border-t pt-3">
               <div className="flex items-center gap-3">
                 <span className="text-sm font-medium text-muted-foreground">
                   {t("common.language")}

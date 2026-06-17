@@ -1,0 +1,19 @@
+{
+  "name": "Review Income & Tax Tracker",
+  "short_name": "Income Tracker",
+  "description": "Track review jobs, income, invoices, and Thai withholding tax.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#e85aa0",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "192x192 512x512 1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

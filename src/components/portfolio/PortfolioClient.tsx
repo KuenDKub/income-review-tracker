@@ -192,6 +192,10 @@ export function PortfolioClient() {
   const [addJobId, setAddJobId] = useState<string>("");
   const [addFiles, setAddFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  // Inline "add work" uploader inside the brand modal — uploads straight to the
+  // brand without leaving the modal or opening another dialog.
+  const brandWorkInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingBrandWork, setUploadingBrandWork] = useState(false);
 
   // Profile photo / cover uploader state.
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -339,7 +343,9 @@ export function PortfolioClient() {
   }
 
   useEffect(() => {
-    if (!addOpen || jobs.length > 0) return;
+    // Jobs are needed by both the add-work dialog and the brand modal's inline
+    // uploader, so load them as soon as either opens.
+    if ((!addOpen && !activeBrand) || jobs.length > 0) return;
     fetch("/api/jobs?pageSize=100")
       .then((r) => r.json())
       .then((json: { data?: Array<{ id: string; title: string; payerName: string | null }> }) =>
@@ -348,7 +354,7 @@ export function PortfolioClient() {
         ),
       )
       .catch(() => setJobs([]));
-  }, [addOpen, jobs.length]);
+  }, [addOpen, activeBrand, jobs.length]);
 
   async function uploadWork() {
     if (!addJobId || addFiles.length === 0) return;
@@ -379,6 +385,43 @@ export function PortfolioClient() {
       toast.error(t("workAddError"));
     } finally {
       setUploading(false);
+    }
+  }
+
+  // Upload one or more images straight onto a brand from inside the brand modal.
+  // The work is attached to a job belonging to that brand so it groups correctly.
+  async function uploadBrandWork(brandName: string, files: FileList | null) {
+    if (!files || files.length === 0) return;
+    const jobId = jobs.find((j) => j.payerName === brandName)?.id;
+    if (!jobId) {
+      toast.error(t("workAddError"));
+      return;
+    }
+    setUploadingBrandWork(true);
+    try {
+      for (const file of Array.from(files)) {
+        const fd = new FormData();
+        fd.append("file", file);
+        const up = await fetch("/api/upload", { method: "POST", body: fd });
+        if (!up.ok) throw new Error("upload failed");
+        const upJson = await up.json();
+        const doc = await fetch("/api/documents", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            reviewJobId: jobId,
+            kind: "portfolio",
+            filePath: upJson.filePath,
+          }),
+        });
+        if (!doc.ok) throw new Error("save failed");
+      }
+      toast.success(t("workAdded"));
+      await loadPortfolio();
+    } catch {
+      toast.error(t("workAddError"));
+    } finally {
+      setUploadingBrandWork(false);
     }
   }
 
@@ -975,25 +1018,49 @@ export function PortfolioClient() {
                 )}
                 <div className="space-y-2">
                   <Label>{t("brandWork")}</Label>
-                  {(() => {
-                    const works = data.gallery.filter((w) => w.payerName === activeBrand.name);
-                    return works.length > 0 ? (
-                      <div className="grid grid-cols-3 gap-2">
-                        {works.map((w) => (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            key={w.id}
-                            src={w.imageUrl}
-                            alt={w.title}
-                            loading="lazy"
-                            className="aspect-square w-full rounded-xl object-cover"
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">{t("brandNoWork")}</p>
-                    );
-                  })()}
+                  <div className="grid grid-cols-3 gap-2">
+                    {data.gallery
+                      .filter((w) => w.payerName === activeBrand.name)
+                      .map((w) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          key={w.id}
+                          src={w.imageUrl}
+                          alt={w.title}
+                          loading="lazy"
+                          className="aspect-square w-full rounded-xl object-cover"
+                        />
+                      ))}
+                    {/* Inline add-work tile — uploads directly to this brand */}
+                    <button
+                      type="button"
+                      onClick={() => brandWorkInputRef.current?.click()}
+                      disabled={
+                        uploadingBrandWork ||
+                        !jobs.some((j) => j.payerName === activeBrand.name)
+                      }
+                      aria-label={t("addWork")}
+                      className="flex aspect-square w-full flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-border text-muted-foreground transition-colors hover:border-primary hover:bg-primary/5 hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {uploadingBrandWork ? (
+                        <Loader2 className="size-5 animate-spin" />
+                      ) : (
+                        <ImagePlus className="size-5" />
+                      )}
+                      <span className="text-[11px] font-medium">{t("addWork")}</span>
+                    </button>
+                  </div>
+                  <input
+                    ref={brandWorkInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      uploadBrandWork(activeBrand.name, e.target.files);
+                      e.target.value = "";
+                    }}
+                  />
                 </div>
               </div>
             </>

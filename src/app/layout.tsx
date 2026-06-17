@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Athiti } from "next/font/google";
 import { Providers } from "@/components/providers";
 import "./globals.css";
@@ -12,6 +12,7 @@ const athiti = Athiti({
 export const metadata: Metadata = {
   title: "Review Income & Tax Tracker",
   description: "Review Income & Tax Tracker (Thailand-focused)",
+  manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -21,6 +22,10 @@ export const metadata: Metadata = {
     icon: "/icon.png",
     apple: "/icon.png",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#e85aa0",
 };
 
 export default function RootLayout({
