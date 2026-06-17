@@ -35,7 +35,8 @@
     "language": "Language",
     "theme": "Theme",
     "themeLight": "Light",
-    "themeDark": "Dark"
+    "themeDark": "Dark",
+    "confirm": "Confirm"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -100,7 +101,8 @@
     "subscribeCopyUrl": "Copy feed URL",
     "subscribeCopied": "Copied!",
     "subscribeCopyError": "Could not copy the URL",
-    "subscribeGoogleHint": "Google Calendar: Other calendars → From URL, then paste the copied feed URL."
+    "subscribeGoogleHint": "Google Calendar: Other calendars → From URL, then paste the copied feed URL.",
+    "confirmDeleteNote": "Delete this note? This can't be undone."
   },
   "jobs": {
     "title": "Review Jobs",
@@ -232,7 +234,10 @@
     "addLinkTitle": "Add a brief link",
     "addLinkHint": "Paste a Canva or Google Docs/Slides/Drive link — it previews right here. Other links open in a new tab.",
     "linkAdded": "Link added",
-    "invalidBriefLink": "Please paste a valid link (starting with http)."
+    "invalidBriefLink": "Please paste a valid link (starting with http).",
+    "confirmDeleteDocument": "Delete this document? This can't be undone.",
+    "confirmRemoveImage": "Remove this image? This can't be undone.",
+    "confirmDeleteBrief": "Delete this file? This can't be undone."
   },
   "payers": {
     "title": "Payers",
@@ -334,7 +339,8 @@
     "selectOrCreate": "Select a form from the list or click New form to create one.",
     "deleteForm": "Delete form",
     "openFormList": "Select form",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "confirmDeleteForm": "Delete this storyline? This can't be undone."
   },
   "ui": {
     "uploadImage": "Upload Image",
@@ -537,6 +543,7 @@
     "viewBrand": "View {name} details",
     "goToSlide": "Go to slide {index}",
     "viewAllWorks": "View all works ({count})",
-    "showLessWorks": "Show less"
+    "showLessWorks": "Show less",
+    "confirmRemoveWork": "Remove this image from your portfolio? This can't be undone."
   }
 }

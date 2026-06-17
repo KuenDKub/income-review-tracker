@@ -21,6 +21,7 @@ import {
 } from "@/lib/schemas/reviewJob";
 import type { ReviewJobStatus } from "@/lib/schemas/reviewJob";
 import { ConfirmDeleteDialog } from "@/components/ui/ConfirmDeleteDialog";
+import { useConfirm } from "@/components/ui/useConfirm";
 import { toast } from "@/lib/toast";
 import { DataTablePagination } from "@/components/ui/DataTablePagination";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -163,6 +164,7 @@ type Paginated<T> = {
 export function JobsPageClient() {
   const t = useTranslations("jobs");
   const tCommon = useTranslations("common");
+  const { confirm, confirmDialog } = useConfirm();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const [jobs, setJobs] = useState<JobItem[]>([]);
   const [payerNames, setPayerNames] = useState<string[]>([]);
@@ -652,6 +654,8 @@ export function JobsPageClient() {
                 onEvidenceFilesChange={setEvidenceFiles}
                 existingEvidenceImages={existingEvidenceImages}
                 onRemoveExistingEvidence={async (docId) => {
+                  if (!(await confirm({ description: t("confirmRemoveImage") })))
+                    return;
                   try {
                     const res = await fetch(`/api/documents/${docId}`, {
                       method: "DELETE",
@@ -669,6 +673,8 @@ export function JobsPageClient() {
                 onBriefFilesChange={setBriefFiles}
                 existingBriefFiles={existingBriefFiles}
                 onRemoveExistingBrief={async (docId) => {
+                  if (!(await confirm({ description: t("confirmDeleteBrief") })))
+                    return;
                   try {
                     const res = await fetch(`/api/documents/${docId}`, {
                       method: "DELETE",
@@ -695,6 +701,8 @@ export function JobsPageClient() {
         onOpenChange={(open) => !open && setDeleteId(null)}
         onConfirm={handleConfirmDelete}
       />
+
+      {confirmDialog}
 
       <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
         <SheetContent

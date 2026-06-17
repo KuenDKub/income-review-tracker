@@ -17,6 +17,7 @@ import {
   Film,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useConfirm } from "@/components/ui/useConfirm";
 import StorylineGenerator, {
   type StorylineFormData,
 } from "@/components/storyline/StorylineGenerator";
@@ -52,6 +53,7 @@ function emptyFormData(): StorylineFormData {
 
 export default function StorylinePageLayout() {
   const t = useTranslations("storyline");
+  const { confirm, confirmDialog } = useConfirm();
   const [items, setItems] = useState<StorylineFormItem[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
@@ -106,8 +108,9 @@ export default function StorylinePageLayout() {
   );
 
   const handleDeleteForm = useCallback(
-    (e: React.MouseEvent, id: string) => {
+    async (e: React.MouseEvent, id: string) => {
       e.stopPropagation();
+      if (!(await confirm({ description: t("confirmDeleteForm") }))) return;
       setItems((prev) => {
         const next = prev.filter((it) => it.id !== id);
         return next;
@@ -118,7 +121,7 @@ export default function StorylinePageLayout() {
         return remaining.length > 0 ? remaining[0].id : null;
       });
     },
-    [items]
+    [items, confirm, t]
   );
 
   const activeItem = activeId
@@ -193,7 +196,7 @@ export default function StorylinePageLayout() {
                     ? "text-primary hover:bg-primary/15"
                     : "text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                 )}
-                onClick={(e) => handleDeleteForm(e, item.id)}
+                onClick={(e) => void handleDeleteForm(e, item.id)}
                 title={t("deleteForm")}
                 aria-label={t("deleteForm")}
               >
@@ -271,6 +274,8 @@ export default function StorylinePageLayout() {
           </div>
         )}
       </main>
+
+      {confirmDialog}
     </div>
   );
 }
