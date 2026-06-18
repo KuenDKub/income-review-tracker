@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -28,7 +29,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { statusTheme } from "@/components/board/statusTheme";
 import { cn } from "@/lib/utils";
 import type { z } from "zod";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal, X } from "lucide-react";
 import { useQueryState } from "nuqs";
 import {
   Sheet,
@@ -638,12 +639,19 @@ export function JobsPageClient() {
       />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="top-0 max-h-[100dvh] max-w-full translate-y-0 gap-0 rounded-none border-0 p-0 sm:top-[50%] sm:max-h-[calc(100dvh-2rem)] sm:max-w-2xl sm:translate-y-[-50%] sm:rounded-lg sm:border md:max-w-3xl">
+        <DialogContent
+          showCloseButton={false}
+          className="top-0 max-h-[100dvh] max-w-full translate-y-0 gap-0 rounded-none border-0 p-0 sm:top-[50%] sm:max-h-[calc(100dvh-2rem)] sm:max-w-2xl sm:translate-y-[-50%] sm:rounded-lg sm:border md:max-w-3xl"
+        >
           <DialogHeader className="sticky top-0 z-10 border-b bg-background px-4 py-4 pr-12 text-left sm:px-6">
             <DialogTitle className="text-xl">
               {editingId ? t("editJob") : t("createJob")}
             </DialogTitle>
             <DialogDescription>{t("jobFormHint")}</DialogDescription>
+            <DialogClose className="ring-offset-background focus:ring-ring absolute right-4 top-1/2 -translate-y-1/2 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden sm:right-6 [&_svg]:size-4 [&_svg]:shrink-0">
+              <X />
+              <span className="sr-only">{tCommon("close")}</span>
+            </DialogClose>
           </DialogHeader>
           <div className="px-4 py-5 sm:px-6">
             {showForm ? (

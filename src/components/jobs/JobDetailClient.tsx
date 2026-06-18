@@ -21,6 +21,7 @@ import {
 } from "./statusBadgeClasses";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -50,6 +51,7 @@ import {
   Copy,
   Pencil,
   MapPin,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -171,7 +173,7 @@ export function JobDetailClient({ id }: { id: string }) {
       );
       setExistingEvidenceImages(
         docs
-          .filter((doc) => doc.kind !== "brief" && doc.filePath)
+          .filter((doc) => doc.kind === "evidence" && doc.filePath)
           .map((doc) => ({ id: doc.id, url: doc.filePath! })),
       );
     } catch (e) {
@@ -362,7 +364,7 @@ export function JobDetailClient({ id }: { id: string }) {
 
   const briefEmbedUrl = job.briefLink ? briefLinkEmbed(job.briefLink) : null;
   const briefDocs = documents.filter((doc) => doc.kind === "brief");
-  const evidenceDocs = documents.filter((doc) => doc.kind !== "brief");
+  const evidenceDocs = documents.filter((doc) => doc.kind === "evidence");
   const hasBriefText = Boolean(job.brief && job.brief.trim());
   const hasBriefLink = Boolean(job.briefLink && job.briefLink.trim());
   const hasBriefContent = hasBriefText || hasBriefLink || briefDocs.length > 0;
@@ -789,7 +791,7 @@ export function JobDetailClient({ id }: { id: string }) {
         </Card>
       )}
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 p-3 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur md:hidden">
+      <div className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-40 border-t bg-background/95 p-3 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur md:hidden">
         <div className="mx-auto grid max-w-md grid-cols-[1fr_1fr_auto] gap-2">
           <AddToCalendarButton
             job={{
@@ -824,10 +826,17 @@ export function JobDetailClient({ id }: { id: string }) {
       </div>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="top-0 max-h-[100dvh] max-w-full translate-y-0 gap-0 rounded-none border-0 p-0 sm:top-[50%] sm:max-h-[calc(100dvh-2rem)] sm:max-w-2xl sm:translate-y-[-50%] sm:rounded-lg sm:border md:max-w-3xl">
+        <DialogContent
+          showCloseButton={false}
+          className="top-0 max-h-[100dvh] max-w-full translate-y-0 gap-0 rounded-none border-0 p-0 sm:top-[50%] sm:max-h-[calc(100dvh-2rem)] sm:max-w-2xl sm:translate-y-[-50%] sm:rounded-lg sm:border md:max-w-3xl"
+        >
           <DialogHeader className="sticky top-0 z-10 border-b bg-background px-4 py-4 pr-12 text-left sm:px-6">
             <DialogTitle className="text-xl">{t("editJob")}</DialogTitle>
             <DialogDescription>{t("jobFormHint")}</DialogDescription>
+            <DialogClose className="ring-offset-background focus:ring-ring absolute right-4 top-1/2 -translate-y-1/2 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden sm:right-6 [&_svg]:size-4 [&_svg]:shrink-0">
+              <X />
+              <span className="sr-only">{tCommon("close")}</span>
+            </DialogClose>
           </DialogHeader>
           <div className="px-4 py-5 sm:px-6">
             <JobForm

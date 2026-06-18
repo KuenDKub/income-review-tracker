@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { Check, Copy, ExternalLink, Heart, Sparkles, X } from "lucide-react";
+import { ExternalLink, Heart, Sparkles, X } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowRight,
@@ -24,8 +24,6 @@ import { AnimatedShinyText } from "@/components/ui/animated-shiny-text";
 import { AnimatedGradientText } from "@/components/ui/animated-gradient-text";
 import { TextReveal } from "@/components/ui/text-reveal";
 import { SparklesText } from "@/components/ui/sparkles-text";
-import { ShinyButton } from "@/components/ui/shiny-button";
-import { PixelImage } from "@/components/ui/pixel-image";
 import { Meteors } from "@/components/ui/meteors";
 
 export type PortfolioViewData = {
@@ -120,7 +118,6 @@ export function PortfolioView({
   const tRate = useTranslations("rateCard");
 
   const [filter, setFilter] = useState("all");
-  const [copied, setCopied] = useState(false);
   // Collapse the gallery on small screens (< lg) into a first batch + "view all".
   const [galleryExpanded, setGalleryExpanded] = useState(false);
   const [isCompact, setIsCompact] = useState(false);
@@ -238,17 +235,6 @@ export function PortfolioView({
     url: link.url,
   }));
 
-  async function copyContact() {
-    const value = profile.contactEmail || handleAt || displayName;
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    } catch {
-      /* ignore */
-    }
-  }
-
   return (
     <div className="text-[#5A3247]">
       {/* ── HERO ─────────────────────────────────────────────── */}
@@ -343,10 +329,11 @@ export function PortfolioView({
                     className="absolute -z-10 size-24 rounded-full bg-gradient-to-br from-rose-300/50 to-fuchsia-200/50 blur-xl sm:size-28"
                   />
                   <div className="size-24 overflow-hidden rounded-full shadow-lg shadow-rose-300/40 ring-4 ring-white sm:size-28">
-                    <PixelImage
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
                       src={profile.avatarUrl}
                       alt={displayName}
-                      grid={7}
+                      className="size-full object-cover"
                     />
                   </div>
                 </div>
@@ -369,7 +356,7 @@ export function PortfolioView({
               </h1>
 
               {handleAt && (
-                <p className="mt-5 text-sm font-semibold uppercase tracking-[0.26em] text-rose-400/80">
+                <p className="mt-5 text-sm font-semibold tracking-[0.26em] text-rose-400/80">
                   <TypingAnimation text={handleAt} speed={90} />
                 </p>
               )}
@@ -395,18 +382,15 @@ export function PortfolioView({
 
               {/* CTAs */}
               <div className="mt-9 flex flex-wrap gap-3">
-                <ShinyButton
-                  type="button"
-                  onClick={copyContact}
-                  className="border border-rose-200/80 bg-white/70 text-[#8A5A72] shadow-sm hover:bg-white"
+                <a
+                  href={lineUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group relative inline-flex cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-full border border-rose-200/80 bg-white/70 px-7 py-3 text-sm font-semibold text-[#8A5A72] shadow-sm transition-transform hover:bg-white active:scale-[0.98]"
                 >
-                  {copied ? (
-                    <Check className="size-4 text-rose-400" />
-                  ) : (
-                    <Copy className="size-4" />
-                  )}
-                  {copied ? t("contactCopied") : t("copyContact")}
-                </ShinyButton>
+                  <PlatformIcon name="LINE" className="size-4" />
+                  {t("contactHere")}
+                </a>
               </div>
             </div>
 
@@ -1110,14 +1094,21 @@ export function PortfolioView({
                 {brandWorks.length > 0 ? (
                   <div className="mt-3 grid grid-cols-3 gap-2">
                     {brandWorks.map((w) => (
-                      <SkeletonImage
+                      <button
                         key={w.id}
-                        src={w.imageUrl}
-                        alt={w.title}
-                        loading="lazy"
-                        wrapperClassName="aspect-square w-full rounded-xl ring-1 ring-rose-100"
-                        className="size-full object-cover"
-                      />
+                        type="button"
+                        onClick={() => setActiveWork(w)}
+                        aria-label={w.payerName ?? w.title}
+                        className="block cursor-pointer overflow-hidden rounded-xl ring-1 ring-rose-100 transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
+                      >
+                        <SkeletonImage
+                          src={w.imageUrl}
+                          alt={w.title}
+                          loading="lazy"
+                          wrapperClassName="aspect-square w-full"
+                          className="size-full object-cover"
+                        />
+                      </button>
                     ))}
                   </div>
                 ) : (
