@@ -36,8 +36,8 @@ import { BoardCardContent } from "@/components/board/BoardCard";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { StatusChipBar } from "@/components/board/StatusChipBar";
 import { JobSheet } from "@/components/board/JobSheet";
-import { PaidConfirmSheet } from "@/components/board/PaidConfirmSheet";
 import { STATUS_KEYS } from "@/components/board/statusTheme";
+import { useJobStatusMove } from "@/hooks/useJobStatusMove";
 import type { JobItem, JobsByStatus } from "@/components/board/types";
 
 const COLLAPSED_STORAGE_KEY = "board-collapsed-columns";
@@ -107,16 +107,23 @@ export function JobsDndClient() {
   // Card detail sheet
   const [selectedJob, setSelectedJob] = useState<JobItem | null>(null);
   const [jobSheetOpen, setJobSheetOpen] = useState(false);
-  const [moving, setMoving] = useState(false);
 
-  // Paid confirmation
-  const [paidDialogOpen, setPaidDialogOpen] = useState(false);
-  const [paidDialogSaving, setPaidDialogSaving] = useState(false);
-  const [pendingPaidJob, setPendingPaidJob] = useState<JobItem | null>(null);
-  const [paidPaymentDate, setPaidPaymentDate] = useState<string>("");
-  const [paidEvidenceFiles, setPaidEvidenceFiles] = useState<File[]>([]);
-  const pendingPrevStatusRef = useRef<string | null>(null);
-  const pendingPrevPaymentDateRef = useRef<string | null>(null);
+  // Status moves (incl. the paid confirmation flow) are shared with the
+  // detail/list views via this hook; the board applies them optimistically.
+  const { moveJob, paidSheet, busy: moving } = useJobStatusMove({
+    onApply: (jobId, patch) =>
+      setJobs((prev) =>
+        prev.map((j) => (j.id === jobId ? { ...j, ...patch } : j)),
+      ),
+    onRevert: (jobId, prev) =>
+      setJobs((cur) =>
+        cur.map((j) =>
+          j.id === jobId
+            ? { ...j, status: prev.status, paymentDate: prev.paymentDate }
+            : j,
+        ),
+      ),
+  });
 
   // Mobile column pager
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -169,15 +176,6 @@ export function JobsDndClient() {
       return next;
     });
   }, []);
-
-  const pendingMinPaymentDate = useMemo(() => {
-    const job = pendingPaidJob;
-    if (!job) return undefined;
-    const received = (job.receivedDate ?? "").trim() || null;
-    const review = (job.reviewDeadline ?? "").trim() || null;
-    const publish = (job.publishDate ?? "").trim() || null;
-    return publish || review || received || undefined;
-  }, [pendingPaidJob]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -234,68 +232,6 @@ export function JobsDndClient() {
     fetchJobs(monthsQuery ?? 3);
   }, [fetchJobs, monthsQuery]);
 
-  const resetPaidDialogState = useCallback(() => {
-    setPaidDialogSaving(false);
-    setPendingPaidJob(null);
-    setPaidPaymentDate("");
-    setPaidEvidenceFiles([]);
-    pendingPrevStatusRef.current = null;
-    pendingPrevPaymentDateRef.current = null;
-  }, []);
-
-  const startPaidFlow = useCallback((job: JobItem, fromStatus: string) => {
-    pendingPrevStatusRef.current = fromStatus;
-    pendingPrevPaymentDateRef.current = job.paymentDate ?? null;
-    setPendingPaidJob(job);
-    const min = (job.publishDate ?? job.reviewDeadline ?? job.receivedDate ?? "")
-      .toString()
-      .trim();
-    const todayIso = new Date().toISOString().slice(0, 10);
-    const defaultDate =
-      job.paymentDate?.trim() ||
-      (min && todayIso < min ? min : todayIso) ||
-      todayIso;
-    setPaidPaymentDate(defaultDate);
-    setPaidEvidenceFiles([]);
-    setPaidDialogOpen(true);
-  }, []);
-
-  /** Shared by drag-and-drop and the tap-to-move status picker. */
-  const moveJob = useCallback(
-    async (job: JobItem, newStatus: string) => {
-      if (!REVIEW_JOB_STATUSES.includes(newStatus as ReviewJobStatus)) return;
-      if (job.status === newStatus) return;
-
-      if (newStatus === "paid") {
-        startPaidFlow(job, job.status);
-        return;
-      }
-
-      const prevJobs = [...jobs];
-      setMoving(true);
-      setJobs((prev) =>
-        prev.map((j) => (j.id === job.id ? { ...j, status: newStatus } : j))
-      );
-
-      try {
-        const res = await fetch(`/api/jobs/${job.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: newStatus }),
-        });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error ?? t("updateError"));
-        toast.success(t("updateSuccess"));
-      } catch (e) {
-        toast.error(t("updateError"), String(e));
-        setJobs(prevJobs);
-      } finally {
-        setMoving(false);
-      }
-    },
-    [jobs, startPaidFlow, t]
-  );
-
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const job = event.active.data?.current?.job as JobItem | undefined;
     setActiveJob(job ?? null);
@@ -340,94 +276,6 @@ export function JobsDndClient() {
     },
     [moveJob]
   );
-
-  const handlePaidDialogCancel = useCallback(() => {
-    if (paidDialogSaving) return;
-    setPaidDialogOpen(false);
-    resetPaidDialogState();
-  }, [paidDialogSaving, resetPaidDialogState]);
-
-  const handlePaidDialogSave = useCallback(async () => {
-    const job = pendingPaidJob;
-    if (!job) return;
-    const paymentDate = paidPaymentDate.trim();
-    if (!paymentDate) {
-      toast.error(t("updateError"), t("paidDialogPaymentDateRequired"));
-      return;
-    }
-
-    setPaidDialogSaving(true);
-
-    const prevStatus = pendingPrevStatusRef.current ?? job.status ?? "received";
-    const prevPaymentDate =
-      pendingPrevPaymentDateRef.current ?? job.paymentDate ?? null;
-
-    try {
-      const patchRes = await fetch(`/api/jobs/${job.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "paid", paymentDate }),
-      });
-      const patchJson = await patchRes.json();
-      if (!patchRes.ok) throw new Error(patchJson.error ?? t("updateError"));
-
-      if (paidEvidenceFiles.length > 0) {
-        for (const file of paidEvidenceFiles) {
-          const formData = new FormData();
-          formData.append("file", file);
-          const uploadRes = await fetch("/api/upload", {
-            method: "POST",
-            body: formData,
-          });
-          if (!uploadRes.ok) throw new Error(t("uploadError"));
-          const uploadJson = await uploadRes.json();
-          const docRes = await fetch("/api/documents", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              reviewJobId: job.id,
-              kind: "evidence",
-              filePath: uploadJson.filePath,
-            }),
-          });
-          if (!docRes.ok) throw new Error(t("uploadError"));
-        }
-      }
-
-      setJobs((prev) =>
-        prev.map((j) =>
-          j.id === job.id ? { ...j, status: "paid", paymentDate } : j
-        )
-      );
-      toast.success(t("updateSuccess"));
-      setPaidDialogOpen(false);
-      resetPaidDialogState();
-    } catch (e) {
-      toast.error(t("updateError"), String(e));
-      try {
-        await fetch(`/api/jobs/${job.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            status: prevStatus,
-            paymentDate: prevPaymentDate,
-          }),
-        });
-      } catch {
-        // best-effort revert
-      }
-      setPaidDialogOpen(false);
-      resetPaidDialogState();
-    } finally {
-      setPaidDialogSaving(false);
-    }
-  }, [
-    paidEvidenceFiles,
-    paidPaymentDate,
-    pendingPaidJob,
-    resetPaidDialogState,
-    t,
-  ]);
 
   const grouped = groupJobsByStatus(jobs);
 
@@ -631,17 +479,7 @@ export function JobsDndClient() {
         busy={moving}
       />
 
-      <PaidConfirmSheet
-        open={paidDialogOpen}
-        saving={paidDialogSaving}
-        paymentDate={paidPaymentDate}
-        minPaymentDate={pendingMinPaymentDate}
-        files={paidEvidenceFiles}
-        onPaymentDateChange={setPaidPaymentDate}
-        onFilesChange={setPaidEvidenceFiles}
-        onCancel={handlePaidDialogCancel}
-        onSave={handlePaidDialogSave}
-      />
+      {paidSheet}
     </div>
   );
 }

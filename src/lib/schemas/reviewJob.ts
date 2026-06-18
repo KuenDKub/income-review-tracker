@@ -41,20 +41,16 @@ export const reviewJobSchema = reviewJobBaseSchema.superRefine((data, ctx) => {
     return;
   }
 
+  // Income is optional at create time — a job is logged when it arrives and the
+  // fee is filled in later (inline on the detail page). Only enforce a gross
+  // amount when withholding tax is explicitly applied, since the tax can't be
+  // computed without it.
   if (data.hasWithholdingTax) {
     if (data.amount == null || data.amount === undefined || data.amount <= 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message:
           "Gross amount (full price) is required when withholding tax is applied",
-        path: ["amount"],
-      });
-    }
-  } else {
-    if (data.amount == null || data.amount === undefined || data.amount <= 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Income (amount) is required",
         path: ["amount"],
       });
     }
@@ -95,6 +91,24 @@ export const reviewJobSchema = reviewJobBaseSchema.superRefine((data, ctx) => {
 export type ReviewJobInput = z.infer<typeof reviewJobSchema>;
 
 export const reviewJobCreateSchema = reviewJobSchema;
+
+/**
+ * Minimal schema for the quick-create modal: just enough to log a new job.
+ * Everything else (brief, income, extra dates) is added inline on the detail
+ * page afterwards.
+ */
+export const reviewJobQuickCreateSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  payerName: z.string().optional(),
+  platforms: z.array(z.string()).optional().default([]),
+  contentType: z.string().min(1, "Content type is required"),
+  status: z.enum(REVIEW_JOB_STATUSES).default("received"),
+  receivedDate: z.string().min(1, "Received date is required"),
+});
+
+export type ReviewJobQuickCreateInput = z.infer<
+  typeof reviewJobQuickCreateSchema
+>;
 // IMPORTANT: `.partial()` does NOT strip `.default(...)`. Any defaulted field
 // left out of a PATCH body would otherwise be re-injected with its default and
 // overwrite the stored value (e.g. a board status-only move would reset

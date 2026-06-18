@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -15,20 +16,17 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { JobList, type JobItem } from "./JobList";
-import { JobForm } from "./JobForm";
+import { QuickCreateForm } from "./QuickCreateForm";
 import {
-  reviewJobCreateSchema,
   REVIEW_JOB_STATUSES,
+  type ReviewJobQuickCreateInput,
 } from "@/lib/schemas/reviewJob";
-import type { ReviewJobStatus } from "@/lib/schemas/reviewJob";
 import { ConfirmDeleteDialog } from "@/components/ui/ConfirmDeleteDialog";
-import { useConfirm } from "@/components/ui/useConfirm";
 import { toast } from "@/lib/toast";
 import { DataTablePagination } from "@/components/ui/DataTablePagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import { statusTheme } from "@/components/board/statusTheme";
 import { cn } from "@/lib/utils";
-import type { z } from "zod";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { useQueryState } from "nuqs";
 import {
@@ -40,44 +38,6 @@ import {
 import { Fab } from "@/components/ui/fab";
 import { PageHeader } from "@/components/ui/page-header";
 import { BlurFade } from "@/components/ui/blur-fade";
-
-function DialogFormSkeleton() {
-  return (
-    <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-16" />
-          <Skeleton className="h-10 w-full" />
-        </div>
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-14" />
-          <Skeleton className="h-10 w-full" />
-        </div>
-        <div className="space-y-2 sm:col-span-2">
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-10 w-full" />
-        </div>
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-20" />
-          <Skeleton className="h-10 w-full" />
-        </div>
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-28" />
-          <Skeleton className="h-10 w-full" />
-        </div>
-      </div>
-      <div className="flex gap-2">
-        <Skeleton className="h-4 w-4" />
-        <Skeleton className="h-4 w-48" />
-      </div>
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-32" />
-        <Skeleton className="h-10 w-40" />
-      </div>
-      <Skeleton className="h-10 w-24" />
-    </div>
-  );
-}
 
 function JobsListSkeleton() {
   return (
@@ -166,13 +126,12 @@ type Paginated<T> = {
 export function JobsPageClient() {
   const t = useTranslations("jobs");
   const tCommon = useTranslations("common");
-  const { confirm, confirmDialog } = useConfirm();
+  const router = useRouter();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const [jobs, setJobs] = useState<JobItem[]>([]);
   const [payerNames, setPayerNames] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
@@ -184,14 +143,6 @@ export function JobsPageClient() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
-  const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
-  const [existingEvidenceImages, setExistingEvidenceImages] = useState<
-    Array<{ id: string; url: string }>
-  >([]);
-  const [briefFiles, setBriefFiles] = useState<File[]>([]);
-  const [existingBriefFiles, setExistingBriefFiles] = useState<
-    Array<{ id: string; url: string }>
-  >([]);
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -273,99 +224,26 @@ export function JobsPageClient() {
   const [newParam, setNewParam] = useQueryState("new");
   useEffect(() => {
     if (newParam === "1") {
-      setEditingId(null);
-      setEvidenceFiles([]);
-      setExistingEvidenceImages([]);
-      setBriefFiles([]);
-      setExistingBriefFiles([]);
       setDialogOpen(true);
       void setNewParam(null);
     }
   }, [newParam, setNewParam]);
 
-  const handleOpenCreate = () => {
-    setEditingId(null);
-    setEvidenceFiles([]);
-    setExistingEvidenceImages([]);
-    setBriefFiles([]);
-    setExistingBriefFiles([]);
-    setDialogOpen(true);
-  };
-
-  const handleEdit = (id: string) => {
-    setEditingId(id);
-    setDialogOpen(true);
-  };
-
-  const handleDelete = (id: string) => {
-    setDeleteId(id);
-  };
-
-  const handleDialogSubmit = async (
-    data: z.infer<typeof reviewJobCreateSchema>,
-  ) => {
+  const handleCreate = async (data: ReviewJobQuickCreateInput) => {
     try {
-      let jobId: string;
-      if (editingId) {
-        const res = await fetch(`/api/jobs/${editingId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-        });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error ?? t("updateError"));
-        jobId = editingId;
-        toast.success(t("updateSuccess"));
-      } else {
-        const res = await fetch("/api/jobs", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-        });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error ?? t("createError"));
-        jobId = json.data.id;
-        toast.success(t("createSuccess"));
-      }
-
-      const uploadDocs = async (files: File[], kind: "evidence" | "brief") => {
-        for (const file of files) {
-          const formData = new FormData();
-          formData.append("file", file);
-          const uploadRes = await fetch("/api/upload", {
-            method: "POST",
-            body: formData,
-          });
-          if (!uploadRes.ok) {
-            throw new Error(t("uploadError"));
-          }
-          const uploadJson = await uploadRes.json();
-          await fetch("/api/documents", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              reviewJobId: jobId,
-              kind,
-              filePath: uploadJson.filePath,
-            }),
-          });
-        }
-      };
-
-      if (evidenceFiles.length > 0) {
-        await uploadDocs(evidenceFiles, "evidence");
-        setEvidenceFiles([]);
-      }
-      if (briefFiles.length > 0) {
-        await uploadDocs(briefFiles, "brief");
-        setBriefFiles([]);
-      }
-
+      const res = await fetch("/api/jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? t("createError"));
+      toast.success(t("createSuccess"));
       setDialogOpen(false);
-      setEditingId(null);
-      await load();
+      // Land on the new job so the brief / income / dates can be filled inline.
+      router.push(`/jobs/${json.data.id}`);
     } catch (e) {
-      toast.error(editingId ? t("updateError") : t("createError"), String(e));
+      toast.error(t("createError"), String(e));
     }
   };
 
@@ -384,106 +262,6 @@ export function JobsPageClient() {
       toast.error(t("deleteError"), String(e));
     }
   };
-
-  const [editDefaultValues, setEditDefaultValues] = useState<
-    Partial<z.infer<typeof reviewJobCreateSchema>> | undefined
-  >(undefined);
-
-  useEffect(() => {
-    if (!dialogOpen || !editingId) {
-      setEditDefaultValues(undefined);
-      setExistingEvidenceImages([]);
-      setEvidenceFiles([]);
-      setExistingBriefFiles([]);
-      setBriefFiles([]);
-      return;
-    }
-    let cancelled = false;
-    Promise.all([
-      fetch(`/api/jobs/${editingId}`).then((r) => r.json()),
-      fetch(`/api/documents?reviewJobId=${editingId}`).then((r) => r.json()),
-      fetch(`/api/income?reviewJobId=${editingId}&pageSize=1`).then((r) =>
-        r.json(),
-      ),
-    ])
-      .then(([jobJson, docsJson, incomeJson]) => {
-        if (cancelled || !jobJson.data) return;
-        const d = jobJson.data as ReviewJobJson;
-        const status: ReviewJobStatus = REVIEW_JOB_STATUSES.includes(
-          d.status as ReviewJobStatus,
-        )
-          ? (d.status as ReviewJobStatus)
-          : "received";
-        const incomeList = (incomeJson?.data ?? []) as Array<{
-          grossAmount: number;
-          withholdingAmount: number;
-          netAmount: number;
-        }>;
-        const firstIncome = incomeList[0];
-        const isBrotherJob = d.isBrotherJob === true;
-        const incomeDefaults = isBrotherJob
-          ? { isBrotherJob: true as const }
-          : firstIncome &&
-              (firstIncome.grossAmount > 0 || firstIncome.netAmount > 0)
-            ? firstIncome.withholdingAmount > 0
-              ? {
-                  hasWithholdingTax: true as const,
-                  amount: firstIncome.grossAmount,
-                  withholdingRate:
-                    firstIncome.grossAmount > 0
-                      ? (firstIncome.withholdingAmount /
-                          firstIncome.grossAmount) *
-                        100
-                      : 3,
-                }
-              : {
-                  hasWithholdingTax: false as const,
-                  amount: firstIncome.grossAmount,
-                }
-            : { hasWithholdingTax: false as const };
-        setEditDefaultValues({
-          payerName: d.payerName ?? "",
-          status,
-          platforms: d.platforms || [],
-          contentType: d.contentType,
-          title: d.title,
-          receivedDate: d.receivedDate ?? "",
-          reviewDeadline: d.reviewDeadline ?? "",
-          publishDate: d.publishDate ?? "",
-          paymentDate: d.paymentDate ?? "",
-          tags: d.tags,
-          notes: d.notes,
-          ...incomeDefaults,
-        });
-        const docs = (docsJson.data ?? []) as Array<{
-          id: string;
-          filePath: string;
-          kind: string;
-        }>;
-        const withPath = docs.filter((doc) => doc.filePath);
-        setExistingEvidenceImages(
-          withPath
-            .filter((doc) => doc.kind !== "brief")
-            .map((doc) => ({ id: doc.id, url: doc.filePath })),
-        );
-        setExistingBriefFiles(
-          withPath
-            .filter((doc) => doc.kind === "brief")
-            .map((doc) => ({ id: doc.id, url: doc.filePath })),
-        );
-      })
-      .catch(() => {
-        setEditDefaultValues(undefined);
-        setExistingEvidenceImages([]);
-        setExistingBriefFiles([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [dialogOpen, editingId]);
-
-  const showForm =
-    dialogOpen && (editingId === null || editDefaultValues !== undefined);
 
   const activeFilterCount = [payerNameFilter, platform, contentType].filter(
     (v) => v.trim()
@@ -544,7 +322,10 @@ export function JobsPageClient() {
       <PageHeader
         title={t("title")}
         actions={
-          <Button onClick={handleOpenCreate} className="hidden lg:inline-flex">
+          <Button
+            onClick={() => setDialogOpen(true)}
+            className="hidden lg:inline-flex"
+          >
             {t("createJob")}
           </Button>
         }
@@ -621,7 +402,7 @@ export function JobsPageClient() {
         <JobsListSkeleton />
       ) : (
         <BlurFade key={`${page}-${statusFilter}`}>
-          <JobList jobs={jobs} onEdit={handleEdit} onDelete={handleDelete} />
+          <JobList jobs={jobs} onDelete={(id) => setDeleteId(id)} />
         </BlurFade>
       )}
 
@@ -641,68 +422,24 @@ export function JobsPageClient() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent
           showCloseButton={false}
-          className="top-0 max-h-[100dvh] max-w-full translate-y-0 gap-0 rounded-none border-0 p-0 sm:top-[50%] sm:max-h-[calc(100dvh-2rem)] sm:max-w-2xl sm:translate-y-[-50%] sm:rounded-lg sm:border md:max-w-3xl"
+          className="top-0 max-h-[100dvh] max-w-full translate-y-0 gap-0 rounded-none border-0 p-0 sm:top-[50%] sm:max-h-[calc(100dvh-2rem)] sm:max-w-2xl sm:translate-y-[-50%] sm:rounded-lg sm:border"
         >
           <DialogHeader className="sticky top-0 z-10 border-b bg-background px-4 py-4 pr-12 text-left sm:px-6">
-            <DialogTitle className="text-xl">
-              {editingId ? t("editJob") : t("createJob")}
-            </DialogTitle>
-            <DialogDescription>{t("jobFormHint")}</DialogDescription>
+            <DialogTitle className="text-xl">{t("createJob")}</DialogTitle>
+            <DialogDescription>{t("quickCreateHint")}</DialogDescription>
             <DialogClose className="ring-offset-background focus:ring-ring absolute right-4 top-1/2 -translate-y-1/2 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden sm:right-6 [&_svg]:size-4 [&_svg]:shrink-0">
               <X />
               <span className="sr-only">{tCommon("close")}</span>
             </DialogClose>
           </DialogHeader>
           <div className="px-4 py-5 sm:px-6">
-            {showForm ? (
-              <JobForm
-                schema={reviewJobCreateSchema}
-                defaultValues={editingId ? editDefaultValues : undefined}
-                onSubmit={handleDialogSubmit}
-                submitLabel={tCommon("save")}
+            {dialogOpen && (
+              <QuickCreateForm
                 payerNames={payerNames}
-                evidenceFiles={evidenceFiles}
-                onEvidenceFilesChange={setEvidenceFiles}
-                existingEvidenceImages={existingEvidenceImages}
-                onRemoveExistingEvidence={async (docId) => {
-                  if (!(await confirm({ description: t("confirmRemoveImage") })))
-                    return;
-                  try {
-                    const res = await fetch(`/api/documents/${docId}`, {
-                      method: "DELETE",
-                    });
-                    if (!res.ok) throw new Error(t("deleteDocError"));
-                    setExistingEvidenceImages((prev) =>
-                      prev.filter((img) => img.id !== docId),
-                    );
-                    toast.success(t("removeImageSuccess"));
-                  } catch (e) {
-                    toast.error(t("removeImageError"), String(e));
-                  }
-                }}
-                briefFiles={briefFiles}
-                onBriefFilesChange={setBriefFiles}
-                existingBriefFiles={existingBriefFiles}
-                onRemoveExistingBrief={async (docId) => {
-                  if (!(await confirm({ description: t("confirmDeleteBrief") })))
-                    return;
-                  try {
-                    const res = await fetch(`/api/documents/${docId}`, {
-                      method: "DELETE",
-                    });
-                    if (!res.ok) throw new Error(t("deleteDocError"));
-                    setExistingBriefFiles((prev) =>
-                      prev.filter((f) => f.id !== docId),
-                    );
-                    toast.success(t("removeImageSuccess"));
-                  } catch (e) {
-                    toast.error(t("removeImageError"), String(e));
-                  }
-                }}
+                onSubmit={handleCreate}
+                submitLabel={t("createJob")}
               />
-            ) : dialogOpen && editingId ? (
-              <DialogFormSkeleton />
-            ) : null}
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -712,8 +449,6 @@ export function JobsPageClient() {
         onOpenChange={(open) => !open && setDeleteId(null)}
         onConfirm={handleConfirmDelete}
       />
-
-      {confirmDialog}
 
       <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
         <SheetContent
@@ -743,7 +478,7 @@ export function JobsPageClient() {
         </SheetContent>
       </Sheet>
 
-      <Fab aria-label={t("createJob")} onClick={handleOpenCreate} />
+      <Fab aria-label={t("createJob")} onClick={() => setDialogOpen(true)} />
     </div>
   );
 }

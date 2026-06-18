@@ -1,0 +1,671 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
+import { useFormContext } from "react-hook-form";
+import {
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { MultiSelect } from "@/components/ui/multi-select";
+import {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+} from "@/components/ui/popover";
+import { FileUpload } from "@/components/ui/file-upload";
+import { Badge } from "@/components/ui/badge";
+import {
+  STATUS_BADGE_CLASS,
+  DEFAULT_STATUS_BADGE_CLASS,
+} from "./statusBadgeClasses";
+import { computeWithholdingAndNet } from "@/lib/tax";
+import { REVIEW_JOB_STATUSES } from "@/lib/schemas/reviewJob";
+import { STATUS_KEYS } from "@/components/board/statusTheme";
+import { X, ClipboardList } from "lucide-react";
+import type { z } from "zod";
+import type { reviewJobSchema } from "@/lib/schemas/reviewJob";
+
+/**
+ * Reusable field groups for review jobs. Each reads the surrounding
+ * react-hook-form via {@link useFormContext}, so the same fields power the
+ * quick-create form and the per-section inline editors on the job detail page.
+ */
+type JobFormValues = z.infer<typeof reviewJobSchema>;
+
+const PLATFORM_OPTIONS = [
+  { value: "TikTok", label: "TikTok" },
+  { value: "YouTube", label: "YouTube" },
+  { value: "Instagram", label: "Instagram" },
+  { value: "Lemon8", label: "Lemon8" },
+  { value: "Facebook", label: "Facebook" },
+  { value: "Twitter", label: "Twitter/X" },
+  { value: "Skinsista", label: "Skinsista" },
+];
+
+type DateFieldName =
+  | "receivedDate"
+  | "reviewDeadline"
+  | "publishDate"
+  | "paymentDate";
+
+export function PayerField({ payerNames = [] }: { payerNames?: string[] }) {
+  const t = useTranslations("jobs");
+  const form = useFormContext<JobFormValues>();
+  const [open, setOpen] = useState(false);
+  const anchorRef = useRef<HTMLDivElement>(null);
+
+  const payerValue = form.watch("payerName") ?? "";
+  const filtered = payerValue.trim()
+    ? payerNames.filter((n) =>
+        n.toLowerCase().includes(payerValue.toLowerCase()),
+      )
+    : payerNames;
+
+  // Close suggestions on any scroll (incl. the dialog's own scroll container)
+  // rather than letting the popover follow the input.
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    window.addEventListener("scroll", close, true);
+    return () => window.removeEventListener("scroll", close, true);
+  }, [open]);
+
+  return (
+    <FormField
+      control={form.control}
+      name="payerName"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{t("payer")}</FormLabel>
+          <Popover open={open && filtered.length > 0} onOpenChange={setOpen}>
+            <PopoverAnchor asChild>
+              <div ref={anchorRef}>
+                <FormControl>
+                  <Input
+                    placeholder={t("payerPlaceholder")}
+                    {...field}
+                    value={field.value ?? ""}
+                    onChange={(e) => {
+                      field.onChange(e.target.value);
+                      setOpen(true);
+                    }}
+                    onFocus={() => setOpen(true)}
+                  />
+                </FormControl>
+              </div>
+            </PopoverAnchor>
+            <PopoverContent
+              align="start"
+              sideOffset={4}
+              onOpenAutoFocus={(e) => e.preventDefault()}
+              onInteractOutside={(e) => {
+                if (anchorRef.current?.contains(e.target as Node)) {
+                  e.preventDefault();
+                }
+              }}
+              className="max-h-48 w-(--radix-popover-trigger-width) overflow-auto p-1"
+            >
+              <ul role="listbox">
+                {filtered.slice(0, 20).map((name) => (
+                  <li
+                    key={name}
+                    role="option"
+                    aria-selected={false}
+                    className="cursor-pointer rounded-sm px-3 py-2 text-sm hover:bg-accent"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      field.onChange(name);
+                      setOpen(false);
+                    }}
+                  >
+                    {name}
+                  </li>
+                ))}
+              </ul>
+            </PopoverContent>
+          </Popover>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+export function StatusField() {
+  const t = useTranslations("jobs");
+  const form = useFormContext<JobFormValues>();
+  return (
+    <FormField
+      control={form.control}
+      name="status"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{t("status")}</FormLabel>
+          <Select onValueChange={field.onChange} value={field.value}>
+            <FormControl>
+              <SelectTrigger className="w-full">
+                <span
+                  className={
+                    field.value
+                      ? "relative flex flex-1 items-center **:data-[slot=select-value]:opacity-0"
+                      : "flex flex-1 items-center"
+                  }
+                >
+                  <SelectValue placeholder={t("status")} />
+                  {field.value ? (
+                    <span className="absolute inset-0 flex items-center pointer-events-none">
+                      <Badge
+                        variant="outline"
+                        className={
+                          STATUS_BADGE_CLASS[field.value] ??
+                          DEFAULT_STATUS_BADGE_CLASS
+                        }
+                      >
+                        {t(STATUS_KEYS[field.value] ?? "statusReceived")}
+                      </Badge>
+                    </span>
+                  ) : null}
+                </span>
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent>
+              {REVIEW_JOB_STATUSES.map((s) => (
+                <SelectItem key={s} value={s}>
+                  <Badge
+                    variant="outline"
+                    className={
+                      STATUS_BADGE_CLASS[s] ?? DEFAULT_STATUS_BADGE_CLASS
+                    }
+                  >
+                    {t(STATUS_KEYS[s] ?? "statusReceived")}
+                  </Badge>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+export function TitleField() {
+  const t = useTranslations("jobs");
+  const form = useFormContext<JobFormValues>();
+  return (
+    <FormField
+      control={form.control}
+      name="title"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{t("table.title")}</FormLabel>
+          <FormControl>
+            <Input
+              placeholder={t("titlePlaceholder")}
+              {...field}
+              value={field.value ?? ""}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+export function PlatformsField() {
+  const t = useTranslations("jobs");
+  const form = useFormContext<JobFormValues>();
+  return (
+    <FormField
+      control={form.control}
+      name="platforms"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{t("table.platform")}</FormLabel>
+          <FormControl>
+            <MultiSelect
+              options={PLATFORM_OPTIONS}
+              value={field.value || []}
+              onChange={field.onChange}
+              placeholder={t("selectPlatforms")}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+export function ContentTypeField() {
+  const t = useTranslations("jobs");
+  const form = useFormContext<JobFormValues>();
+  return (
+    <FormField
+      control={form.control}
+      name="contentType"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{t("contentType")}</FormLabel>
+          <FormControl>
+            <Input
+              placeholder={t("contentTypePlaceholder")}
+              {...field}
+              value={field.value ?? ""}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+export function DateField({
+  name,
+  label,
+  min,
+  clearable = true,
+}: {
+  name: DateFieldName;
+  label: string;
+  min?: string;
+  clearable?: boolean;
+}) {
+  const form = useFormContext<JobFormValues>();
+  return (
+    <FormField
+      control={form.control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{label}</FormLabel>
+          <FormControl>
+            <div className="flex items-center gap-2">
+              <Input
+                type="date"
+                {...field}
+                value={field.value ?? ""}
+                min={min}
+                className="flex-1"
+              />
+              {clearable &&
+                field.value &&
+                String(field.value).trim() !== "" && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => field.onChange("")}
+                    className="shrink-0"
+                  >
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Clear {label}</span>
+                  </Button>
+                )}
+            </div>
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+/** Received / review deadline / publish dates with their chained min-date rules. */
+export function CoreDateFields() {
+  const t = useTranslations("jobs");
+  const form = useFormContext<JobFormValues>();
+  const receivedDate = form.watch("receivedDate");
+  const reviewDeadline = form.watch("reviewDeadline");
+  const minReviewDeadline =
+    receivedDate && String(receivedDate).trim()
+      ? String(receivedDate).trim()
+      : undefined;
+  const minPublishDate =
+    (reviewDeadline && String(reviewDeadline).trim()) ||
+    (receivedDate && String(receivedDate).trim()) ||
+    undefined;
+  return (
+    <>
+      <DateField
+        name="receivedDate"
+        label={t("receivedDate")}
+        clearable={false}
+      />
+      <DateField
+        name="reviewDeadline"
+        label={t("reviewDeadline")}
+        min={minReviewDeadline}
+      />
+      <DateField
+        name="publishDate"
+        label={t("publishDate")}
+        min={minPublishDate}
+      />
+    </>
+  );
+}
+
+type BriefFieldsProps = {
+  briefFiles?: File[];
+  onBriefFilesChange?: (files: File[]) => void;
+  existingBriefFiles?: Array<{ id: string; url: string }>;
+  onRemoveExistingBrief?: (id: string) => void;
+};
+
+export function BriefFields({
+  briefFiles = [],
+  onBriefFilesChange,
+  existingBriefFiles = [],
+  onRemoveExistingBrief,
+}: BriefFieldsProps) {
+  const t = useTranslations("jobs");
+  const form = useFormContext<JobFormValues>();
+  return (
+    <div className="space-y-4">
+      <FormField
+        control={form.control}
+        name="briefLink"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>{t("briefLink")}</FormLabel>
+            <FormControl>
+              <Input
+                type="url"
+                inputMode="url"
+                placeholder={t("briefLinkPlaceholder")}
+                {...field}
+                value={field.value ?? ""}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
+        name="briefLinkNote"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>{t("briefLinkNote")}</FormLabel>
+            <FormControl>
+              <Input
+                placeholder={t("briefLinkNotePlaceholder")}
+                {...field}
+                value={field.value ?? ""}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
+        name="brief"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>{t("briefText")}</FormLabel>
+            <FormControl>
+              <Textarea
+                rows={5}
+                placeholder={t("briefPlaceholder")}
+                {...field}
+                value={field.value ?? ""}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      {onBriefFilesChange && (
+        <FormItem>
+          <FormLabel>{t("briefFiles")}</FormLabel>
+          <FileUpload
+            value={briefFiles}
+            onChange={onBriefFilesChange}
+            accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+            multiple
+            buttonLabel={t("addBriefFiles")}
+            existingImages={existingBriefFiles}
+            onRemoveExisting={onRemoveExistingBrief}
+          />
+        </FormItem>
+      )}
+    </div>
+  );
+}
+
+/** Brief block with the bordered "Brief" heading used in the full form. */
+export function BriefSection(props: BriefFieldsProps) {
+  const t = useTranslations("jobs");
+  return (
+    <div className="space-y-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
+      <div className="flex items-center gap-2">
+        <ClipboardList className="h-4 w-4 text-primary" />
+        <h3 className="text-sm font-semibold">{t("brief")}</h3>
+      </div>
+      <p className="-mt-2 text-xs text-muted-foreground">{t("briefFormHint")}</p>
+      <BriefFields {...props} />
+    </div>
+  );
+}
+
+export function NotesField() {
+  const t = useTranslations("jobs");
+  const form = useFormContext<JobFormValues>();
+  return (
+    <FormField
+      control={form.control}
+      name="notes"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{t("notes")}</FormLabel>
+          <FormControl>
+            <Textarea
+              rows={3}
+              placeholder={t("notesPlaceholder")}
+              {...field}
+              value={field.value ?? ""}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+/** Brother-job toggle + withholding / income inputs with the live tax preview. */
+export function IncomeFields() {
+  const t = useTranslations("jobs");
+  const form = useFormContext<JobFormValues>();
+  const hasWithholdingTax = form.watch("hasWithholdingTax") ?? false;
+  const amountValue = form.watch("amount") ?? 0;
+  const withholdingRateValue = form.watch("withholdingRate") ?? 3;
+  const isBrotherJob = form.watch("isBrotherJob") ?? false;
+
+  return (
+    <div className="space-y-4">
+      <FormField
+        control={form.control}
+        name="isBrotherJob"
+        render={({ field }) => (
+          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+            <FormControl>
+              <Checkbox
+                checked={field.value ?? false}
+                onCheckedChange={(checked) => field.onChange(checked === true)}
+              />
+            </FormControl>
+            <div className="space-y-1 leading-none">
+              <FormLabel className="font-normal cursor-pointer">
+                {t("isBrotherJob")}
+              </FormLabel>
+            </div>
+          </FormItem>
+        )}
+      />
+      {!isBrotherJob && (
+        <>
+          <FormField
+            control={form.control}
+            name="hasWithholdingTax"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value ?? false}
+                    onCheckedChange={(checked) =>
+                      field.onChange(checked === true)
+                    }
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel className="font-normal cursor-pointer">
+                    {t("hasWithholdingTax")}
+                  </FormLabel>
+                </div>
+              </FormItem>
+            )}
+          />
+          {!hasWithholdingTax ? (
+            <FormField
+              control={form.control}
+              name="amount"
+              render={({ field }) => (
+                <FormItem className="max-w-xs">
+                  <FormLabel>{t("amount")}</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.01"
+                      min={0}
+                      placeholder="0"
+                      {...field}
+                      value={
+                        field.value === undefined || field.value === null
+                          ? ""
+                          : field.value
+                      }
+                      onChange={(e) => {
+                        const v =
+                          e.target.value === ""
+                            ? undefined
+                            : Number(e.target.value);
+                        field.onChange(v);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          ) : (
+            <div className="space-y-3">
+              <div className="grid gap-4 sm:grid-cols-2 max-w-md">
+                <FormField
+                  control={form.control}
+                  name="amount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("grossAmount")}</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          step="0.01"
+                          min={0}
+                          placeholder="0"
+                          {...field}
+                          value={
+                            field.value === undefined || field.value === null
+                              ? ""
+                              : field.value
+                          }
+                          onChange={(e) => {
+                            const v =
+                              e.target.value === ""
+                                ? undefined
+                                : Number(e.target.value);
+                            field.onChange(v);
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="withholdingRate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("withholdingRate")}</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          step="0.01"
+                          min={0}
+                          max={100}
+                          placeholder="3"
+                          {...field}
+                          value={
+                            field.value === undefined || field.value === null
+                              ? "3"
+                              : field.value
+                          }
+                          onChange={(e) => {
+                            const v =
+                              e.target.value === ""
+                                ? 3
+                                : Number(e.target.value);
+                            field.onChange(v);
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              {amountValue > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  {t("taxResult", {
+                    tax: computeWithholdingAndNet(
+                      amountValue,
+                      withholdingRateValue,
+                    ).withholdingAmount.toLocaleString("th-TH"),
+                    net: computeWithholdingAndNet(
+                      amountValue,
+                      withholdingRateValue,
+                    ).netAmount.toLocaleString("th-TH"),
+                  })}
+                </p>
+              )}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
