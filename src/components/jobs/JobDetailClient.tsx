@@ -1,65 +1,54 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter, Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { FileUpload } from "@/components/ui/file-upload";
 import { PlatformBadges } from "./PlatformBadges";
 import {
   STATUS_BADGE_CLASS,
   DEFAULT_STATUS_BADGE_CLASS,
 } from "./statusBadgeClasses";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { JobForm } from "./JobForm";
-import { BriefAttachments } from "./BriefAttachments";
 import { AddToCalendarButton } from "./AddToCalendarButton";
 import { JobInvoices } from "./JobInvoices";
-import {
-  reviewJobCreateSchema,
-  REVIEW_JOB_STATUSES,
-} from "@/lib/schemas/reviewJob";
+import { StatusPicker } from "@/components/board/StatusPicker";
+import { REVIEW_JOB_STATUSES } from "@/lib/schemas/reviewJob";
 import { ConfirmDeleteDialog } from "@/components/ui/ConfirmDeleteDialog";
 import { useConfirm } from "@/components/ui/useConfirm";
 import { BlurFade } from "@/components/ui/blur-fade";
-import { NumberTicker } from "@/components/ui/number-ticker";
-import { briefLinkEmbed } from "@/lib/briefEmbed";
 import { toast } from "@/lib/toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   ArrowLeft,
-  Calendar,
-  ClipboardList,
+  Check,
+  ChevronDown,
   Trash2,
-  ExternalLink,
-  Copy,
   Pencil,
-  MapPin,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useJobStatusMove } from "@/hooks/useJobStatusMove";
 import {
-  formatDateThai,
-  isNearReviewDeadline,
-  isPublishDatePassed,
-} from "@/lib/formatDate";
-import { formatTHB } from "@/lib/currency";
+  DetailsCard,
+  BriefCard,
+  IncomeCard,
+  DatesCard,
+  NotesCard,
+  type JobDetail,
+  type JobIncome,
+  type BriefDoc,
+} from "./sections/JobSections";
 import type { z } from "zod";
-import type { ReviewJobStatus } from "@/lib/schemas/reviewJob";
+import type { reviewJobSchema, ReviewJobStatus } from "@/lib/schemas/reviewJob";
 
 const STATUS_KEYS: Record<string, string> = {
   received: "statusReceived",
@@ -72,76 +61,27 @@ const STATUS_KEYS: Record<string, string> = {
   paid: "statusPaid",
 };
 
-function DetailItem({
-  label,
-  children,
-  icon,
-  className,
-}: {
-  label: ReactNode;
-  children: ReactNode;
-  icon?: ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={cn("rounded-lg border bg-muted/20 p-3", className)}>
-      <dt className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-        {icon}
-        {label}
-      </dt>
-      <dd className="mt-1.5 min-h-5 text-sm font-medium">{children}</dd>
-    </div>
-  );
-}
-
-type ReviewJobJson = {
-  id: string;
-  payerName: string | null;
-  status: string;
-  platforms: string[];
-  contentType: string;
-  title: string;
-  receivedDate?: string | null;
-  reviewDeadline?: string | null;
-  publishDate?: string | null;
-  paymentDate?: string | null;
-  tags: string[];
-  notes: string | null;
-  brief?: string | null;
-  briefLink?: string | null;
-  briefLinkNote?: string | null;
-  isBrotherJob?: boolean;
-};
-
-type DocumentJson = {
-  id: string;
-  filePath: string;
-  kind: string;
-  notes: string | null;
-};
+type JobFormValues = z.infer<typeof reviewJobSchema>;
 
 export function JobDetailClient({ id }: { id: string }) {
   const router = useRouter();
   const t = useTranslations("jobs");
   const tCommon = useTranslations("common");
-  const tDashboard = useTranslations("dashboard");
   const { confirm, confirmDialog } = useConfirm();
-  const [job, setJob] = useState<ReviewJobJson | null>(null);
+  const [job, setJob] = useState<JobDetail | null>(null);
   const [payerNames, setPayerNames] = useState<string[]>([]);
-  const [documents, setDocuments] = useState<DocumentJson[]>([]);
+  const [documents, setDocuments] = useState<BriefDoc[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
-  const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
-  const [existingEvidenceImages, setExistingEvidenceImages] = useState<
-    Array<{ id: string; url: string }>
-  >([]);
-  const [jobIncome, setJobIncome] = useState<{
-    grossAmount: number;
-    withholdingAmount: number;
-    netAmount: number;
-  } | null>(null);
+  const [uploadingEvidence, setUploadingEvidence] = useState(false);
+  const [jobIncome, setJobIncome] = useState<JobIncome | null>(null);
+
+  // Header quick-edit state
+  const [statusOpen, setStatusOpen] = useState(false);
+  const [titleEditing, setTitleEditing] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
+  const [titleSaving, setTitleSaving] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -156,23 +96,14 @@ export function JobDetailClient({ id }: { id: string }) {
       const incomeJson = await incomeRes.json();
       if (!jobRes.ok) throw new Error(jobJson.error ?? t("jobNotFound"));
       setJob(jobJson.data ?? null);
-      const docs = (docsJson.data ?? []) as DocumentJson[];
+      const docs = (docsJson.data ?? []) as BriefDoc[];
       setDocuments(docs);
-      const incomeList = (incomeJson?.data ?? []) as Array<{
-        grossAmount: number;
-        withholdingAmount: number;
-        netAmount: number;
-      }>;
+      const incomeList = (incomeJson?.data ?? []) as JobIncome[];
       setJobIncome(
         incomeList[0] &&
           (incomeList[0].grossAmount > 0 || incomeList[0].netAmount > 0)
           ? incomeList[0]
           : null,
-      );
-      setExistingEvidenceImages(
-        docs
-          .filter((doc) => doc.kind !== "brief" && doc.filePath)
-          .map((doc) => ({ id: doc.id, url: doc.filePath! })),
       );
     } catch (e) {
       toast.error(t("loadingError"), String(e));
@@ -180,63 +111,95 @@ export function JobDetailClient({ id }: { id: string }) {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, t]);
 
   useEffect(() => {
     load();
   }, [load]);
 
+  // Payer suggestions are needed by both the inline Details editor and the
+  // full "Edit all" form, so fetch them once the page has a job.
   useEffect(() => {
-    if (editOpen) {
-      fetch("/api/jobs/payer-names")
-        .then((r) => r.json())
-        .then((json: { data?: string[] }) => setPayerNames(json.data ?? []))
-        .catch(() => setPayerNames([]));
-    }
-  }, [editOpen]);
+    fetch("/api/jobs/payer-names")
+      .then((r) => r.json())
+      .then((json: { data?: string[] }) => setPayerNames(json.data ?? []))
+      .catch(() => setPayerNames([]));
+  }, []);
 
-  const handleEditSubmit = async (
-    data: z.infer<typeof reviewJobCreateSchema>,
-  ) => {
-    try {
-      const res = await fetch(`/api/jobs/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? t("updateError"));
+  const { moveJob, paidSheet, busy: moveBusy } = useJobStatusMove({
+    onApply: (_jobId, patch) =>
+      setJob((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: patch.status,
+              ...(patch.paymentDate !== undefined
+                ? { paymentDate: patch.paymentDate }
+                : {}),
+            }
+          : prev,
+      ),
+    onRevert: (_jobId, prev) =>
+      setJob((cur) =>
+        cur
+          ? { ...cur, status: prev.status, paymentDate: prev.paymentDate }
+          : cur,
+      ),
+    onSaved: () => load(),
+  });
 
-      if (evidenceFiles.length > 0) {
-        for (const file of evidenceFiles) {
-          const formData = new FormData();
-          formData.append("file", file);
-          const uploadRes = await fetch("/api/upload", {
-            method: "POST",
-            body: formData,
-          });
-          if (!uploadRes.ok) {
-            throw new Error(t("uploadError"));
-          }
-          const uploadJson = await uploadRes.json();
-          await fetch("/api/documents", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              reviewJobId: id,
-              kind: "evidence",
-              filePath: uploadJson.filePath,
-            }),
-          });
-        }
-        setEvidenceFiles([]);
+  /** PATCH a single section and refresh. Throws so the editor can stay open. */
+  const saveSection = useCallback(
+    async (patch: Partial<JobFormValues>) => {
+      try {
+        const res = await fetch(`/api/jobs/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(patch),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error ?? t("updateError"));
+        toast.success(t("updateSuccess"));
+        await load();
+      } catch (e) {
+        toast.error(t("updateError"), String(e));
+        throw e;
       }
+    },
+    [id, t, load],
+  );
 
+  /** Upload newly picked evidence images immediately, then refresh. */
+  const uploadEvidence = async (files: File[]) => {
+    if (files.length === 0 || uploadingEvidence) return;
+    setUploadingEvidence(true);
+    try {
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+        if (!uploadRes.ok) throw new Error(t("uploadError"));
+        const uploadJson = await uploadRes.json();
+        const docRes = await fetch("/api/documents", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            reviewJobId: id,
+            kind: "evidence",
+            filePath: uploadJson.filePath,
+          }),
+        });
+        if (!docRes.ok) throw new Error(t("uploadError"));
+      }
       toast.success(t("updateSuccess"));
-      setEditOpen(false);
       await load();
     } catch (e) {
-      toast.error(t("updateError"), String(e));
+      toast.error(t("uploadError"), String(e));
+    } finally {
+      setUploadingEvidence(false);
     }
   };
 
@@ -251,6 +214,39 @@ export function JobDetailClient({ id }: { id: string }) {
       router.push("/jobs");
     } catch (e) {
       toast.error(t("deleteError"), String(e));
+    }
+  };
+
+  const handleDeleteDocument = async (docId: string) => {
+    if (deletingDocId) return;
+    if (!(await confirm({ description: t("confirmDeleteDocument") }))) return;
+    setDeletingDocId(docId);
+    try {
+      const res = await fetch(`/api/documents/${docId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error(t("deleteDocError"));
+      toast.success(t("deleteDocSuccess"));
+      await load();
+    } catch (e) {
+      toast.error(t("deleteDocError"), String(e));
+    } finally {
+      setDeletingDocId(null);
+    }
+  };
+
+  const saveTitle = async () => {
+    const next = titleDraft.trim();
+    if (!next || !job || next === job.title) {
+      setTitleEditing(false);
+      return;
+    }
+    setTitleSaving(true);
+    try {
+      await saveSection({ title: next });
+      setTitleEditing(false);
+    } catch {
+      // error toast already shown by saveSection
+    } finally {
+      setTitleSaving(false);
     }
   };
 
@@ -281,41 +277,10 @@ export function JobDetailClient({ id }: { id: string }) {
             </dl>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-5 w-20" />
-          </CardHeader>
-          <CardContent>
-            <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i}>
-                  <Skeleton className="mb-1 h-4 w-24" />
-                  <Skeleton className="h-4 w-28" />
-                </div>
-              ))}
-            </dl>
-          </CardContent>
-        </Card>
       </div>
     );
   if (!job)
     return <p className="text-sm text-muted-foreground">{t("jobNotFound")}</p>;
-
-  const handleDeleteDocument = async (docId: string) => {
-    if (deletingDocId) return;
-    if (!(await confirm({ description: t("confirmDeleteDocument") }))) return;
-    setDeletingDocId(docId);
-    try {
-      const res = await fetch(`/api/documents/${docId}`, { method: "DELETE" });
-      if (!res.ok) throw new Error(t("deleteDocError"));
-      toast.success(t("deleteDocSuccess"));
-      await load();
-    } catch (e) {
-      toast.error(t("deleteDocError"), String(e));
-    } finally {
-      setDeletingDocId(null);
-    }
-  };
 
   const status: ReviewJobStatus = REVIEW_JOB_STATUSES.includes(
     job.status as ReviewJobStatus,
@@ -323,24 +288,23 @@ export function JobDetailClient({ id }: { id: string }) {
     ? (job.status as ReviewJobStatus)
     : "received";
 
-  const incomeDefaults =
-    job.isBrotherJob
-      ? { isBrotherJob: true as const }
-      : jobIncome
-        ? jobIncome.withholdingAmount > 0
-          ? {
-              hasWithholdingTax: true as const,
-              amount: jobIncome.grossAmount,
-              withholdingRate:
-                jobIncome.grossAmount > 0
-                  ? (jobIncome.withholdingAmount / jobIncome.grossAmount) * 100
-                  : 3,
-            }
-          : {
-              hasWithholdingTax: false as const,
-              amount: jobIncome.grossAmount,
-            }
-        : { hasWithholdingTax: false as const };
+  const incomeDefaults = job.isBrotherJob
+    ? { isBrotherJob: true as const }
+    : jobIncome
+      ? jobIncome.withholdingAmount > 0
+        ? {
+            hasWithholdingTax: true as const,
+            amount: jobIncome.grossAmount,
+            withholdingRate:
+              jobIncome.grossAmount > 0
+                ? (jobIncome.withholdingAmount / jobIncome.grossAmount) * 100
+                : 3,
+          }
+        : {
+            hasWithholdingTax: false as const,
+            amount: jobIncome.grossAmount,
+          }
+      : { hasWithholdingTax: false as const };
 
   const defaultValues = {
     payerName: job.payerName ?? "",
@@ -358,20 +322,28 @@ export function JobDetailClient({ id }: { id: string }) {
     briefLink: job.briefLink ?? "",
     briefLinkNote: job.briefLinkNote ?? "",
     ...incomeDefaults,
+  } as unknown as JobFormValues;
+
+  const briefDocs = documents.filter((doc) => doc.kind === "brief");
+  const evidenceDocs = documents.filter((doc) => doc.kind === "evidence");
+  const showEvidence = job.status === "paid";
+
+  const sectionProps = {
+    job,
+    defaultValues,
+    confirm,
+    onSave: saveSection,
   };
 
-  const briefEmbedUrl = job.briefLink ? briefLinkEmbed(job.briefLink) : null;
-  const briefDocs = documents.filter((doc) => doc.kind === "brief");
-  const evidenceDocs = documents.filter((doc) => doc.kind !== "brief");
-  const hasBriefText = Boolean(job.brief && job.brief.trim());
-  const hasBriefLink = Boolean(job.briefLink && job.briefLink.trim());
-  const hasBriefContent = hasBriefText || hasBriefLink || briefDocs.length > 0;
-  const showEvidence = job.status === "paid";
-  const hasAnyDate =
-    (job.receivedDate != null && job.receivedDate !== "") ||
-    (job.reviewDeadline != null && job.reviewDeadline !== "") ||
-    (job.publishDate != null && job.publishDate !== "") ||
-    (job.paymentDate != null && job.paymentDate !== "");
+  const calendarJob = {
+    title: job.title,
+    platforms: job.platforms,
+    contentType: job.contentType,
+    payerName: job.payerName,
+    notes: job.notes,
+    reviewDeadline: job.reviewDeadline ?? null,
+    publishDate: job.publishDate ?? null,
+  };
 
   return (
     <div className="space-y-5 pb-24 md:space-y-6 md:pb-0">
@@ -391,20 +363,47 @@ export function JobDetailClient({ id }: { id: string }) {
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0 space-y-3">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge
-                variant="outline"
-                className={cn(
-                  "border text-xs",
-                  job.status
-                    ? (STATUS_BADGE_CLASS[job.status] ??
-                        DEFAULT_STATUS_BADGE_CLASS)
-                    : DEFAULT_STATUS_BADGE_CLASS,
-                )}
-              >
-                {job.status
-                  ? t(STATUS_KEYS[job.status] ?? "statusReceived")
-                  : "—"}
-              </Badge>
+              <Popover open={statusOpen} onOpenChange={setStatusOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={t("changeStatus")}
+                    className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "cursor-pointer border text-xs",
+                        STATUS_BADGE_CLASS[job.status] ??
+                          DEFAULT_STATUS_BADGE_CLASS,
+                      )}
+                    >
+                      {t(STATUS_KEYS[job.status] ?? "statusReceived")}
+                      <ChevronDown className="ml-1 h-3 w-3" />
+                    </Badge>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-72 p-2">
+                  <StatusPicker
+                    current={job.status}
+                    disabled={moveBusy}
+                    onSelect={(next) => {
+                      setStatusOpen(false);
+                      void moveJob(
+                        {
+                          id: job.id,
+                          status: job.status,
+                          paymentDate: job.paymentDate ?? null,
+                          receivedDate: job.receivedDate ?? null,
+                          reviewDeadline: job.reviewDeadline ?? null,
+                          publishDate: job.publishDate ?? null,
+                        },
+                        next,
+                      );
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
               {job.isBrotherJob && (
                 <Badge
                   variant="outline"
@@ -414,9 +413,67 @@ export function JobDetailClient({ id }: { id: string }) {
                 </Badge>
               )}
             </div>
-            <h1 className="break-words text-2xl font-semibold leading-tight tracking-tight md:text-3xl">
-              {job.title}
-            </h1>
+
+            {titleEditing ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  autoFocus
+                  value={titleDraft}
+                  onChange={(e) => setTitleDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      void saveTitle();
+                    } else if (e.key === "Escape") {
+                      setTitleEditing(false);
+                    }
+                  }}
+                  className="h-auto max-w-xl py-1 text-2xl font-semibold md:text-3xl"
+                  disabled={titleSaving}
+                />
+                <Button
+                  type="button"
+                  size="icon"
+                  className="h-9 w-9 shrink-0"
+                  loading={titleSaving}
+                  onClick={() => void saveTitle()}
+                  aria-label={tCommon("save")}
+                >
+                  {titleSaving ? null : <Check className="h-4 w-4" />}
+                </Button>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  className="h-9 w-9 shrink-0"
+                  disabled={titleSaving}
+                  onClick={() => setTitleEditing(false)}
+                  aria-label={tCommon("cancel")}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-start gap-2">
+                <h1 className="break-words text-2xl font-semibold leading-tight tracking-tight md:text-3xl">
+                  {job.title}
+                </h1>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="mt-0.5 h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
+                  aria-label={t("editTitleAria")}
+                  onClick={() => {
+                    setTitleDraft(job.title);
+                    setTitleEditing(true);
+                  }}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
               {job.payerName && <span>{job.payerName}</span>}
               <PlatformBadges platforms={job.platforms ?? []} />
@@ -425,392 +482,58 @@ export function JobDetailClient({ id }: { id: string }) {
           </div>
 
           <div className="hidden shrink-0 flex-wrap gap-2 md:flex md:justify-end">
-            <AddToCalendarButton
-              job={{
-                title: job.title,
-                platforms: job.platforms,
-                contentType: job.contentType,
-                payerName: job.payerName,
-                notes: job.notes,
-                reviewDeadline: job.reviewDeadline ?? null,
-                publishDate: job.publishDate ?? null,
-              }}
-            />
-            <Button variant="outline" onClick={() => setEditOpen(true)}>
-              <Pencil className="h-4 w-4" />
-              {tCommon("edit")}
-            </Button>
+            <AddToCalendarButton job={calendarJob} />
             <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
               <Trash2 className="h-4 w-4" />
               {tCommon("delete")}
             </Button>
           </div>
         </div>
-
-        <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <DetailItem label={t("payer")}>{job.payerName || "—"}</DetailItem>
-          <DetailItem label={t("table.contentType")}>
-            {job.contentType || "—"}
-          </DetailItem>
-          <DetailItem
-            label={t("reviewDeadline")}
-            icon={<Calendar className="h-3.5 w-3.5" />}
-          >
-            {job.reviewDeadline ? (
-              <span
-                className={
-                  isNearReviewDeadline(job.reviewDeadline)
-                    ? "rounded bg-amber-50 px-1 font-semibold text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
-                    : undefined
-                }
-              >
-                {formatDateThai(job.reviewDeadline)}
-              </span>
-            ) : (
-              "—"
-            )}
-          </DetailItem>
-          <DetailItem
-            label={t("publishDate")}
-            icon={<Calendar className="h-3.5 w-3.5" />}
-          >
-            {job.publishDate ? (
-              <span
-                className={
-                  isPublishDatePassed(job.publishDate)
-                    ? "rounded bg-green-50 px-1 font-semibold text-green-700 dark:bg-green-950/40 dark:text-green-300"
-                    : undefined
-                }
-              >
-                {formatDateThai(job.publishDate)}
-              </span>
-            ) : (
-              "—"
-            )}
-          </DetailItem>
-        </dl>
       </BlurFade>
 
-      <Card
-        id="brief"
-        className="scroll-mt-24 gap-4 border-primary/25 py-4 shadow-sm md:py-5"
-      >
-        <CardHeader className="gap-3 px-4 md:px-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <ClipboardList className="h-4 w-4 text-primary" />
-              {t("brief")}
-            </CardTitle>
-            {(hasBriefLink || hasBriefText) && (
-              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-                {hasBriefLink && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="min-h-11"
-                    asChild
-                  >
-                    <a
-                      href={job.briefLink!}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                      {t("openBrief")}
-                    </a>
-                  </Button>
-                )}
-                {hasBriefText && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="min-h-11"
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(job.brief ?? "");
-                        toast.success(t("briefCopied"));
-                      } catch {
-                        toast.error(t("copyError"));
-                      }
-                    }}
-                  >
-                    <Copy className="h-4 w-4" />
-                    {t("copyBrief")}
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4 px-4 md:px-5">
-          {briefEmbedUrl && (
-            <div className="relative w-full overflow-hidden rounded-lg border bg-muted/30 pt-[62%] sm:pt-[56.25%]">
-              <iframe
-                src={briefEmbedUrl}
-                title={t("brief")}
-                loading="lazy"
-                allowFullScreen
-                className="absolute inset-0 h-full w-full"
-              />
-            </div>
-          )}
-          {hasBriefLink && !briefEmbedUrl && (
-            <a
-              href={job.briefLink!}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex min-h-11 items-center gap-2 break-all rounded-lg border bg-muted/30 px-4 py-3 text-sm font-medium text-primary"
-            >
-              <ExternalLink className="h-4 w-4 shrink-0" />
-              {job.briefLink}
-            </a>
-          )}
-          {job.briefLinkNote && job.briefLinkNote.trim() && (
-            <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
-              <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
-              {job.briefLinkNote}
-            </p>
-          )}
-          {hasBriefText && (
-            <div className="rounded-lg bg-muted/25 p-3 text-sm leading-6">
-              <p className="whitespace-pre-wrap">{job.brief}</p>
-            </div>
-          )}
-          {!hasBriefContent && (
-            <p className="rounded-lg bg-muted/25 p-3 text-sm text-muted-foreground">
-              {t("briefEmpty")}
-            </p>
-          )}
-          <BriefAttachments jobId={id} files={briefDocs} onChanged={load} />
-        </CardContent>
-      </Card>
+      <DetailsCard {...sectionProps} payerNames={payerNames} />
 
-      {(jobIncome || job.isBrotherJob) && (
-        <Card className="gap-4 py-4 shadow-sm md:py-5">
-          <CardHeader className="px-4 md:px-5">
-            <CardTitle className="text-base">{t("income")}</CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 md:px-5">
-            {job.isBrotherJob ? (
-              <Badge
-                variant="outline"
-                className="text-xs bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-200 dark:border-purple-800"
-              >
-                {t("brotherBadge")}
-              </Badge>
-            ) : jobIncome ? (
-              <>
-                <dl className="grid gap-3 sm:hidden">
-                  <DetailItem label={t("grossAmount")}>
-                    <span className="tabular-nums">
-                      {formatTHB(jobIncome.grossAmount)} THB
-                    </span>
-                  </DetailItem>
-                  <DetailItem label={t("withholdingRate")}>
-                    <span className="tabular-nums">
-                      {jobIncome.withholdingAmount > 0 && jobIncome.grossAmount > 0
-                        ? `${Math.round((jobIncome.withholdingAmount / jobIncome.grossAmount) * 100 * 100) / 100}%`
-                        : "—"}
-                    </span>
-                  </DetailItem>
-                  <DetailItem label={tDashboard("withholding")}>
-                    <span className="tabular-nums">
-                      {jobIncome.withholdingAmount > 0
-                        ? `${formatTHB(jobIncome.withholdingAmount)} THB`
-                        : "—"}
-                    </span>
-                  </DetailItem>
-                  <DetailItem label={tDashboard("net")}>
-                    <span className="tabular-nums">
-                      <NumberTicker
-                        value={jobIncome.netAmount}
-                        decimalPlaces={2}
-                      />{" "}
-                      THB
-                    </span>
-                  </DetailItem>
-                </dl>
-                <div className="hidden overflow-hidden rounded-lg border sm:block">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-right">{t("grossAmount")}</TableHead>
-                        <TableHead className="text-right">
-                          {t("withholdingRate")}
-                        </TableHead>
-                        <TableHead className="text-right">
-                          {tDashboard("withholding")}
-                        </TableHead>
-                        <TableHead className="text-right">
-                          {tDashboard("net")}
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell className="text-right tabular-nums">
-                          {formatTHB(jobIncome.grossAmount)} THB
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {jobIncome.withholdingAmount > 0 && jobIncome.grossAmount > 0
-                            ? `${Math.round((jobIncome.withholdingAmount / jobIncome.grossAmount) * 100 * 100) / 100}%`
-                            : "—"}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {jobIncome.withholdingAmount > 0
-                            ? `${formatTHB(jobIncome.withholdingAmount)} THB`
-                            : "—"}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums font-semibold">
-                          <NumberTicker
-                            value={jobIncome.netAmount}
-                            decimalPlaces={2}
-                          />{" "}
-                          THB
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </div>
-              </>
-            ) : null}
-          </CardContent>
-        </Card>
-      )}
+      <BriefCard
+        {...sectionProps}
+        briefDocs={briefDocs}
+        onAttachmentsChanged={load}
+      />
+
+      <IncomeCard {...sectionProps} income={jobIncome} />
 
       {!job.isBrotherJob && <JobInvoices jobId={id} />}
 
-      {hasAnyDate && (
-        <Card className="gap-4 py-4 shadow-sm md:py-5">
-          <CardHeader className="px-4 md:px-5">
-            <CardTitle className="text-base">{t("dates")}</CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 md:px-5">
-            <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {job.receivedDate != null && job.receivedDate !== "" && (
-                <DetailItem
-                  label={t("receivedDate")}
-                  icon={<Calendar className="h-3.5 w-3.5" />}
-                >
-                  {formatDateThai(job.receivedDate)}
-                </DetailItem>
-              )}
-              {job.reviewDeadline != null && job.reviewDeadline !== "" && (
-                <DetailItem
-                  label={t("reviewDeadline")}
-                  icon={<Calendar className="h-3.5 w-3.5" />}
-                >
-                  <span
-                    className={
-                      isNearReviewDeadline(job.reviewDeadline)
-                        ? "rounded px-1 font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
-                        : undefined
-                    }
-                  >
-                    {formatDateThai(job.reviewDeadline)}
-                  </span>
-                </DetailItem>
-              )}
-              {job.publishDate != null && job.publishDate !== "" && (
-                <DetailItem
-                  label={t("publishDate")}
-                  icon={<Calendar className="h-3.5 w-3.5" />}
-                >
-                  <span
-                    className={
-                      isPublishDatePassed(job.publishDate)
-                        ? "rounded px-1 font-medium bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-300"
-                        : undefined
-                    }
-                  >
-                    {formatDateThai(job.publishDate)}
-                  </span>
-                </DetailItem>
-              )}
-              {job.paymentDate != null && job.paymentDate !== "" && (
-                <DetailItem
-                  label={t("paymentDate")}
-                  icon={<Calendar className="h-3.5 w-3.5" />}
-                >
-                  {formatDateThai(job.paymentDate)}
-                </DetailItem>
-              )}
-            </dl>
-          </CardContent>
-        </Card>
-      )}
+      <DatesCard {...sectionProps} />
 
-      {job.notes && (
-        <Card className="gap-4 py-4 shadow-sm md:py-5">
-          <CardHeader className="px-4 md:px-5">
-            <CardTitle className="text-base">{t("notes")}</CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 md:px-5">
-            <p className="rounded-lg bg-muted/25 p-3 text-sm leading-6 whitespace-pre-wrap">
-              {job.notes}
-            </p>
-          </CardContent>
-        </Card>
-      )}
+      <NotesCard {...sectionProps} />
 
-      {showEvidence && evidenceDocs.length > 0 && (
+      {showEvidence && (
         <Card className="gap-4 py-4 shadow-sm md:py-5">
           <CardHeader className="px-4 md:px-5">
             <CardTitle className="text-base">{t("evidenceImages")}</CardTitle>
           </CardHeader>
           <CardContent className="px-4 md:px-5">
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-              {evidenceDocs.map((doc) => (
-                <div
-                  key={doc.id}
-                  className="relative group rounded-lg border bg-muted/30 overflow-hidden"
-                >
-                  <img
-                    src={doc.filePath}
-                    alt="Evidence"
-                    className="w-full h-32 object-cover"
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="icon"
-                    loading={deletingDocId === doc.id}
-                    className="absolute right-2 top-2 h-11 w-11 opacity-100 transition-opacity data-[loading]:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 md:h-8 md:w-8 [@media(hover:hover)]:opacity-0"
-                    onClick={() => handleDeleteDocument(doc.id)}
-                  >
-                    {deletingDocId === doc.id ? null : (
-                      <Trash2 className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
-                </div>
-              ))}
-            </div>
+            <FileUpload
+              value={[]}
+              onChange={(files) => void uploadEvidence(files)}
+              accept="image/*"
+              multiple
+              existingImages={evidenceDocs.map((doc) => ({
+                id: doc.id,
+                url: doc.filePath,
+              }))}
+              onRemoveExisting={(docId) => void handleDeleteDocument(docId)}
+              className={
+                uploadingEvidence ? "pointer-events-none opacity-70" : undefined
+              }
+            />
           </CardContent>
         </Card>
       )}
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 p-3 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur md:hidden">
-        <div className="mx-auto grid max-w-md grid-cols-[1fr_1fr_auto] gap-2">
-          <AddToCalendarButton
-            job={{
-              title: job.title,
-              platforms: job.platforms,
-              contentType: job.contentType,
-              payerName: job.payerName,
-              notes: job.notes,
-              reviewDeadline: job.reviewDeadline ?? null,
-              publishDate: job.publishDate ?? null,
-            }}
-            className="min-h-11 w-full"
-          />
-          <Button
-            variant="outline"
-            className="min-h-11"
-            onClick={() => setEditOpen(true)}
-          >
-            <Pencil className="h-4 w-4" />
-            {tCommon("edit")}
-          </Button>
+      <div className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-40 border-t bg-background/95 p-3 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur md:hidden">
+        <div className="mx-auto grid max-w-md grid-cols-[1fr_auto] gap-2">
+          <AddToCalendarButton job={calendarJob} className="min-h-11 w-full" />
           <Button
             variant="destructive"
             size="icon"
@@ -823,50 +546,13 @@ export function JobDetailClient({ id }: { id: string }) {
         </div>
       </div>
 
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="top-0 max-h-[100dvh] max-w-full translate-y-0 gap-0 rounded-none border-0 p-0 sm:top-[50%] sm:max-h-[calc(100dvh-2rem)] sm:max-w-2xl sm:translate-y-[-50%] sm:rounded-lg sm:border md:max-w-3xl">
-          <DialogHeader className="sticky top-0 z-10 border-b bg-background px-4 py-4 pr-12 text-left sm:px-6">
-            <DialogTitle className="text-xl">{t("editJob")}</DialogTitle>
-            <DialogDescription>{t("jobFormHint")}</DialogDescription>
-          </DialogHeader>
-          <div className="px-4 py-5 sm:px-6">
-            <JobForm
-              schema={reviewJobCreateSchema}
-              defaultValues={defaultValues}
-              onSubmit={handleEditSubmit}
-              submitLabel={tCommon("save")}
-              payerNames={payerNames}
-              evidenceFiles={evidenceFiles}
-              onEvidenceFilesChange={setEvidenceFiles}
-              existingEvidenceImages={existingEvidenceImages}
-              onRemoveExistingEvidence={async (docId) => {
-                if (!(await confirm({ description: t("confirmRemoveImage") })))
-                  return;
-                try {
-                  const res = await fetch(`/api/documents/${docId}`, {
-                    method: "DELETE",
-                  });
-                  if (!res.ok) throw new Error(t("deleteDocError"));
-                  setExistingEvidenceImages((prev) =>
-                    prev.filter((img) => img.id !== docId),
-                  );
-                  await load();
-                  toast.success(t("removeImageSuccess"));
-                } catch (e) {
-                  toast.error(t("removeImageError"), String(e));
-                }
-              }}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
-
       <ConfirmDeleteDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
         onConfirm={handleConfirmDelete}
       />
 
+      {paidSheet}
       {confirmDialog}
     </div>
   );

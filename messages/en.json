@@ -36,7 +36,8 @@
     "theme": "Theme",
     "themeLight": "Light",
     "themeDark": "Dark",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "discard": "Discard"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -237,7 +238,16 @@
     "invalidBriefLink": "Please paste a valid link (starting with http).",
     "confirmDeleteDocument": "Delete this document? This can't be undone.",
     "confirmRemoveImage": "Remove this image? This can't be undone.",
-    "confirmDeleteBrief": "Delete this file? This can't be undone."
+    "confirmDeleteBrief": "Delete this file? This can't be undone.",
+    "changeStatus": "Change status",
+    "discardChanges": "Discard changes?",
+    "discardChangesDesc": "Your unsaved changes to this section will be lost.",
+    "keepEditing": "Keep editing",
+    "editTitleAria": "Edit title",
+    "incomeEmpty": "No income recorded yet. Use Edit to add the amount and withholding.",
+    "datesEmpty": "No dates set yet. Use Edit to add the received, review, publish, or payment date.",
+    "notesEmpty": "No notes yet. Use Edit to add a note.",
+    "quickCreateHint": "Log the essentials now — add the brief, fee and dates on the next screen."
   },
   "payers": {
     "title": "Payers",
@@ -488,6 +498,7 @@
     "rateCardBgSaved": "Rate Card background updated",
     "copyContact": "Copy contact",
     "contactCopied": "Copied",
+    "contactHere": "Contact me here",
     "addWork": "Add work",
     "addWorkTitle": "Add portfolio work",
     "addWorkHint": "Upload content images to feature in your portfolio. These are separate from payment slips and are the only images shown publicly.",
