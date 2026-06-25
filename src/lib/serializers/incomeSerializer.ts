@@ -3,6 +3,9 @@
  * TODO: Thailand - ensure dates and amounts align with PND 50/53 period grouping.
  */
 
+import { computeWithholdingAndNet } from "@/lib/tax";
+import { roundCurrency } from "@/lib/currency";
+
 // Numeric DB columns arrive as a string from raw pg, or a Prisma.Decimal object
 // from the Prisma client. Both serialize to a JS number via Number().
 type Numeric = string | number | { toString(): string };
@@ -73,8 +76,10 @@ export function deserializeIncomeBody(body: {
 } {
   const rate = body.withholdingRate ?? 3;
   const gross = body.grossAmount;
-  const withholding = body.withholdingAmount ?? Math.round(gross * (rate / 100) * 100) / 100;
-  const net = body.netAmount ?? gross - withholding;
+  // Single source of truth for the math; explicit body values still win.
+  const computed = computeWithholdingAndNet(gross, rate);
+  const withholding = body.withholdingAmount ?? computed.withholdingAmount;
+  const net = body.netAmount ?? roundCurrency(gross - withholding);
   return {
     review_job_id: body.reviewJobId,
     gross_amount: gross,

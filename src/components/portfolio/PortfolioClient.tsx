@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -81,6 +82,7 @@ type Collab = {
   platforms: string[];
   contentTypes: string[];
   imageUrl: string | null;
+  showOnPortfolio: boolean;
 };
 type Work = {
   id: string;
@@ -281,11 +283,43 @@ export function PortfolioClient() {
   }, [profile, updateProfile, saveProfile, t]);
 
   const loadPortfolio = useCallback(() => {
-    return fetch("/api/portfolio")
+    // includeHidden: this is the owner edit page, so show hidden brands too
+    // (with their toggle off) instead of dropping them like the public page.
+    return fetch("/api/portfolio?includeHidden=1")
       .then((res) => (res.ok ? res.json() : Promise.reject(res)))
       .then((json: { data: PortfolioData }) => setData(json.data))
       .catch(() => setError(true));
   }, []);
+
+  const toggleBrand = useCallback(
+    async (name: string, show: boolean) => {
+      const apply = (value: boolean) =>
+        setData((prev) =>
+          prev
+            ? {
+                ...prev,
+                collaborations: prev.collaborations.map((c) =>
+                  c.name === name ? { ...c, showOnPortfolio: value } : c,
+                ),
+              }
+            : prev,
+        );
+      apply(show); // optimistic
+      try {
+        const res = await fetch("/api/portfolio", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ payerName: name, showOnPortfolio: show }),
+        });
+        if (!res.ok) throw new Error();
+        toast.success(show ? t("brandShown") : t("brandHidden"));
+      } catch {
+        apply(!show); // revert
+        toast.error(t("brandToggleError"));
+      }
+    },
+    [t],
+  );
 
   const loadRateCards = useCallback(() => {
     return fetch("/api/rate-cards")
@@ -855,15 +889,20 @@ export function PortfolioClient() {
           <SectionHeading icon={Building2} title={t("collabsTitle")} />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {collaborations.map((c) => (
-              <button
+              <Card
                 key={c.name}
-                type="button"
-                onClick={() => setActiveBrand(c)}
-                aria-label={t("viewBrand", { name: c.name })}
-                className="cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-2xl"
+                className={cn(
+                  "overflow-hidden rounded-2xl transition-shadow hover:shadow-md",
+                  !c.showOnPortfolio && "opacity-55",
+                )}
               >
-                <Card className="overflow-hidden rounded-2xl transition-shadow hover:shadow-md">
-                  <CardContent className="flex items-center gap-3 p-3">
+                <CardContent className="flex items-center gap-2 p-3">
+                  <button
+                    type="button"
+                    onClick={() => setActiveBrand(c)}
+                    aria-label={t("viewBrand", { name: c.name })}
+                    className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
+                  >
                     {c.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -883,9 +922,14 @@ export function PortfolioClient() {
                         {t("deals", { count: c.dealCount })}
                       </p>
                     </div>
-                  </CardContent>
-                </Card>
-              </button>
+                  </button>
+                  <Switch
+                    checked={c.showOnPortfolio}
+                    onCheckedChange={(v) => toggleBrand(c.name, v)}
+                    aria-label={t("showOnPortfolioBrand", { name: c.name })}
+                  />
+                </CardContent>
+              </Card>
             ))}
           </div>
         </section>

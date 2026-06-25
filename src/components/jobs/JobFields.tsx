@@ -527,6 +527,25 @@ export function IncomeFields() {
         <>
           <FormField
             control={form.control}
+            name="showOnPortfolio"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value ?? true}
+                    onCheckedChange={(checked) => field.onChange(checked === true)}
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel className="font-normal cursor-pointer">
+                    {t("showOnPortfolio")}
+                  </FormLabel>
+                </div>
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
             name="hasWithholdingTax"
             render={({ field }) => (
               <FormItem className="flex flex-row items-start space-x-3 space-y-0">

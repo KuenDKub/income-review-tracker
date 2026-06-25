@@ -98,6 +98,15 @@ export async function GET(request: NextRequest) {
     sent += result.sent;
   }
 
+  // Heartbeat: record this successful run so /api/health can detect a cron that
+  // has gone silent (e.g. Vercel Cron stopped, or CRON_SECRET drift).
+  const detail = `items=${notifications.length} sent=${sent}`;
+  await prisma.cron_runs.upsert({
+    where: { job_name: "reminders" },
+    update: { last_run_at: new Date(), last_status: "ok", detail },
+    create: { job_name: "reminders", last_status: "ok", detail },
+  });
+
   return NextResponse.json({
     data: { date: todayKey, items: notifications.length, pushesSent: sent },
   });

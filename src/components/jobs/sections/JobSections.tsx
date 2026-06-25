@@ -72,6 +72,7 @@ export type JobDetail = {
   briefLink?: string | null;
   briefLinkNote?: string | null;
   isBrotherJob?: boolean;
+  showOnPortfolio?: boolean;
 };
 
 export type JobIncome = {
@@ -310,6 +311,7 @@ export function IncomeCard({
       onSave({
         isBrotherJob: values.isBrotherJob,
         hasWithholdingTax: values.hasWithholdingTax,
+        showOnPortfolio: values.showOnPortfolio,
         amount: values.amount,
         withholdingRate: values.withholdingRate,
         // Keep the income row's date in sync and avoid the route defaulting

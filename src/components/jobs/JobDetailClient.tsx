@@ -321,6 +321,7 @@ export function JobDetailClient({ id }: { id: string }) {
     brief: job.brief ?? "",
     briefLink: job.briefLink ?? "",
     briefLinkNote: job.briefLinkNote ?? "",
+    showOnPortfolio: job.showOnPortfolio ?? true,
     ...incomeDefaults,
   } as unknown as JobFormValues;
 

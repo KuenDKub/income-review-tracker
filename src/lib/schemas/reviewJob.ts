@@ -29,6 +29,7 @@ const reviewJobBaseSchema = z.object({
   briefLinkNote: z.string().optional().nullable(),
   hasWithholdingTax: z.boolean().default(false),
   isBrotherJob: z.boolean().default(false),
+  showOnPortfolio: z.boolean().default(true),
   amount: z.coerce.number().min(0).optional(),
   withholdingRate: z.coerce.number().min(0).max(100).default(3).optional(),
   netAmount: z.coerce.number().min(0).optional(),
@@ -122,5 +123,6 @@ export const reviewJobUpdateSchema = reviewJobBaseSchema.partial().extend({
   tags: z.array(z.string()).optional(),
   hasWithholdingTax: z.boolean().optional(),
   isBrotherJob: z.boolean().optional(),
+  showOnPortfolio: z.boolean().optional(),
   withholdingRate: z.coerce.number().min(0).max(100).optional(),
 });

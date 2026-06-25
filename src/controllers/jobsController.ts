@@ -253,6 +253,7 @@ export async function createJob(body: {
   briefLink?: string | null;
   briefLinkNote?: string | null;
   isBrotherJob?: boolean;
+  showOnPortfolio?: boolean;
 }): Promise<ReviewJobJson> {
   const data = deserializeReviewJobBody(body);
   const row = await prisma.review_jobs.create({
@@ -272,6 +273,7 @@ export async function createJob(body: {
       brief_link: data.brief_link,
       brief_link_note: data.brief_link_note,
       is_brother_job: data.is_brother_job,
+      show_on_portfolio: data.show_on_portfolio,
     },
   });
   return serializeReviewJob(row);
@@ -295,6 +297,7 @@ export async function updateJob(
     briefLink: string | null;
     briefLinkNote: string | null;
     isBrotherJob: boolean;
+    showOnPortfolio: boolean;
   }>,
 ): Promise<ReviewJobJson | null> {
   const existing = await getJobById(id);
@@ -339,6 +342,9 @@ export async function updateJob(
     isBrotherJob: has("isBrotherJob")
       ? (body.isBrotherJob ?? false)
       : (existing.isBrotherJob ?? false),
+    showOnPortfolio: has("showOnPortfolio")
+      ? (body.showOnPortfolio ?? true)
+      : existing.showOnPortfolio,
   });
   const row = await prisma.review_jobs.update({
     where: { id },
@@ -358,6 +364,7 @@ export async function updateJob(
       brief_link: data.brief_link,
       brief_link_note: data.brief_link_note,
       is_brother_job: data.is_brother_job,
+      show_on_portfolio: data.show_on_portfolio,
     },
   });
   return serializeReviewJob(row);

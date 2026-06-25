@@ -209,3 +209,19 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT push_subscriptions_endpoint_unique UNIQUE (endpoint)
 );
+
+-- ── High 4: portfolio opt-in ────────────────────────────────────────────────
+-- Per-job consent flag for the PUBLIC portfolio. Default true preserves the
+-- current behaviour (existing jobs stay visible) — untick a job to hide it when
+-- a collaboration is under NDA. Additive + idempotent.
+ALTER TABLE review_jobs ADD COLUMN IF NOT EXISTS show_on_portfolio BOOLEAN NOT NULL DEFAULT true;
+
+-- ── High 3: cron heartbeat ──────────────────────────────────────────────────
+-- One row per scheduled job, updated on every successful run. /api/health reads
+-- this to flag a cron that has gone silent (e.g. >25h). Additive + idempotent.
+CREATE TABLE IF NOT EXISTS cron_runs (
+  job_name TEXT PRIMARY KEY,
+  last_run_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_status TEXT,
+  detail TEXT
+);
