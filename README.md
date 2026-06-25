@@ -34,3 +34,35 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Database backups
+
+The prod Neon database is backed up two ways:
+
+- **Neon PITR (built-in):** point-in-time restore covers the very recent past
+  with no setup. Use it for "I deleted a row an hour ago" recovery.
+- **Daily logical dump:** the `DB Backup` GitHub Action (`.github/workflows/db-backup.yml`)
+  runs `pg_dump` every day (~02:00 Asia/Bangkok) and keeps a gzipped artifact for
+  **30 days**. Requires one repo secret: `DATABASE_URL` (use the **direct**
+  Neon connection string, not the `-pooler` host).
+
+### Restore from a daily artifact
+
+1. GitHub → **Actions → DB Backup**, open a run, download the `db-backup-*` artifact.
+2. Unzip the artifact, then the dump: `gunzip irt-db-YYYY-MM-DD.sql.gz`
+3. **Restore into a fresh Neon branch first** (so you can verify before touching
+   live data), then promote it:
+   ```bash
+   psql "<neon-branch-direct-url>" < irt-db-YYYY-MM-DD.sql
+   ```
+
+### Schema migrations are guarded
+
+`npm run db:migrate` (`scripts/run-schema.js`) runs against **real prod**. It now:
+
+- refuses to run if `src/lib/db/schema.sql` contains destructive statements
+  (`DROP TABLE/COLUMN`, `TRUNCATE`, `ALTER ... DROP`, `DELETE` without `WHERE`)
+  unless you pass `-- --allow-destructive`;
+- wraps the whole file in one transaction (failure → full rollback).
+
+Keep `schema.sql` additive + idempotent (`CREATE/ALTER ... IF NOT EXISTS`).

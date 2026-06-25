@@ -1,0 +1,55 @@
+name: DB Backup
+
+# Daily logical backup of the prod Neon database.
+# - pg_dump runs inside a postgres:17 container so the client version always
+#   matches Neon (no host pg_dump version skew).
+# - Output is gzipped and kept as a GitHub Actions artifact (30-day retention,
+#   pruned automatically by GitHub — no separate Supabase storage needed).
+# - Restore: download the artifact, `gunzip`, then `psql "$DATABASE_URL" < file.sql`
+#   (preferably into a fresh Neon branch first to verify before promoting).
+
+on:
+  schedule:
+    # 19:00 UTC = ~02:00 Asia/Bangkok. GitHub may delay scheduled runs slightly.
+    - cron: "0 19 * * *"
+  workflow_dispatch: {} # allow manual "Run workflow" from the Actions tab
+
+# Never run two dumps at once.
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Dump database (read-only)
+        env:
+          # Use the DIRECT connection string (not the -pooler host) for pg_dump.
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DATABASE_URL:-}" ]; then
+            echo "::error::DATABASE_URL secret is not set"
+            exit 1
+          fi
+          FILE="irt-db-$(date -u +%Y-%m-%d).sql.gz"
+          docker run --rm -e DATABASE_URL postgres:17 \
+            sh -c 'pg_dump --no-owner --no-privileges "$DATABASE_URL"' \
+            | gzip > "$FILE"
+          # Fail loudly if the dump is suspiciously tiny (connection/auth issue).
+          SIZE=$(stat -c%s "$FILE")
+          echo "Backup file: $FILE ($SIZE bytes)"
+          if [ "$SIZE" -lt 1000 ]; then
+            echo "::error::Backup looks empty ($SIZE bytes) — aborting"
+            exit 1
+          fi
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: "*.sql.gz"
+          retention-days: 30
+          if-no-files-found: error

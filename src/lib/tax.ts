@@ -1,7 +1,9 @@
 /**
- * Reuse: Withholding tax (หักภาษี ณ ที่จ่าย) calculation.
- * TODO: Thailand - centralise rate rules and validate against Revenue Department guidelines (e.g. PND 50/53).
- * TODO: Apply official rounding (per RD rules) before storing withholding_amount.
+ * Reuse: Withholding tax (หักภาษี ณ ที่จ่าย) calculation. Single source of truth
+ * for withholding/net math — used by both income and invoice paths and the job
+ * form on the client. Rounding goes through `roundCurrency` (half-up, satang,
+ * float-safe). Client-safe: no server-only deps here.
+ * TODO: Thailand - validate rate against Revenue Department rules (e.g. PND 50/53).
  */
 
 import { roundCurrency } from "./currency";

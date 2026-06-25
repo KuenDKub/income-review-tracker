@@ -104,6 +104,7 @@ export async function POST(request: NextRequest) {
       briefLink: payload.briefLink,
       briefLinkNote: payload.briefLinkNote,
       isBrotherJob: payload.isBrotherJob ?? false,
+      showOnPortfolio: payload.showOnPortfolio ?? true,
     });
     const incomePayload = buildIncomeFromJobPayload(data.id, payload);
     if (incomePayload) {

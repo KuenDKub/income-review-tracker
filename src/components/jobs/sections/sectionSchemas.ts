@@ -26,6 +26,7 @@ export const incomeSectionSchema = z
   .object({
     isBrotherJob: z.boolean().default(false),
     hasWithholdingTax: z.boolean().default(false),
+    showOnPortfolio: z.boolean().default(true),
     amount: z.coerce.number().min(0).optional(),
     withholdingRate: z.coerce.number().min(0).max(100).default(3).optional(),
   })

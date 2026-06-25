@@ -26,6 +26,7 @@ export type ReviewJobRow = {
   brief_link?: string | null;
   brief_link_note?: string | null;
   is_brother_job: boolean;
+  show_on_portfolio?: boolean;
   created_at: Date;
 };
 
@@ -47,6 +48,7 @@ export type ReviewJobJson = {
   briefLinkNote: string | null;
   createdAt: string;
   isBrotherJob: boolean;
+  showOnPortfolio: boolean;
   grossAmount?: number | null;
 };
 
@@ -69,6 +71,7 @@ export function serializeReviewJob(row: ReviewJobRow): ReviewJobJson {
     briefLinkNote: row.brief_link_note ?? null,
     createdAt: row.created_at.toISOString(),
     isBrotherJob: Boolean(row.is_brother_job),
+    showOnPortfolio: row.show_on_portfolio ?? true,
   };
 }
 
@@ -88,6 +91,7 @@ export function deserializeReviewJobBody(body: {
   briefLink?: string | null;
   briefLinkNote?: string | null;
   isBrotherJob?: boolean;
+  showOnPortfolio?: boolean;
 }): {
   payer_name: string | null;
   status: string;
@@ -104,6 +108,7 @@ export function deserializeReviewJobBody(body: {
   brief_link: string | null;
   brief_link_note: string | null;
   is_brother_job: boolean;
+  show_on_portfolio: boolean;
 } {
   return {
     payer_name: body.payerName?.trim() || null,
@@ -123,5 +128,9 @@ export function deserializeReviewJobBody(body: {
     is_brother_job: Object.prototype.hasOwnProperty.call(body, "isBrotherJob")
       ? Boolean(body.isBrotherJob)
       : false,
+    // Default true preserves prior behaviour (visible) when the client omits it.
+    show_on_portfolio: Object.prototype.hasOwnProperty.call(body, "showOnPortfolio")
+      ? Boolean(body.showOnPortfolio)
+      : true,
   };
 }

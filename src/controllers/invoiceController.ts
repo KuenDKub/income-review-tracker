@@ -8,14 +8,11 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { serializeInvoice, type InvoiceJson } from "@/lib/serializers/invoiceSerializer";
+import { computeWithholdingAndNet } from "@/lib/tax";
+import { roundCurrency } from "@/lib/currency";
 
 export const INVOICE_STATUSES = ["unpaid", "paid", "cancelled"] as const;
 export type InvoiceStatus = (typeof INVOICE_STATUSES)[number];
-
-/** Round to 2 dp the same way the income serializer does. */
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
-}
 
 function dateOnly(d: Date): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
@@ -70,14 +67,15 @@ export async function createInvoiceForJob(input: CreateInvoiceInput): Promise<In
     if (!job) throw new Error("Review job not found");
 
     const latestIncome = job.income[0];
-    const subtotal = round2(
+    const subtotal = roundCurrency(
       input.subtotal ?? (latestIncome ? Number(latestIncome.gross_amount) : 0),
     );
     const rate =
       input.withholdingRate ??
       (latestIncome ? Number(latestIncome.withholding_rate) : 3);
-    const withholding = round2(subtotal * (rate / 100));
-    const total = round2(subtotal - withholding);
+    // Same math as income so an invoice always matches its job's figures.
+    const { withholdingAmount: withholding, netAmount: total } =
+      computeWithholdingAndNet(subtotal, rate);
 
     const issueDate = input.issueDate ? new Date(input.issueDate) : dateOnly(new Date());
     let dueDate: Date | null = null;
