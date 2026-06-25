@@ -1,12 +1,13 @@
-name: DB Backup
+name: Backup (DB + Storage)
 
-# Daily logical backup of the prod Neon database.
-# - pg_dump runs inside a postgres:17 container so the client version always
-#   matches Neon (no host pg_dump version skew).
-# - Output is gzipped and kept as a GitHub Actions artifact (30-day retention,
-#   pruned automatically by GitHub — no separate Supabase storage needed).
-# - Restore: download the artifact, `gunzip`, then `psql "$DATABASE_URL" < file.sql`
-#   (preferably into a fresh Neon branch first to verify before promoting).
+# Daily backup of prod, in two independent jobs:
+#  1. db      — logical Neon dump (pg_dump in postgres:17 so client versions match).
+#  2. storage — mirror of the Supabase Storage bucket (uploaded images/files),
+#               which the DB dump does NOT contain (it only stores their paths).
+# Both keep a GitHub Actions artifact for 30 days (GitHub prunes automatically).
+# Restore DB:      gunzip the .sql.gz, then psql "$DATABASE_URL" < file.sql
+#                  (preferably into a fresh Neon branch first to verify).
+# Restore storage: extract the .tar.gz, then aws s3 sync it back to the bucket.
 
 on:
   schedule:
@@ -20,7 +21,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  backup:
+  db:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -51,5 +52,44 @@ jobs:
         with:
           name: db-backup-${{ github.run_id }}
           path: "*.sql.gz"
+          retention-days: 30
+          if-no-files-found: error
+
+  storage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Mirror Supabase Storage bucket (read-only)
+        env:
+          # Supabase Storage is S3-compatible; reuse the app's S3 credentials.
+          AWS_ACCESS_KEY_ID: ${{ secrets.SUPABASE_S3_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SUPABASE_S3_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
+          # Match the app's client: Supabase rejects the default checksum mode.
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+          ENDPOINT: ${{ secrets.SUPABASE_S3_ENDPOINT }}
+          BUCKET: ${{ secrets.SUPABASE_STORAGE_BUCKET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${AWS_ACCESS_KEY_ID:-}" ] || [ -z "${ENDPOINT:-}" ] || [ -z "${BUCKET:-}" ]; then
+            echo "::error::Missing Supabase S3 secrets (SUPABASE_S3_* / SUPABASE_STORAGE_BUCKET)"
+            exit 1
+          fi
+          aws configure set default.s3.addressing_style path  # Supabase needs path-style
+          mkdir -p storage
+          aws s3 sync "s3://${BUCKET}" ./storage --endpoint-url "$ENDPOINT" --no-progress
+          COUNT=$(find storage -type f | wc -l)
+          echo "Mirrored $COUNT files from bucket '$BUCKET'"
+          if [ "$COUNT" -eq 0 ]; then
+            echo "::warning::Bucket appears empty — check credentials/endpoint"
+          fi
+          tar -czf "irt-storage-$(date -u +%Y-%m-%d).tar.gz" -C storage .
+
+      - name: Upload storage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: storage-backup-${{ github.run_id }}
+          path: "*.tar.gz"
           retention-days: 30
           if-no-files-found: error

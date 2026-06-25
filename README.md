@@ -41,10 +41,16 @@ The prod Neon database is backed up two ways:
 
 - **Neon PITR (built-in):** point-in-time restore covers the very recent past
   with no setup. Use it for "I deleted a row an hour ago" recovery.
-- **Daily logical dump:** the `DB Backup` GitHub Action (`.github/workflows/db-backup.yml`)
-  runs `pg_dump` every day (~02:00 Asia/Bangkok) and keeps a gzipped artifact for
-  **30 days**. Requires one repo secret: `DATABASE_URL` (use the **direct**
-  Neon connection string, not the `-pooler` host).
+- **Daily logical dump:** the `Backup (DB + Storage)` GitHub Action
+  (`.github/workflows/db-backup.yml`) runs every day (~02:00 Asia/Bangkok) and
+  keeps gzipped artifacts for **30 days**. Two jobs:
+  - `db` — `pg_dump` of Neon. Secret: `DATABASE_URL` (the **direct** Neon string,
+    not the `-pooler` host).
+  - `storage` — mirrors the Supabase Storage bucket (uploaded images/files),
+    which the DB dump does **not** contain (it only stores their paths). Secrets:
+    `SUPABASE_S3_ENDPOINT`, `SUPABASE_S3_ACCESS_KEY_ID`,
+    `SUPABASE_S3_SECRET_ACCESS_KEY`, `SUPABASE_STORAGE_BUCKET` (same values as
+    `.env`). Restore: extract the `.tar.gz`, then `aws s3 sync` it back.
 
 ### Restore from a daily artifact
 
