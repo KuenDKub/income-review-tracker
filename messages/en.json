@@ -248,7 +248,8 @@
     "incomeEmpty": "No income recorded yet. Use Edit to add the amount and withholding.",
     "datesEmpty": "No dates set yet. Use Edit to add the received, review, publish, or payment date.",
     "notesEmpty": "No notes yet. Use Edit to add a note.",
-    "quickCreateHint": "Log the essentials now — add the brief, fee and dates on the next screen."
+    "quickCreateHint": "Log the essentials now — add the brief, fee and dates on the next screen.",
+    "addMoreDates": "Add other dates (optional)"
   },
   "payers": {
     "title": "Payers",
