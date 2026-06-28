@@ -87,14 +87,9 @@ export async function GET(req: Request) {
           alarm: { trigger: "PT9H", description: `Post: ${job.title}` },
         });
       }
-      if (job.paymentDate) {
-        events.push({
-          title: `${job.title} (Payment)`,
-          date: job.paymentDate,
-          description,
-          uid: `job-${job.id}-payment@${FEED_DOMAIN}`,
-        });
-      }
+      // Payment-received dates are intentionally NOT synced to external
+      // calendars (kept on the web only). Subscribed calendars drop the old
+      // payment events on their next poll once they disappear from the feed.
     }
     for (const note of notes) {
       const firstLine = note.text.split("\n")[0]?.trim() || "Note";

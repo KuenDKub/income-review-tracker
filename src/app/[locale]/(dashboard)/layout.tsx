@@ -21,7 +21,7 @@ export default async function DashboardLayout({
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col bg-muted/30 dark:bg-background">
         <Header title={t("title")} />
-        <main className="flex min-w-0 flex-1 flex-col p-4 pb-[calc(9rem+env(safe-area-inset-bottom))] sm:p-6 sm:pb-[calc(9rem+env(safe-area-inset-bottom))] lg:pb-8">
+        <main className="flex min-w-0 flex-1 flex-col p-4 pb-[calc(9rem+env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:p-6 sm:pb-[calc(9rem+env(safe-area-inset-bottom))] sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] lg:pb-8">
           <div className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col">
             {children}
           </div>

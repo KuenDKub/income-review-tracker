@@ -105,6 +105,11 @@ export const reviewJobQuickCreateSchema = z.object({
   contentType: z.string().min(1, "Content type is required"),
   status: z.enum(REVIEW_JOB_STATUSES).default("received"),
   receivedDate: z.string().min(1, "Received date is required"),
+  // Optional extra dates, surfaced behind a collapsible section in the quick
+  // form. The server validates the full schema (incl. date-ordering refinement),
+  // so anything captured here is persisted on create.
+  reviewDeadline: z.string().optional().nullable(),
+  publishDate: z.string().optional().nullable(),
 });
 
 export type ReviewJobQuickCreateInput = z.infer<

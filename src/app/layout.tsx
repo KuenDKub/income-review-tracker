@@ -26,6 +26,10 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#e85aa0",
+  // Render edge-to-edge AND activate real env(safe-area-inset-*) values, which
+  // the dashboard layout + bottom nav consume so content/tabs clear the iPhone
+  // bezel & home indicator on the installed PWA. Without this, those insets are 0.
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

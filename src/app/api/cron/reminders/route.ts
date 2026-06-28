@@ -1,11 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { sendPushToAll, isPushConfigured, type PushPayload } from "@/lib/push/webpush";
+import { pickStable } from "@/lib/pickStable";
 
 export const dynamic = "force-dynamic";
 
 // Jobs in these statuses are finished — don't nag about their deadlines.
 const DONE_STATUSES = new Set(["paid", "done", "cancelled", "published"]);
+
+// Varied Thai title copy so a day with several reminders of the same kind doesn't
+// produce a stack of identical-looking notifications. The phrasing is chosen
+// deterministically from the item's id (see pickStable), so a given job/invoice
+// keeps the same wording across cron re-runs while different items differ.
+const DEADLINE_TODAY_TITLES = [
+  "⏰ เดดไลน์รีวิววันนี้",
+  "🔥 วันนี้ครบกำหนดรีวิว",
+  "📌 รีวิวนี้ต้องส่งวันนี้",
+  "⚡ อย่าลืม! รีวิววันนี้",
+] as const;
+const DEADLINE_TOMORROW_TITLES = [
+  "⏳ พรุ่งนี้ถึงเดดไลน์รีวิว",
+  "📅 อีกวันครบกำหนดรีวิว",
+  "🔔 เตรียมตัว! รีวิวพรุ่งนี้",
+] as const;
+const PUBLISH_TITLES = [
+  "📅 วันนี้ถึงกำหนดโพสต์",
+  "📣 ได้เวลาโพสต์รีวิวแล้ว",
+  "🚀 วันนี้ปล่อยโพสต์",
+] as const;
+const INVOICE_OVERDUE_TITLES = [
+  "💸 Invoice เลยกำหนดชำระ",
+  "⚠️ Invoice ค้างชำระ",
+  "🧾 ตามจ่าย Invoice",
+] as const;
+const INVOICE_DUE_TITLES = [
+  "💸 Invoice ครบกำหนดวันนี้",
+  "🧾 วันนี้ครบกำหนด Invoice",
+] as const;
 
 /** "YYYY-MM-DD" for a date offset from now, in Asia/Bangkok (Thailand-focused app). */
 function bangkokDateKey(offsetDays = 0): string {
@@ -53,9 +84,10 @@ export async function GET(request: NextRequest) {
   });
   for (const job of deadlineJobs) {
     if (DONE_STATUSES.has(job.status)) continue;
-    const due = job.review_deadline?.getTime() === tomorrow.getTime() ? "พรุ่งนี้" : "วันนี้";
+    const isTomorrow = job.review_deadline?.getTime() === tomorrow.getTime();
+    const titles = isTomorrow ? DEADLINE_TOMORROW_TITLES : DEADLINE_TODAY_TITLES;
     notifications.push({
-      title: `⏰ เดดไลน์รีวิว${due}`,
+      title: pickStable(titles, job.id),
       body: job.title,
       url: `/jobs/${job.id}`,
       tag: `deadline-${job.id}`,
@@ -70,7 +102,7 @@ export async function GET(request: NextRequest) {
   for (const job of publishJobs) {
     if (DONE_STATUSES.has(job.status)) continue;
     notifications.push({
-      title: "📅 วันนี้ถึงกำหนดโพสต์",
+      title: pickStable(PUBLISH_TITLES, job.id),
       body: job.title,
       url: `/jobs/${job.id}`,
       tag: `publish-${job.id}`,
@@ -85,7 +117,7 @@ export async function GET(request: NextRequest) {
   for (const inv of dueInvoices) {
     const overdue = inv.due_date && inv.due_date.getTime() < today.getTime();
     notifications.push({
-      title: overdue ? "💸 Invoice เลยกำหนดชำระ" : "💸 Invoice ครบกำหนดวันนี้",
+      title: pickStable(overdue ? INVOICE_OVERDUE_TITLES : INVOICE_DUE_TITLES, inv.id),
       body: `${inv.invoice_number}${inv.payer_name ? ` · ${inv.payer_name}` : ""}`,
       url: "/payments",
       tag: `invoice-${inv.id}`,
