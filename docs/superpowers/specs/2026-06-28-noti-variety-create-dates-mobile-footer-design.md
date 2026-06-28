@@ -3,11 +3,13 @@
 Date: 2026-06-28
 Status: Approved-pending (brainstorm)
 
-Three small, independent UX fixes requested from a phone:
+Four small, independent UX fixes requested from a phone:
 
 1. Push notifications all look identical → add varied copy.
 2. Quick-create form only captures the received date → optionally capture more dates.
 3. The mobile bottom nav is clipped by the iPhone frame → add safe-area spacing.
+4. Dashboard content is clipped at the screen edges on the installed iPhone PWA →
+   same root cause as #3 (safe-area insets are disabled); fix once at the source.
 
 ---
 
@@ -108,29 +110,65 @@ implementation time based on what's installed. Exposes `Collapsible`,
 
 ---
 
-## 3. Mobile bottom nav — escape the iPhone frame
+## 3 + 4. Mobile safe-area spacing (installed iPhone PWA)
+
+Both the clipped bottom nav (screenshot 1) and the clipped dashboard cards
+(screenshot 2) are the **same bug**: on a notched iPhone, content and the bottom
+nav run under the device bezel / home indicator. User's words: "กรอบของ iphone
+มันบัง เพิ่ม space ข้างๆกับด้านล่าง".
+
+### Root cause — `env(safe-area-inset-*)` is disabled
+
+`src/app/layout.tsx` exports `viewport = { themeColor: ... }` **without**
+`viewportFit: "cover"`. Without that, the browser keeps content inside the safe
+area by default and **all `env(safe-area-inset-*)` values resolve to `0`** — so
+the existing `pb-[env(safe-area-inset-bottom)]` on `BottomNav` is currently a
+no-op, and there is no horizontal inset anywhere. This is why content reaches the
+physical screen edges and looks cut on the installed PWA.
+
+**Fix (the source):** add `viewportFit: "cover"` to the `viewport` export:
+```ts
+export const viewport: Viewport = {
+  themeColor: "#e85aa0",
+  viewportFit: "cover",
+};
+```
+This makes the app render edge-to-edge AND activates real `env(safe-area-inset-*)`
+values, which the padding below then consumes.
+
+### Part A — page content side/bottom insets
+
+**File:** `src/app/[locale]/(dashboard)/layout.tsx` (`<main>`)
+
+Current: `p-4 pb-[calc(9rem+env(safe-area-inset-bottom))] sm:p-6 ... lg:pb-8`.
+
+Add horizontal safe-area padding so cards clear the side bezels on a notched
+device while staying at the normal 1rem/1.5rem on everything else:
+- `pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]`
+  at the base, and the `sm:` variants at `max(1.5rem, …)`.
+
+The existing bottom reserve (`9rem + inset-bottom`) is kept.
+
+### Part B — bottom nav insets
 
 **File:** `src/components/layout/BottomNav.tsx`
 
-**Problem (user):** "กรอบของ iphone มันบัง เพิ่ม space ข้างๆกับด้านล่าง" — the home
-indicator (bottom) and the rounded corners / side insets clip the nav.
-
-**Current:** `<nav className="... pb-[env(safe-area-inset-bottom)] ...">` — only a
-bare bottom inset, no side insets, no minimum bottom gap.
-
-**Change** the `<nav>` padding to:
-- **Bottom:** a small base padding **plus** the safe-area inset, e.g.
+Change the `<nav>` padding to:
+- **Bottom:** base padding **plus** the inset, e.g.
   `pb-[calc(0.5rem+env(safe-area-inset-bottom))]`, so labels clear the home
-  indicator instead of butting against it.
+  indicator (now that the inset is non-zero).
 - **Sides:** `pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]` so
   the first/last tab isn't hidden under rounded corners / a landscape notch.
 
-The dashboard layout's `main` already reserves `pb-[calc(9rem+...)]`; bumping the
-nav's bottom padding stays within that reserve, so no layout change is needed
-there. The "More" sheet is unaffected (Radix sheet handles its own insets).
+The "More" sheet is unaffected (Radix sheet handles its own insets).
 
-**Out of scope:** restructuring the nav, hide-on-scroll, or bringing the desktop
-`Footer` to mobile.
+**Verification:** must be checked in an **installed PWA / `viewport-fit=cover`
+context** (iOS Safari "Add to Home Screen", or DevTools device emulation with a
+notched device), not a plain desktop window — otherwise the insets read 0 and the
+change appears to do nothing.
+
+**Out of scope:** restructuring the nav, hide-on-scroll, bringing the desktop
+`Footer` to mobile, or per-page padding overrides (fix lives in the shared layout).
 
 ---
 
@@ -142,8 +180,11 @@ there. The "More" sheet is unaffected (Radix sheet handles its own insets).
   context and inspect payload titles. No DB writes change.
 - **Create dates:** create a job with the section collapsed (dates omitted) and
   with it expanded (dates set); confirm both persist and min-date chaining works.
-- **Footer:** check on an iPhone-with-notch viewport (Safari responsive / device)
-  that tabs clear the home indicator and aren't clipped at the sides.
+- **Safe-area (3+4):** in a `viewport-fit=cover` context (installed iOS PWA or
+  notched-device emulation), confirm (a) bottom-nav tabs clear the home indicator
+  and aren't clipped at the sides, and (b) dashboard cards/badges are no longer cut
+  at the right edge. Also sanity-check a normal desktop window still shows the
+  usual 1rem/1.5rem gutters (the `max(...)` keeps the floor).
 
 ## Non-goals
 
