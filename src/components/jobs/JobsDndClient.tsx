@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { ArrowUp, GripVertical } from "lucide-react";
+import { ArrowUp, GripVertical, Plus } from "lucide-react";
+import { Link } from "@/i18n/navigation";
+import { Button } from "@/components/ui/button";
 import {
   DndContext,
   DragOverlay,
@@ -365,6 +367,12 @@ export function JobsDndClient() {
         title={t("boardTitle")}
         actions={
           <>
+          <Button asChild size="sm" className="min-h-[40px]">
+            <Link href="/jobs?new=1">
+              <Plus className="size-4" />
+              {t("createJob")}
+            </Link>
+          </Button>
           <span className="hidden text-xs text-muted-foreground sm:inline">
             {t("monthsRange")}
           </span>
