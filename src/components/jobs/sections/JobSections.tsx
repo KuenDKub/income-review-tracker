@@ -30,6 +30,7 @@ import {
   BriefFields,
   NotesField,
   IncomeFields,
+  ShowOnPortfolioField,
   CoreDateFields,
   DateField,
 } from "@/components/jobs/JobFields";
@@ -123,6 +124,7 @@ export function DetailsCard({
         payerName: values.payerName ?? "",
         contentType: values.contentType,
         platforms: values.platforms ?? [],
+        showOnPortfolio: values.showOnPortfolio,
       }),
   });
 
@@ -136,6 +138,7 @@ export function DetailsCard({
               <ContentTypeField />
               <PlatformsField />
             </div>
+            {!job.isBrotherJob && <ShowOnPortfolioField />}
             <SectionEditFooter onCancel={cancel} saving={saving} />
           </form>
         </Form>
@@ -152,6 +155,13 @@ export function DetailsCard({
               "—"
             )}
           </DetailItem>
+          {!job.isBrotherJob && (
+            <DetailItem label={t("showOnPortfolio")}>
+              {job.showOnPortfolio ?? true
+                ? t("portfolioShown")
+                : t("portfolioHidden")}
+            </DetailItem>
+          )}
         </dl>
       )}
     </SectionCard>
@@ -311,7 +321,6 @@ export function IncomeCard({
       onSave({
         isBrotherJob: values.isBrotherJob,
         hasWithholdingTax: values.hasWithholdingTax,
-        showOnPortfolio: values.showOnPortfolio,
         amount: values.amount,
         withholdingRate: values.withholdingRate,
         // Keep the income row's date in sync and avoid the route defaulting

@@ -493,6 +493,39 @@ export function NotesField() {
   );
 }
 
+/**
+ * Public-portfolio visibility toggle. Kept separate from {@link IncomeFields}
+ * since showing a job in the portfolio is a publishing concern, not income.
+ * Self-hides for brother jobs (review-only, never on the portfolio).
+ */
+export function ShowOnPortfolioField() {
+  const t = useTranslations("jobs");
+  const form = useFormContext<JobFormValues>();
+  const isBrotherJob = form.watch("isBrotherJob") ?? false;
+  if (isBrotherJob) return null;
+  return (
+    <FormField
+      control={form.control}
+      name="showOnPortfolio"
+      render={({ field }) => (
+        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+          <FormControl>
+            <Checkbox
+              checked={field.value ?? true}
+              onCheckedChange={(checked) => field.onChange(checked === true)}
+            />
+          </FormControl>
+          <div className="space-y-1 leading-none">
+            <FormLabel className="font-normal cursor-pointer">
+              {t("showOnPortfolio")}
+            </FormLabel>
+          </div>
+        </FormItem>
+      )}
+    />
+  );
+}
+
 /** Brother-job toggle + withholding / income inputs with the live tax preview. */
 export function IncomeFields() {
   const t = useTranslations("jobs");
@@ -525,25 +558,6 @@ export function IncomeFields() {
       />
       {!isBrotherJob && (
         <>
-          <FormField
-            control={form.control}
-            name="showOnPortfolio"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value ?? true}
-                    onCheckedChange={(checked) => field.onChange(checked === true)}
-                  />
-                </FormControl>
-                <div className="space-y-1 leading-none">
-                  <FormLabel className="font-normal cursor-pointer">
-                    {t("showOnPortfolio")}
-                  </FormLabel>
-                </div>
-              </FormItem>
-            )}
-          />
           <FormField
             control={form.control}
             name="hasWithholdingTax"

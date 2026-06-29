@@ -183,6 +183,8 @@
     "withholdingAmount": "Tax (THB)",
     "isBrotherJob": "Barter job (review items only, no income)",
     "showOnPortfolio": "Show this job on the public portfolio",
+    "portfolioShown": "Shown",
+    "portfolioHidden": "Hidden",
     "brotherBadge": "Barter job",
     "allStatuses": "All statuses",
     "searchPlaceholder": "Search jobs...",
@@ -248,8 +250,9 @@
     "incomeEmpty": "No income recorded yet. Use Edit to add the amount and withholding.",
     "datesEmpty": "No dates set yet. Use Edit to add the received, review, publish, or payment date.",
     "notesEmpty": "No notes yet. Use Edit to add a note.",
-    "quickCreateHint": "Log the essentials now — add the brief, fee and dates on the next screen.",
-    "addMoreDates": "Add other dates (optional)"
+    "quickCreateHint": "Log the essentials now — add the brief, fee and other dates here or on the next screen.",
+    "addMoreDates": "Add other dates (optional)",
+    "addIncome": "Add income (optional)"
   },
   "payers": {
     "title": "Payers",

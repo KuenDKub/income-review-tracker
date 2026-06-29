@@ -98,19 +98,42 @@ export const reviewJobCreateSchema = reviewJobSchema;
  * Everything else (brief, income, extra dates) is added inline on the detail
  * page afterwards.
  */
-export const reviewJobQuickCreateSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  payerName: z.string().optional(),
-  platforms: z.array(z.string()).optional().default([]),
-  contentType: z.string().min(1, "Content type is required"),
-  status: z.enum(REVIEW_JOB_STATUSES).default("received"),
-  receivedDate: z.string().min(1, "Received date is required"),
-  // Optional extra dates, surfaced behind a collapsible section in the quick
-  // form. The server validates the full schema (incl. date-ordering refinement),
-  // so anything captured here is persisted on create.
-  reviewDeadline: z.string().optional().nullable(),
-  publishDate: z.string().optional().nullable(),
-});
+export const reviewJobQuickCreateSchema = z
+  .object({
+    title: z.string().min(1, "Title is required"),
+    payerName: z.string().optional(),
+    platforms: z.array(z.string()).optional().default([]),
+    contentType: z.string().min(1, "Content type is required"),
+    status: z.enum(REVIEW_JOB_STATUSES).default("received"),
+    receivedDate: z.string().min(1, "Received date is required"),
+    // Optional extra dates, surfaced behind a collapsible section in the quick
+    // form. The server validates the full schema (incl. date-ordering
+    // refinement), so anything captured here is persisted on create.
+    reviewDeadline: z.string().optional().nullable(),
+    publishDate: z.string().optional().nullable(),
+    // Optional income, surfaced behind a collapsible section. The fee can be
+    // left blank here and filled in inline on the detail page later; when an
+    // amount is given the server builds the Income row on create.
+    isBrotherJob: z.boolean().default(false),
+    showOnPortfolio: z.boolean().default(true),
+    hasWithholdingTax: z.boolean().default(false),
+    amount: z.coerce.number().min(0).optional(),
+    withholdingRate: z.coerce.number().min(0).max(100).default(3).optional(),
+  })
+  .superRefine((data, ctx) => {
+    // Mirror the full schema: a gross amount is required once withholding tax is
+    // applied, since the tax can't be computed without it. Brother jobs carry no
+    // income, so skip the check.
+    if (data.isBrotherJob || !data.hasWithholdingTax) return;
+    if (data.amount == null || data.amount <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Gross amount (full price) is required when withholding tax is applied",
+        path: ["amount"],
+      });
+    }
+  });
 
 export type ReviewJobQuickCreateInput = z.infer<
   typeof reviewJobQuickCreateSchema

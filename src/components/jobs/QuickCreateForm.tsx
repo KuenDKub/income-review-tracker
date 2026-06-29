@@ -15,6 +15,8 @@ import {
   PlatformsField,
   ContentTypeField,
   DateField,
+  IncomeFields,
+  ShowOnPortfolioField,
 } from "./JobFields";
 import {
   reviewJobQuickCreateSchema,
@@ -44,6 +46,7 @@ export function QuickCreateForm({
 }: QuickCreateFormProps) {
   const t = useTranslations("jobs");
   const [showMoreDates, setShowMoreDates] = useState(false);
+  const [showIncome, setShowIncome] = useState(false);
   const form = useForm<ReviewJobQuickCreateInput>({
     resolver: zodResolver(reviewJobQuickCreateSchema) as never,
     defaultValues: {
@@ -55,6 +58,11 @@ export function QuickCreateForm({
       receivedDate: todayIso(),
       reviewDeadline: "",
       publishDate: "",
+      isBrotherJob: false,
+      showOnPortfolio: true,
+      hasWithholdingTax: false,
+      amount: undefined,
+      withholdingRate: 3,
     },
   });
   const { isSubmitting } = form.formState;
@@ -118,6 +126,30 @@ export function QuickCreateForm({
             </div>
           )}
         </div>
+
+        <div className="rounded-xl border">
+          <button
+            type="button"
+            aria-expanded={showIncome}
+            onClick={() => setShowIncome((v) => !v)}
+            className="flex w-full items-center justify-between gap-2 px-4 py-3 text-sm font-medium touch-manipulation"
+          >
+            {t("addIncome")}
+            <ChevronDown
+              className={cn(
+                "size-4 shrink-0 text-muted-foreground transition-transform",
+                showIncome && "rotate-180",
+              )}
+            />
+          </button>
+          {showIncome && (
+            <div className="border-t px-4 pb-4 pt-4">
+              <IncomeFields />
+            </div>
+          )}
+        </div>
+
+        <ShowOnPortfolioField />
 
         <Button type="submit" loading={isSubmitting} className="w-full sm:w-auto">
           {submitLabel}

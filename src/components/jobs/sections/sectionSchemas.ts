@@ -10,6 +10,8 @@ export const detailsSectionSchema = z.object({
   payerName: z.string().optional(),
   contentType: z.string().min(1, "Content type is required"),
   platforms: z.array(z.string()).optional().default([]),
+  // Public-portfolio visibility lives with the job's details, not its income.
+  showOnPortfolio: z.boolean().default(true),
 });
 
 export const briefSectionSchema = z.object({
@@ -26,7 +28,6 @@ export const incomeSectionSchema = z
   .object({
     isBrotherJob: z.boolean().default(false),
     hasWithholdingTax: z.boolean().default(false),
-    showOnPortfolio: z.boolean().default(true),
     amount: z.coerce.number().min(0).optional(),
     withholdingRate: z.coerce.number().min(0).max(100).default(3).optional(),
   })
